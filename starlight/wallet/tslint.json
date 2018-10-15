@@ -1,0 +1,31 @@
+{
+  "defaultSeverity": "error",
+  "extends": ["tslint:recommended", "tslint-config-prettier"],
+  "jsRules": {},
+  "rules": {
+    "object-literal-sort-keys": false,
+    "interface-name": [false],
+    "no-console": [false],
+    "semicolon": [true, "never"],
+    "member-ordering": false,
+    "max-classes-per-file": [false],
+    "no-var-requires": false,
+    "no-bitwise": false,
+    "no-unused-expression": { "options": ["allow-fast-null-checks"] },
+    "no-unused-variable": true,
+    "one-variable-per-declaration": false,
+    "ordered-imports": false,
+    "trailing-comma": [
+      true,
+      {
+        "multiline": {
+          "typeLiterals": "never",
+          "objects": "always",
+          "arrays": "always"
+        },
+        "singleline": "never"
+      }
+    ],
+    "variable-name": [false]
+  }
+}

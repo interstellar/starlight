@@ -1,0 +1,14 @@
+#!/bin/sh
+
+set -e
+
+if [ -d /tmp/starlight-wallet/node_modules ]; then
+  mv /tmp/starlight-wallet/node_modules .
+fi
+
+npm install
+./node_modules/.bin/tslint -p tsconfig.json
+npm test
+
+mkdir -p /tmp/starlight-wallet
+mv node_modules /tmp/starlight-wallet

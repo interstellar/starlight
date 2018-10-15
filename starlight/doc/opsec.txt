@@ -1,0 +1,37 @@
+Operational Security
+
+Encryption at Rest
+
+Starlight uses private keys during the normal course
+of operation. For demo purposes, these keys stay
+resident in unencrypted memory; we don't use an
+HSM or similar service, which would be safer.
+But we do still want to have sensitive secrets
+encrypted at rest (on the filesystem).
+
+There are several private keys involved in the protocol,
+but these can all be derived from a single secret seed.
+So we only need encrypted storage for one 32-byte record.
+
+We'll encrypt the seed using the user's password.
+This means that, in case of a power outage, the starlightd
+process will restart but it won't be able to execute any
+private-key operations until the user has provided their
+password. This means it won't be able to participate in
+new rounds of the protocol; if too much time goes by
+before the user has a chance to enter their password,
+starlightd will have to close all channels.
+
+To close all channels without access to the private keys,
+we'll precompute necessary transactions at each round,
+and store those unencrypted, like any other ordinary
+database record.
+
+As an optional enhancement, in some environments there
+are convenient HSM-like services readily available.
+For example, AWS has a service called KMS. We could
+use KMS (or a similar facility in another context)
+instead of the user's password to encrypt the secret seed.
+This would provide fully-automatic restarts, with
+no need to supply the user's password, and no need to
+close all channels.
