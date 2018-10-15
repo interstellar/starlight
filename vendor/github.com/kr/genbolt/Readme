@@ -1,0 +1,13 @@
+Command genbolt generates code for conveniently reading and
+writing objects in a bolt database. It reads a set of Go
+type definitions and generates a parallel set of types using
+the input for structure.
+
+Genbolt Documentation
+	https://godoc.org/github.com/kr/genbolt
+
+Bolt Documentation
+	https://godoc.org/github.com/coreos/bbolt
+
+This module is distributed under the terms of the "MIT"
+License. See file Copying for details.

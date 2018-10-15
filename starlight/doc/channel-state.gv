@@ -1,0 +1,199 @@
+digraph Channel {
+        graph [pad=0.5]
+        node [shape=box]
+
+        // title
+        labelloc="t";
+        label="Channel States\n\n";
+        fontsize=24
+
+        // legend items
+
+        l1 [shape=plaintext, label=""]
+        l2 [shape=plaintext, label=""]
+        l3 [shape=plaintext, label=""]
+        l4 [shape=plaintext, label=""]
+        l5 [shape=plaintext, label=""]
+        l6 [shape=plaintext, label=""]
+
+        l1 -> l2 [label="state transition"]
+        l3 -> l4 [style=dotted, label="RPC message"]
+        l5 -> l6 [style=dashed, label="ledger event"]
+
+        l7 [shape=box, label="host", style=filled, fillcolor="#ffc0c0"]
+        l8 [shape=box, label="guest", style=filled, fillcolor="#c0ffc0"]
+        l9 [shape=box, label="host or guest", style=bold]
+
+        l10 [shape=box, label="sender", style=filled, fillcolor="#c0c0ff"]
+        l11 [shape=box, label="recipient", style=filled, fillcolor="#ffffc0"]
+        l12 [shape=box, label="ledger", style=filled, fillcolor="#88eeee"]
+
+        Start [shape=diamond, style=dotted]
+
+        AwaitingFunding [style=bold]
+        AwaitingPaymentMerge [label="\N\n(sender is now recipient)", style="bold,filled", fillcolor="#ffffc0"]
+        ChannelProposed [style="bold,filled", fillcolor="#ffc0c0"]
+        Open [style=bold]
+        PaymentAccepted [style="bold,filled", fillcolor="#ffffc0"]
+        PaymentProposed [style="bold,filled", fillcolor="#c0c0ff"]
+        SettingUp [style="bold, filled", fillcolor="#ffc0c0"]
+        AwaitingCleanUp [style="bold,filled", fillcolor="#ffc0c0"]
+
+        EvGetChannelAcceptMsg [style="dashed,filled", fillcolor="#ffc0c0", label="host receives ChannelAcceptMsg\nsubmits FundingTx"]
+        EvGetChannelProposeMsg -> EvGetChannelAcceptMsg [style="dotted"]
+        EvGetChannelProposeMsg [style="dashed,filled", fillcolor="#c0ffc0", label="guest receives ChannelProposeMsg\nsends ChannelAcceptMsg"]
+        EvGetConflictingPaymentProposeMsg [style="dashed,filled", fillcolor="#c0c0ff", label="sender gets conflicting PaymentProposeMsg"]
+        EvGetPaymentAcceptMsg -> EvGetPaymentCompleteMsg [style="dotted"]
+        EvGetPaymentAcceptMsg [style="dashed,filled", fillcolor="#c0c0ff", label="sender gets PaymentAcceptMsg\nsends PaymentCompleteMsg"]
+        EvGetPaymentCompleteMsg [style="dashed, filled", fillcolor="#ffffc0", label="recipient gets PaymentCompleteMsg"]
+        EvGetPaymentProposeMsg -> EvGetPaymentAcceptMsg [style="dotted"]
+        EvGetPaymentProposeMsg [style="dashed,filled", fillcolor="#ffffc0", label="recipient gets PaymentProposeMsg\nsends PaymentAcceptMsg"]
+        EvHostSendTopUp [style="dashed,filled", fillcolor="#ffc0c0", label="host receives TopUpCmd\nhost submits TopUpTx"]
+        EvProposePayment -> EvGetPaymentProposeMsg [style="dotted"]
+        EvProposePayment [style="dashed,filled", fillcolor="#c0c0ff", label="sender receives ChannelPayCmd\nsender sends PaymentProposeMsg"]
+        EvSeeFundingTx [style=dashed, label="party sees FundingTx"]
+        EvSeeSetupAccountTxs -> EvGetChannelProposeMsg [style="dotted"]
+        EvSeeSetupAccountTxs [style="dashed,filled", fillcolor="#ffc0c0", label="host sees third SetupAccountTx hit ledger\nhost sends ChannelProposeMsg"]
+        EvSendMergedPayment -> EvGetPaymentProposeMsg [style="dotted"]
+        EvSendMergedPayment [style="dashed,filled", fillcolor="#c0c0ff", label="sender sends merged PaymentProposeMsg"]
+        EvReceiveCreateChannelCmd [style="dashed,filled", fillcolor="#ffc0c0", label="host receives CreateChannelCmd\nhost submits three SetupAccountTxs"]
+        EvRound1Timeout [style="dashed,filled", fillcolor="#ffc0c0", label="ChannelProposedTimeout"]
+        EvSubmitCleanupTx [style="dashed,filled", fillcolor="#ffc0c0", label="host submits CleanupTx"]
+        EvSeeCleanupTx [style="dashed,filled", fillcolor="#ffc0c0", label="host sees CleanupTx hit ledger"]
+        EvCleanupCmd [style="dashed,filled", fillcolor="#ffc0c0", label="host receives CleanUpCmd"]
+        EvGuestPreFundTimeout [style="dashed,filled", fillcolor="#c0ffc0", label="guest sees PreFundTimeout"]
+        EvHostPreFundTimeout [style="dashed,filled", fillcolor="#ffc0c0", label="host sees PreFundTimeout"]
+
+        QIsHigher [shape=diamond, label="higher amount?"]
+
+        Start -> EvGetChannelProposeMsg -> AwaitingFunding
+        Start -> EvReceiveCreateChannelCmd -> SettingUp
+
+        AwaitingFunding -> EvSeeFundingTx -> Open
+        AwaitingFunding -> EvGuestPreFundTimeout -> Closed
+        AwaitingFunding -> EvHostPreFundTimeout -> EvSubmitCleanupTx
+
+        AwaitingPaymentMerge -> EvGetPaymentProposeMsg
+
+        ChannelProposed -> EvGetChannelAcceptMsg -> AwaitingFunding
+        ChannelProposed -> EvRound1Timeout -> EvSubmitCleanupTx -> AwaitingCleanUp -> EvSeeCleanupTx -> Closed
+        ChannelProposed -> EvCleanupCmd
+        EvCleanupCmd -> EvSubmitCleanupTx
+
+        EvProposePayment -> EvGetConflictingPaymentProposeMsg [style=dotted]
+
+        EvSendMergedPayment -> PaymentProposed
+
+        Open -> EvGetPaymentProposeMsg -> PaymentAccepted
+        Open -> EvHostSendTopUp -> Open
+        Open -> EvProposePayment -> PaymentProposed
+
+        PaymentAccepted -> EvGetPaymentCompleteMsg -> Open
+
+        PaymentProposed -> EvGetConflictingPaymentProposeMsg -> QIsHigher
+        PaymentProposed -> EvGetPaymentAcceptMsg -> Open
+
+        QIsHigher -> AwaitingPaymentMerge [label="yes"]
+        QIsHigher -> EvSendMergedPayment [label="no"]
+
+        SettingUp -> EvSeeSetupAccountTxs -> ChannelProposed
+
+        // coop closing
+        EvSeeCooperativeCloseTx [style=dashed, label="party sees CooperativeCloseTx hit ledger"]
+        EvGetCloseMsg [style=dashed, label="cooperator gets CloseMsg\nsubmits CooperativeCloseTx"]
+        EvSendCloseMsg -> EvGetCloseMsg [style="dotted"]
+        EvSendCloseMsg [style=dashed, label="closer receives CloseChannelCmd\ncloser sends CloseMsg"]
+        Open -> EvSendCloseMsg -> AwaitingClose -> EvSeeCooperativeCloseTx
+        Open -> EvGetCloseMsg -> AwaitingClose
+        PaymentProposed -> EvGetCloseMsg
+        AwaitingClose [style=bold]
+        AwaitingClose [style=bold]
+        Closed [style=bold, peripheries=2]
+
+        // force closing
+        AnyNonSetup [shape=ellipse, style=dotted, label="any non-setup state (including closing and force-closing states)"]
+        AnyNonSetupNonForceClosing [shape=ellipse, style=dotted, label="any non-setup, non force-closing state"]
+
+        EvRoundTimeout [style=dashed, label="RoundTimeout"]
+        EvForceCloseCmd [style=dashed, label="party receives ForceCloseCmd"]
+        EvSeeRatchetTx [style=dashed, label="party sees CurrentRatchetTx hit ledger"]
+        EvSeeCounterpartyRatchetTx [style=dashed, label="party sees counterparty ratchet transaction hit ledger"]
+        EvSeeCoopCloseFail [style=dashed, label="party sees CooperativeCloseTx fail"]
+        EvSettlementMintime [style=dashed,
+        label="SettlementMintimeTimeout\nparty submits settlement transactions"]
+        EvSubmitRatchetTx [style=dashed, label="party submits CurrentRatchetTx"]
+        EvSeeSettlementTxes [style=dashed, label="party sees settlement txes hit ledger"]
+
+        AwaitingRatchet [style="bold"]
+        AwaitingSettlementMintime [style="bold"]
+        AwaitingSettlement [style="bold"]
+
+        QOutdated [shape=diamond, label="outdated?"]
+
+        AwaitingClose -> EvSeeCoopCloseFail -> EvSubmitRatchetTx
+        AnyNonSetupNonForceClosing -> EvRoundTimeout -> EvSubmitRatchetTx
+        AnyNonSetupNonForceClosing -> EvForceCloseCmd -> EvSubmitRatchetTx
+        EvSubmitRatchetTx-> AwaitingRatchet -> EvSeeRatchetTx
+        AwaitingRatchet -> EvSeeCooperativeCloseTx -> Closed
+
+        AwaitingSettlementMintime -> EvSettlementMintime -> AwaitingSettlement -> EvSeeSettlementTxes -> Closed
+
+        EvSeeRatchetTx -> AwaitingSettlementMintime
+
+        QOutdated -> AwaitingSettlementMintime [label="no"]
+        QOutdated -> EvSubmitRatchetTx [label="yes"]
+
+        AnyNonSetup -> EvSeeCounterpartyRatchetTx -> QOutdated
+
+        // host top-up
+
+        EvHostTopUp [style=dashed, label="payment to an escrow or ratchet account hits ledger"]
+        EvSeeHostTopUp [style=dashed, label="party sees host top-up"]
+        AnyLedger [shape=ellipse, style="filled,dotted", label="any ledger state", fillcolor="#88eeee"]
+        AnyLedger -> EvHostTopUp -> AnyLedger
+        Any [shape=ellipse, style=dotted, label="any channel state"]
+        EvRandomTopUp [style="dotted", label="random entity submits payment to escrow or ratchet account"]
+        EvRandomTopUp -> EvHostTopUp [style="dashed"]
+        EvHostTopUp -> EvSeeHostTopUp [style="dotted"]
+        Any -> EvSeeHostTopUp -> Any
+        EvHostSendTopUp -> EvHostTopUp [style="dotted"]
+
+        // ledger states
+
+        LedgerStart [shape=diamond, style="filled,dotted", fillcolor="#88eeee"]
+        LedgerReady [style="filled,bold", fillcolor="#88eeee"]
+        LedgerOpen [style="filled,bold", fillcolor="#88eeee"]
+        LedgerRatcheted [style="filled,bold", fillcolor="#88eeee"]
+        LedgerClosed [style="filled,bold", fillcolor="#88eeee", peripheries=2]
+
+        EvSetupAccountTxsHit [style="dashed,filled,bold", fillcolor="#88eeee", label="three setup transactions succeed or fail"]
+        EvFundingTxSucceeds [style="dashed,filled,bold", fillcolor="#88eeee", label="FundingTx hits ledger"]
+        EvRatchetTxSucceeds [style="dashed,filled,bold", fillcolor="#88eeee", label="RatchetTx hits ledger"]
+        EvSettlementTxesHitLedger [style="dashed,filled,bold", fillcolor="#88eeee", label="settlement transactions hit ledger"]
+        EvCoopCloseSucceeds [style="dashed,filled,bold", fillcolor="#88eeee", label="cooperative close transaction hits ledger"]
+        EvCoopCloseFails [style="dashed,filled,bold", fillcolor="#88eeee", label="cooperative close transaction fails"]
+        EvCleanupTxSucceeds [style="dashed,filled,bold", fillcolor="#88eeee", label="cleanup transaction hits ledger"]
+
+        LedgerStart -> EvSetupAccountTxsHit -> LedgerReady -> EvFundingTxSucceeds -> LedgerOpen -> EvCoopCloseSucceeds -> LedgerClosed
+        LedgerOpen -> EvRatchetTxSucceeds -> LedgerRatcheted -> EvSettlementTxesHitLedger -> LedgerClosed
+        LedgerReady -> EvCleanupTxSucceeds -> LedgerClosed
+        LedgerRatcheted -> EvRatchetTxSucceeds
+
+        EvSubmitCleanupTx -> EvCleanupTxSucceeds [style="dashed"]
+        EvSubmitRatchetTx -> EvRatchetTxSucceeds [style="dashed"]
+        EvReceiveCreateChannelCmd -> EvSetupAccountTxsHit [style="dashed"]
+        EvGetChannelAcceptMsg -> EvFundingTxSucceeds [style="dashed"]
+        EvGetCloseMsg -> EvCoopCloseSucceeds [style="dashed"]
+        EvGetCloseMsg -> EvCoopCloseFails [style="dashed"]
+        EvSettlementMintime -> EvSettlementTxesHitLedger [style="dashed"]
+
+        EvSetupAccountTxsHit -> EvSeeSetupAccountTxs [style="dashed"]
+        EvFundingTxSucceeds -> EvSeeFundingTx [style="dashed"]
+        EvCleanupTxSucceeds -> EvSeeCleanupTx [style="dashed"]
+        EvRatchetTxSucceeds -> EvSeeRatchetTx [style="dashed"]
+        EvRatchetTxSucceeds -> EvSeeCounterpartyRatchetTx [style="dashed"]
+        EvSettlementTxesHitLedger -> EvSeeSettlementTxes [style="dashed"]
+        EvCoopCloseSucceeds -> EvSeeCooperativeCloseTx [style="dashed"]
+        EvCoopCloseFails -> EvSeeCoopCloseFail [style="dashed"]
+}
+
