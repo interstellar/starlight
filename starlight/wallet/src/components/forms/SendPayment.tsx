@@ -188,26 +188,32 @@ export class SendPayment extends React.Component<Props, State> {
   }
 
   private recipientIsValidAccount() {
+    const validAccountId = StrKey.isValidEd25519PublicKey(this.state.Recipient)
+
     return (
-      this.destinationChannel() ||
-      StrKey.isValidEd25519PublicKey(this.state.Recipient)
+      this.destinationChannel() || validAccountId // TODO: || is valid Stellar address
     )
   }
 
   private destinationChannel(): ChannelState | undefined {
     const recipient = this.state.Recipient
     const channels = this.props.Channels
-    const counterpartyAccounts = this.props.CounterpartyAccounts
 
     if (channels[recipient] && channels[recipient].State !== 'Closed') {
       return channels[recipient]
     } else {
-      const chanId = counterpartyAccounts[recipient]
-      if (chanId !== undefined) {
-        const channel = channels[chanId]
-        if (channel.State !== 'Closed') {
-          return channel
-        }
+      return this.lookupChannelByAccountId(recipient, channels)
+    }
+  }
+
+  private lookupChannelByAccountId(accountId: string, channels: ChannelsState) {
+    const counterpartyAccounts = this.props.CounterpartyAccounts
+    const chanId = counterpartyAccounts[accountId]
+
+    if (chanId !== undefined) {
+      const channel = channels[chanId]
+      if (channel.State !== 'Closed') {
+        return channel
       }
     }
   }
