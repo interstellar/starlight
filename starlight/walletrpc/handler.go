@@ -133,9 +133,11 @@ func (wt *wallet) doCreateChannel(w http.ResponseWriter, req *http.Request) {
 		httperror(req, w, fmt.Sprintf("bad request: %s", err.Error()), 400)
 		return
 	}
-	err = wt.agent.DoCreateChannel(v.GuestAddr, v.HostAmount, req.Host)
+	ch, err := wt.agent.DoCreateChannel(v.GuestAddr, v.HostAmount, req.Host)
 	switch errors.Root(err) {
 	case nil:
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(ch)
 	case starlight.ErrExists:
 		// StatusResetContent is used to designate non-retriable errors.
 		// TODO(debnil): Find a more suitable status code if possible.

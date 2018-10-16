@@ -414,7 +414,7 @@ func TestAgentCreateChannel(t *testing.T) {
 			if c.agentFunc != nil {
 				c.agentFunc(g)
 			}
-			got := g.DoCreateChannel(c.guestAddr, c.hostAmount, c.host)
+			_, got := g.DoCreateChannel(c.guestAddr, c.hostAmount, c.host)
 			if errors.Root(got) != c.want {
 				t.Errorf("g.DoCreateChannel(%s, %s, %s) = %s, want %s", c.guestAddr, c.hostAmount, c.host, got, c.want)
 			}
