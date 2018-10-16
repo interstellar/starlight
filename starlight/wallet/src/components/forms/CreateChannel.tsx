@@ -45,6 +45,7 @@ const Amount = styled.div`
 interface Props {
   AvailableBalance: number
   closeModal: () => void
+  prefill?: { counterparty: string }
   createChannel: (recipient: string, initialDeposit: number) => void
 }
 
@@ -59,7 +60,7 @@ export class CreateChannel extends React.Component<Props, State> {
     super(props)
 
     this.state = {
-      Counterparty: '',
+      Counterparty: this.props.prefill ? this.props.prefill.counterparty : '',
       InitialDeposit: '',
       showError: false,
     }
@@ -81,7 +82,7 @@ export class CreateChannel extends React.Component<Props, State> {
             type="text"
             name="Counterparty"
             autoComplete="off"
-            autoFocus
+            autoFocus={!this.state.Counterparty}
           />
 
           <Label htmlFor="InitialDeposit">Initial Deposit</Label>
@@ -98,6 +99,7 @@ export class CreateChannel extends React.Component<Props, State> {
               type="number"
               name="InitialDeposit"
               autoComplete="off"
+              autoFocus={!!this.state.Counterparty}
             />
             <Unit>XLM</Unit>
           </UnitContainer>
@@ -173,7 +175,7 @@ const mapDispatchToProps = (dispatch: Dispatch) => {
 export const ConnectedCreateChannel = connect<
   {},
   {},
-  { closeModal: () => void }
+  { closeModal: () => void; prefill?: { counterparty: string } }
 >(
   mapStateToProps,
   mapDispatchToProps
