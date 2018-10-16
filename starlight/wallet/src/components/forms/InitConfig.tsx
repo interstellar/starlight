@@ -168,11 +168,11 @@ export class InitConfig extends React.Component<Props, ConfigState & State> {
   private async handleSubmit(event: any) {
     event.preventDefault()
     this.setState({ loading: true })
+
     const ok = await this.props.configure(this.state)
 
     if (!ok) {
-      this.setState({ loading: false })
-      this.setState({ showError: true })
+      this.setState({ loading: false, showError: true })
       window.setTimeout(() => {
         this.setState({ showError: false })
       }, 3000)
