@@ -1,15 +1,13 @@
 // Package worizon is a wrapper for horizon.
 // It exposes very little of the functionality
-// of the underlying library — just enough for Chain.
+// of the underlying library — just enough for Interstellar.
 package worizon
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -19,17 +17,13 @@ import (
 	"github.com/interstellar/starlight/errors"
 	"github.com/interstellar/starlight/net"
 
-	"github.com/stellar/go/build"
 	"github.com/stellar/go/clients/horizon"
-	"github.com/stellar/go/keypair"
-	"github.com/stellar/go/support/render/hal"
 	"github.com/stellar/go/xdr"
 )
 
 var (
-	errUninitialized          = errors.New("uninitialized")
-	errTxSignerNotInitialized = errors.New("Required field txSigner is not set")
-	errMainnet                = errors.New("using mainnet instead of testnet")
+	errUninitialized = errors.New("uninitialized")
+	errMainnet       = errors.New("using mainnet instead of testnet")
 )
 
 // Alias some types that don't need to be wrapped.
@@ -41,8 +35,6 @@ type (
 	TxSuccess          = horizon.TransactionSuccess
 	Account            = horizon.Account
 	TransactionHandler = horizon.TransactionHandler
-	Error              = horizon.Error
-	PaymentHandler     = horizon.PaymentHandler
 )
 
 // horizonClient is a minimal subset of horizon.ClientInterface that allows this for simpler test doubles
@@ -54,43 +46,7 @@ type horizonClient interface {
 	SequenceForAccount(accountID string) (xdr.SequenceNumber, error)
 	StreamLedgers(ctx context.Context, cursor *Cursor, handler LedgerHandler) error
 	StreamTransactions(ctx context.Context, accountID string, cursor *Cursor, handler TransactionHandler) error
-	StreamPayments(ctx context.Context, accountID string, cursor *Cursor, handler PaymentHandler) error
-	LoadMemo(p *horizon.Payment) error
 	SubmitTransaction(txeBase64 string) (TxSuccess, error)
-}
-
-type PaymentsPage struct {
-	Links    hal.Links `json:"_links"`
-	Embedded struct {
-		Records []horizon.Payment `json:"records"`
-	} `json:"_embedded"`
-}
-
-type Payment struct {
-	Credit
-	DestAddr string
-}
-
-type Credit struct {
-	Asset
-	Amount string
-}
-
-type Asset struct {
-	Issuer string
-	Code   string
-}
-
-const defaultLimit = 10
-
-type TXSigner interface {
-	// SignTransaction will return a build.TransactionEnvelopeBuilder that
-	// is signed by all private keys that correspond to the public keys
-	// presented as arguments or it will return an error
-	SignTransaction(ctx context.Context, tx *build.TransactionBuilder, pubKeys ...string) (build.TransactionEnvelopeBuilder, error)
-
-	// PersistSeed will encrypt and call persistenceProvider with the result of the encryption
-	PersistSeed(ctx context.Context, seed string) (string, error)
 }
 
 // Client is a wrapper for some of a horizon client's functionality.
@@ -98,17 +54,12 @@ type TXSigner interface {
 // It is okay to call methods on Client concurrently.
 // A Client must not be copied after first use.
 type Client struct {
-	mu       sync.Mutex
-	changed  chan struct{}
-	hclient  horizonClient
-	now      time.Time // updated at each ledger close
-	timers   []*timer
-	http     horizon.HTTP
-	txSigner TXSigner
-
-	// url of the horizon server in case we want to send requests to directly
-	// to horizon api endpoints
-	url string
+	mu      sync.Mutex
+	changed chan struct{}
+	hclient horizonClient
+	now     time.Time // updated at each ledger close
+	timers  []*timer
+	http    horizon.HTTP
 
 	// initHorizon indicates whether the Client was initialized with a
 	// horizon client, in which case SetURL has no effect.
@@ -122,14 +73,13 @@ type timer struct {
 	f func()
 }
 
-func NewClient(rt http.RoundTripper, horizon horizonClient, txSigner TXSigner) *Client {
+func NewClient(rt http.RoundTripper, horizon horizonClient) *Client {
 	return &Client{
 		http: &http.Client{
 			Transport: rt,
 		},
 		hclient:     horizon,
 		initHorizon: horizon != nil,
-		txSigner:    txSigner,
 	}
 }
 
@@ -150,9 +100,8 @@ func (c *Client) SetURL(url string) {
 	if c.http == nil {
 		c.http = new(http.Client)
 	}
-	c.url = strings.TrimRight(url, "/")
 	c.hclient = &horizon.Client{
-		URL:  c.url,
+		URL:  strings.TrimRight(url, "/"),
 		HTTP: c.http,
 	}
 	changed := c.changed
@@ -370,238 +319,6 @@ func (c *Client) SubmitTx(envXdr string) (response TxSuccess, err error) {
 	return hclient.SubmitTransaction(envXdr)
 }
 
-func (c *Client) buildCreateAccount(ctx context.Context, baseAccountPubKey, channelAccountPubKey, startingBalance string, mainnet bool, newAccountPubKeys ...string) (string, error) {
-	c.mu.Lock()
-	hclient := c.hclient
-	txSigner := c.txSigner
-	c.mu.Unlock()
-
-	if hclient == nil {
-		return "", errUninitialized
-	}
-	if txSigner == nil {
-		return "", errTxSignerNotInitialized
-	}
-
-	amount, err := strconv.ParseFloat(startingBalance, 64)
-	if err != nil {
-		return "", errors.New("invalid balance string")
-	}
-	if amount < 1 {
-		return "", errors.New("starting balance too low")
-	}
-
-	if len(newAccountPubKeys) > 100 {
-		return "", errors.New("too many accounts")
-	}
-
-	txMutators := make([]build.TransactionMutator, 0, 3+len(newAccountPubKeys))
-	if channelAccountPubKey != "" {
-		txMutators = append(txMutators, build.SourceAccount{channelAccountPubKey})
-	} else {
-		txMutators = append(txMutators, build.SourceAccount{baseAccountPubKey})
-	}
-	txMutators = append(txMutators, build.AutoSequence{hclient})
-	if mainnet {
-		txMutators = append(txMutators, build.PublicNetwork)
-	} else {
-		txMutators = append(txMutators, build.TestNetwork)
-	}
-
-	var muts []interface{}
-	for _, newPubKey := range newAccountPubKeys {
-		if channelAccountPubKey != "" {
-			muts = append(muts, build.SourceAccount{baseAccountPubKey})
-		}
-
-		muts = append(muts, build.Destination{newPubKey}, build.NativeAmount{startingBalance})
-		txMutators = append(txMutators, build.CreateAccount(muts...))
-		muts = nil
-	}
-
-	tx, err := build.Transaction(txMutators...)
-	if err != nil {
-		return "", errors.Wrap(err, "cannot buildCreateAccount")
-	}
-	pubKeys := []string{baseAccountPubKey}
-	if channelAccountPubKey != "" {
-		pubKeys = append(pubKeys, channelAccountPubKey)
-	}
-	txe, err := txSigner.SignTransaction(ctx, tx, pubKeys...)
-	if err != nil {
-		return "", errors.Wrap(err, "cannot sign createAccount TX")
-	}
-	return txe.Base64()
-}
-
-// CreateAccounts will create N new accounts specified by newNewAccounts and persist their seeds with txSigner.
-// If we encounter any errors while persisting seeds, the function will return an error. However, there might be
-// a number of seeds that have been persisted.
-// Note that we can create a maximum of 100 accounts at a time.
-func (c *Client) CreateAccounts(ctx context.Context, baseAccountPubKey, channelAccountPubKey, startingBalance string, mainnet bool, numNewAccounts int) (TxSuccess, []string, error) {
-	c.mu.Lock()
-	txSigner := c.txSigner
-	c.mu.Unlock()
-
-	if txSigner == nil {
-		return TxSuccess{}, nil, errTxSignerNotInitialized
-	}
-
-	newAccountPubKeys := make([]string, 0, numNewAccounts)
-	seeds := make([]string, 0, numNewAccounts)
-	for i := 0; i < numNewAccounts; i++ {
-		kp, err := keypair.Random()
-		if err != nil {
-			return TxSuccess{}, nil, errors.Wrap(err, "generating a new keypair")
-		}
-		newAccountPubKeys = append(newAccountPubKeys, kp.Address())
-		seeds = append(seeds, kp.Seed())
-	}
-
-	e, err := c.buildCreateAccount(ctx, baseAccountPubKey, channelAccountPubKey, startingBalance, mainnet, newAccountPubKeys...)
-	if err != nil {
-		return TxSuccess{}, nil, errors.Wrap(err, "building create account transaction")
-	}
-
-	resp, err := c.SubmitTx(e)
-	if err != nil {
-		return TxSuccess{}, nil, errors.Wrap(err, "submitting create account transaction")
-	}
-
-	for _, seed := range seeds {
-		_, err = txSigner.PersistSeed(ctx, seed)
-		if err != nil {
-			return TxSuccess{}, nil, errors.Wrap(err, "Cannot persist encrypted seed to datastore")
-		}
-	}
-
-	return resp, newAccountPubKeys, nil
-}
-
-func (c *Client) BuildCreditAccount(ctx context.Context, baseAccountPubKey, channelAccountPubKey string, mainnet bool, memo string, payments ...Payment) (string, string, error) {
-	c.mu.Lock()
-	hclient := c.hclient
-	txSigner := c.txSigner
-	c.mu.Unlock()
-
-	if hclient == nil {
-		return "", "", errUninitialized
-	}
-	if txSigner == nil {
-		return "", "", errTxSignerNotInitialized
-	}
-
-	if len(payments) == 0 {
-		return "", "", errors.New("Nothing to send")
-	}
-	txMutators := make([]build.TransactionMutator, 0, len(payments)+4)
-	if channelAccountPubKey != "" {
-		txMutators = append(txMutators, build.SourceAccount{channelAccountPubKey})
-	} else {
-		txMutators = append(txMutators, build.SourceAccount{baseAccountPubKey})
-	}
-	txMutators = append(txMutators, build.AutoSequence{hclient})
-	if mainnet {
-		txMutators = append(txMutators, build.PublicNetwork)
-	} else {
-		txMutators = append(txMutators, build.TestNetwork)
-	}
-	txMutators = append(txMutators, build.MemoText{memo})
-
-	var muts []interface{}
-	for _, p := range payments {
-		if channelAccountPubKey != "" {
-			muts = append(muts, build.SourceAccount{baseAccountPubKey})
-		}
-
-		if p.Code == "" {
-			muts = append(muts, build.Destination{p.DestAddr}, build.NativeAmount{p.Amount})
-		} else {
-			muts = append(muts, build.Destination{p.DestAddr}, build.CreditAmount{
-				Code:   p.Code,
-				Issuer: p.Issuer,
-				Amount: p.Amount,
-			})
-		}
-		txMutators = append(txMutators, build.Payment(muts...))
-		muts = nil
-	}
-
-	tx, err := build.Transaction(txMutators...)
-	if err != nil {
-		return "", "", err
-	}
-	hash, err := tx.HashHex()
-	if err != nil {
-		return "", "", err
-	}
-
-	pubKeys := []string{baseAccountPubKey}
-	if channelAccountPubKey != "" {
-		pubKeys = append(pubKeys, channelAccountPubKey)
-	}
-	txe, err := txSigner.SignTransaction(ctx, tx, pubKeys...)
-	if err != nil {
-		return "", "", err
-	}
-
-	txeBase64, err := txe.Base64()
-	return hash, txeBase64, err
-}
-
-func (c *Client) CreditAccount(ctx context.Context, baseAccountPubKey, channelAccountPubKey string, mainnet bool, payments ...Payment) (TxSuccess, error) {
-	_, txeBase64, err := c.BuildCreditAccount(ctx, baseAccountPubKey, channelAccountPubKey, mainnet, "", payments...)
-	if err != nil {
-		return TxSuccess{}, err
-	}
-
-	return c.SubmitTx(txeBase64)
-}
-
-func (c *Client) CreateTrustline(ctx context.Context, srcAddr string, mainnet bool, assets ...Asset) (TxSuccess, error) {
-	c.mu.Lock()
-	hclient := c.hclient
-	txSigner := c.txSigner
-	c.mu.Unlock()
-
-	if hclient == nil {
-		return TxSuccess{}, errUninitialized
-	}
-	if txSigner == nil {
-		return TxSuccess{}, errTxSignerNotInitialized
-	}
-
-	txMutators := make([]build.TransactionMutator, 0, len(assets)+3)
-	txMutators = append(txMutators, build.SourceAccount{srcAddr})
-	txMutators = append(txMutators, build.AutoSequence{hclient})
-	if mainnet {
-		txMutators = append(txMutators, build.PublicNetwork)
-	} else {
-		txMutators = append(txMutators, build.TestNetwork)
-	}
-	for _, a := range assets {
-		txMutators = append(txMutators, build.Trust(
-			a.Code,
-			a.Issuer,
-		))
-	}
-
-	tx, err := build.Transaction(txMutators...)
-	if err != nil {
-		return TxSuccess{}, errors.Wrap(err, "cannot build transaction for trustline creation")
-	}
-	txe, err := txSigner.SignTransaction(ctx, tx, srcAddr)
-	if err != nil {
-		return TxSuccess{}, errors.Wrap(err, "cannot sign transaction for trustline creation")
-	}
-	txeBase64, err := txe.Base64()
-	if err != nil {
-		return TxSuccess{}, errors.Wrap(err, "cannot base64 encode transaction for trustline creation")
-	}
-
-	return c.SubmitTx(txeBase64)
-}
-
 func (c *Client) LoadAccount(id string) (Account, error) {
 	c.mu.Lock()
 	hclient := c.hclient
@@ -610,112 +327,4 @@ func (c *Client) LoadAccount(id string) (Account, error) {
 		return Account{}, errUninitialized
 	}
 	return hclient.LoadAccount(id)
-}
-
-// StreamPayments will stream payments of the account starting from cur until it sees a payment whose memo value
-// equals to stopAtMemoText. It will stream indefinitely if stopAtMemoText is nil.
-func (c *Client) StreamPayments(ctx context.Context, accountID string, cur Cursor, stopAtMemoText *string, h PaymentHandler) error {
-	c.mu.Lock()
-	hclient := c.hclient
-	c.mu.Unlock()
-
-	if hclient == nil {
-		return errUninitialized
-	}
-
-	origCtx := ctx
-
-	// The base amount of time to wait between retries of StreamPayments.
-	// Wait time grows exponentially with each failure.
-	// Each time the StreamPayments callback gets called,
-	// the wait time resets to this value.
-	const baseBackoff = 100 * time.Millisecond
-	backoff := &net.Backoff{Base: baseBackoff}
-
-	for {
-		ctx, cancel := context.WithCancel(ctx)
-		var memoErr error
-		streamErr := hclient.StreamPayments(ctx, accountID, &cur, func(payment horizon.Payment) {
-			// Reset retry wait time.
-			backoff = &net.Backoff{Base: baseBackoff}
-			if h != nil {
-				h(payment)
-			}
-			if stopAtMemoText != nil {
-				memoErr = hclient.LoadMemo(&payment)
-				if memoErr != nil {
-					cancel()
-				}
-				if payment.Memo.Type == "text" && payment.Memo.Value == *stopAtMemoText {
-					cancel()
-				}
-			}
-			cur = Cursor(payment.PagingToken)
-		})
-		if origCtx.Err() == nil {
-			if ctx.Err() == context.Canceled {
-				return memoErr
-			}
-			if streamErr != nil {
-				time.Sleep(backoff.Next())
-				continue
-			}
-		}
-
-		return streamErr
-	}
-}
-
-// PaymentsForAccount returns a page of payments associated with the provided accountID.
-// asc: asc = true means older payments first; asc = false means newer payments first.
-// cursor: a payment paging token specifying from where to begin results.
-// limit: the count of records at most to return.
-// TODO: replace this function with one from horizon.Client when horizon Client has it.
-func (c *Client) PaymentsForAccount(accountID string, asc bool, cursor Cursor, limit int) (PaymentsPage, error) {
-	c.mu.Lock()
-	url := c.url
-	if c.http == nil {
-		c.http = new(http.Client)
-	}
-	http := c.http
-	c.mu.Unlock()
-
-	order := "desc"
-	if asc {
-		order = "asc"
-	}
-	if limit < 1 {
-		limit = defaultLimit
-	}
-	url += "/accounts/" + accountID + "/payments?order=" + order + "&limit=" + strconv.Itoa(limit)
-	if cursor != "" {
-		url = url + "&cursor=" + string(cursor)
-	}
-	resp, err := http.Get(url)
-	if err != nil {
-		return PaymentsPage{}, err
-	}
-
-	var page PaymentsPage
-	err = decodeResponse(resp, &page)
-	return page, err
-}
-
-// https://github.com/stellar/go/blob/27a025ec0a44e547ab859aea1636dd3a2f8e59b4/clients/horizon/internal.go#L10-L30
-func decodeResponse(resp *http.Response, object interface{}) error {
-	defer resp.Body.Close()
-	decoder := json.NewDecoder(resp.Body)
-
-	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
-		horizonError := &Error{
-			Response: resp,
-		}
-		err := decoder.Decode(&horizonError.Problem)
-		if err != nil {
-			return errors.Wrap(err, "error decoding horizon.Problem")
-		}
-		return horizonError
-	}
-
-	return decoder.Decode(&object)
 }

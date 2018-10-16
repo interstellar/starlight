@@ -46,11 +46,3 @@ func (c *FakeHorizonClient) SequenceForAccount(accountID string) (xdr.SequenceNu
 func (c *FakeHorizonClient) StreamTransactions(ctx context.Context, accountID string, cursor *Cursor, handler TransactionHandler) error {
 	return nil
 }
-
-func (c *FakeHorizonClient) StreamPayments(ctx context.Context, accountID string, cursor *Cursor, handler PaymentHandler) error {
-	return nil
-}
-
-func (c *FakeHorizonClient) LoadMemo(p *horizon.Payment) error {
-	return nil
-}
