@@ -5,8 +5,8 @@ import styled from 'styled-components'
 
 import { BtnSubmit } from 'components/styled/Button'
 import { Heading } from 'components/styled/Heading'
-import { Hint, Input, Label } from 'components/styled/Input'
 import { Icon } from 'components/styled/Icon'
+import { Hint, Input, Label } from 'components/styled/Input'
 import { HorizontalLine } from 'components/styled/HorizontalLine'
 import { Total } from 'components/styled/Total'
 import { Unit, UnitContainer } from 'components/styled/Unit'
@@ -54,6 +54,7 @@ interface State {
   Counterparty: string
   InitialDeposit: string // TODO(croaky): number?
   showError: boolean
+  loading: boolean
 }
 
 export class CreateChannel extends React.Component<Props, State> {
@@ -64,6 +65,7 @@ export class CreateChannel extends React.Component<Props, State> {
       Counterparty: this.props.prefill ? this.props.prefill.counterparty : '',
       InitialDeposit: '',
       showError: false,
+      loading: false,
     }
 
     this.handleSubmit = this.handleSubmit.bind(this)
@@ -129,7 +131,13 @@ export class CreateChannel extends React.Component<Props, State> {
   }
 
   private formatSubmitButton() {
-    if (this.state.showError) {
+    if (this.state.loading) {
+      return (
+        <BtnSubmit disabled>
+          Opening <Icon className="fa-pulse" name="spinner" />
+        </BtnSubmit>
+      )
+    } else if (this.state.showError) {
       return (
         <BtnSubmit color={RADICALRED} disabled>
           Error opening channel
@@ -142,6 +150,7 @@ export class CreateChannel extends React.Component<Props, State> {
 
   private async handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    this.setState({ loading: true })
 
     const ok = await this.props.createChannel(
       this.state.Counterparty,
@@ -152,7 +161,7 @@ export class CreateChannel extends React.Component<Props, State> {
       this.props.closeModal()
       this.props.redirect && this.props.redirect(this.state.Counterparty)
     } else {
-      this.setState({ showError: true })
+      this.setState({ loading: false, showError: true })
       window.setTimeout(() => {
         this.setState({ showError: false })
       }, 3000)
@@ -178,9 +187,9 @@ export const ConnectedCreateChannel = connect<
   {},
   {},
   {
-    closeModal: () => void;
-    prefill?: { counterparty: string };
-    redirect?: (account: string) => void;
+    closeModal: () => void
+    prefill?: { counterparty: string }
+    redirect?: (account: string) => void
   }
 >(
   mapStateToProps,
