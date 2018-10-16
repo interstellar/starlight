@@ -6,6 +6,7 @@ import { connect } from 'react-redux'
 import { Arrow } from 'components/styled/Arrow'
 import { Credentials } from 'types'
 import { Heading } from 'components/styled/Heading'
+import { Icon } from 'components/styled/Icon'
 import { Input, Label } from 'components/styled/Input'
 import { BtnSubmit } from 'components/styled/Button'
 import { CORNFLOWER, RADICALRED, WHITE } from 'components/styled/Colors'
@@ -25,6 +26,7 @@ interface State {
   Username: string
   Password: string
   showError: boolean
+  loading: boolean
 }
 
 export class LoginForm extends React.Component<
@@ -38,6 +40,7 @@ export class LoginForm extends React.Component<
       Username: '',
       Password: '',
       showError: false,
+      loading: false,
     }
 
     this.handleSubmit = this.handleSubmit.bind(this)
@@ -79,7 +82,13 @@ export class LoginForm extends React.Component<
   }
 
   private formatSubmitButton() {
-    if (this.state.showError) {
+    if (this.state.loading) {
+      return (
+        <BtnSubmit disabled>
+          Logging in <Icon className="fa-pulse" name="spinner" />
+        </BtnSubmit>
+      )
+    } else if (this.state.showError) {
       return (
         <BtnSubmit color={RADICALRED} disabled>
           Invalid username or password
@@ -96,10 +105,12 @@ export class LoginForm extends React.Component<
 
   private async handleSubmit(event: any) {
     event.preventDefault()
+    this.setState({ loading: true })
+
     const ok = await this.props.login(this.state)
 
     if (!ok) {
-      this.setState({ showError: true })
+      this.setState({ loading: false, showError: true })
       window.setTimeout(() => {
         this.setState({ showError: false })
       }, 3000)
