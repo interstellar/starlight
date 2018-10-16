@@ -45,8 +45,9 @@ const Amount = styled.div`
 interface Props {
   AvailableBalance: number
   closeModal: () => void
-  prefill?: { counterparty: string }
   createChannel: (recipient: string, initialDeposit: number) => void
+  prefill?: { counterparty: string }
+  redirect?: (account: string) => void
 }
 
 interface State {
@@ -149,6 +150,7 @@ export class CreateChannel extends React.Component<Props, State> {
 
     if (ok) {
       this.props.closeModal()
+      this.props.redirect && this.props.redirect(this.state.Counterparty)
     } else {
       this.setState({ showError: true })
       window.setTimeout(() => {
@@ -175,7 +177,11 @@ const mapDispatchToProps = (dispatch: Dispatch) => {
 export const ConnectedCreateChannel = connect<
   {},
   {},
-  { closeModal: () => void; prefill?: { counterparty: string } }
+  {
+    closeModal: () => void;
+    prefill?: { counterparty: string };
+    redirect?: (account: string) => void;
+  }
 >(
   mapStateToProps,
   mapDispatchToProps

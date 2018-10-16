@@ -1,6 +1,7 @@
 import * as React from 'react'
 import styled from 'styled-components'
 import { connect } from 'react-redux'
+import { Redirect } from 'react-router'
 
 import { ApplicationState } from 'schema'
 
@@ -42,6 +43,7 @@ interface State {
   hasOpenModal: boolean
   showFlash: boolean
   timer?: number
+  redirectTo: string
 }
 
 export class Channels extends React.Component<Props, State> {
@@ -54,10 +56,12 @@ export class Channels extends React.Component<Props, State> {
       timer: window.setTimeout(() => {
         this.setState({ showFlash: false })
       }, 3000),
+      redirectTo: '',
     }
 
     this.openModal = this.openModal.bind(this)
     this.closeModal = this.closeModal.bind(this)
+    this.redirect = this.redirect.bind(this)
   }
 
   public componentDidMount() {
@@ -76,7 +80,15 @@ export class Channels extends React.Component<Props, State> {
     this.setState({ hasOpenModal: false })
   }
 
+  private redirect(account: string) {
+    this.setState({ redirectTo: account })
+  }
+
   public render() {
+    if (this.state.redirectTo) {
+      return <Redirect to={`/channel/${this.state.redirectTo}`} />
+    }
+
     return (
       <Container>
         {this.state.showFlash && (
@@ -85,7 +97,10 @@ export class Channels extends React.Component<Props, State> {
         <Heading>Channels</Heading>
         <BtnHeading onClick={this.openModal}>Create channel</BtnHeading>
         <Modal isOpen={this.state.hasOpenModal} onClose={this.closeModal}>
-          <ConnectedCreateChannel closeModal={() => this.closeModal()} />
+          <ConnectedCreateChannel
+            closeModal={() => this.closeModal()}
+            redirect={this.redirect}
+          />
         </Modal>
         <Section>
           <SectionHeading>Capacity</SectionHeading>
