@@ -6,6 +6,7 @@ import { connect } from 'react-redux'
 import { Arrow } from 'components/styled/Arrow'
 import { Heading } from 'components/styled/Heading'
 import { Hint, Input, Label } from 'components/styled/Input'
+import { Icon } from 'components/styled/Icon'
 import { RadioButton } from 'components/styled/RadioButton'
 import { BtnSubmit } from 'components/styled/Button'
 import { ConfigState } from 'schema'
@@ -33,6 +34,7 @@ interface State {
   Password: string
   DemoServer: boolean
   showError: boolean
+  loading: boolean
 }
 
 export class InitConfig extends React.Component<Props, ConfigState & State> {
@@ -45,6 +47,7 @@ export class InitConfig extends React.Component<Props, ConfigState & State> {
       DemoServer: true,
       HorizonURL: 'https://horizon-testnet.stellar.org',
       showError: false,
+      loading: false,
     }
 
     this.handleSubmit = this.handleSubmit.bind(this)
@@ -87,11 +90,7 @@ export class InitConfig extends React.Component<Props, ConfigState & State> {
             <div>
               <Label htmlFor="Testnet">Network</Label>
             </div>
-            <RadioButton
-              name="Testnet"
-              text="Testnet"
-              checked={true}
-            />
+            <RadioButton name="Testnet" text="Testnet" checked />
           </RadioGroup>
 
           <div>
@@ -145,7 +144,13 @@ export class InitConfig extends React.Component<Props, ConfigState & State> {
   }
 
   private formatSubmitButton() {
-    if (this.state.showError) {
+    if (this.state.loading) {
+      return (
+        <BtnSubmit disabled>
+          Configuring <Icon className="fa-pulse" name="spinner" />
+        </BtnSubmit>
+      )
+    } else if (this.state.showError) {
       return (
         <BtnSubmit color={RADICALRED} disabled>
           Error configuring
@@ -162,9 +167,11 @@ export class InitConfig extends React.Component<Props, ConfigState & State> {
 
   private async handleSubmit(event: any) {
     event.preventDefault()
+    this.setState({ loading: true })
     const ok = await this.props.configure(this.state)
 
     if (!ok) {
+      this.setState({ loading: false })
       this.setState({ showError: true })
       window.setTimeout(() => {
         this.setState({ showError: false })

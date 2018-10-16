@@ -5,13 +5,14 @@ import {
   faCopy,
   faExchangeAlt,
   faInfoCircle,
+  faSpinner,
   faWallet,
 } from '@fortawesome/free-solid-svg-icons'
 import { IconProp } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
 // Explicitly import / store references to fa icons we are using
-library.add(faCog, faCopy, faExchangeAlt, faInfoCircle, faWallet)
+library.add(faCog, faCopy, faExchangeAlt, faInfoCircle, faSpinner, faWallet)
 
 export class Icon extends React.Component<{
   name: IconProp
