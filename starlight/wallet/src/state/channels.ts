@@ -77,15 +77,15 @@ export const createChannel = async (
     HostAmount,
   })
 
-  if (response.ok && response.body.length >= 1) {
-    console.log(response.body)
+  if (response.ok) {
+    await dispatch({
+      type: CHANNEL_UPDATE,
+      channel: response.body,
+      Ops: [],
+    })
   } else {
     console.log('error', response)
   }
-
-  dispatch({
-    type: 'TODO',
-  })
 
   return response.ok
 }
