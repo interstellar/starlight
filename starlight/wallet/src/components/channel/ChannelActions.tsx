@@ -4,6 +4,7 @@ import { Dispatch } from 'redux'
 
 import { ChannelState } from 'types'
 
+import { ConnectedCreateChannel } from 'components/forms/CreateChannel'
 import { ConnectedDeposit } from 'components/forms/Deposit'
 import { ConnectedSendPayment } from 'components/forms/SendPayment'
 
@@ -55,8 +56,11 @@ export class ChannelActions extends React.Component<Props, State> {
       <div>
         <ActionContainer>
           {this.props.channel.State === 'Closed' ? (
-            // TODO: add "Open" button if channel is closed
-            ''
+            <span>
+              <BtnHeading onClick={() => this.openModal('open')}>
+                Open
+              </BtnHeading>
+            </span>
           ) : (
             <span>
               <BtnHeading
@@ -102,6 +106,14 @@ export class ChannelActions extends React.Component<Props, State> {
           <ConnectedSendPayment
             InitialRecipient={this.props.channel.CounterpartyAddress}
             closeModal={this.closeModal}
+          />
+        </Modal>
+        <Modal isOpen={this.hasOpenModal('open')} onClose={this.closeModal}>
+          <ConnectedCreateChannel
+            closeModal={() => this.closeModal()}
+            prefill={
+              { counterparty: this.props.channel.CounterpartyAddress }
+            }
           />
         </Modal>
       </div>
