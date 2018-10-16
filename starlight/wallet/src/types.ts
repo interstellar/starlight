@@ -353,31 +353,3 @@ export interface ChannelPaymentCompletedOp {
   type: 'paymentCompleted'
   timestamp: string
 }
-
-export function isChannelCmdEvent(
-  event: ChannelEvent
-): event is ChannelCmdEvent {
-  return (event as any).InputCommand !== null
-}
-
-export function isChannelTxEvent(event: ChannelEvent): event is ChannelTxEvent {
-  return (event as any).InputTx !== null
-}
-
-export function isChannelMsgEvent(
-  event: ChannelEvent
-): event is ChannelMsgEvent {
-  return (event as any).InputMessage !== null
-}
-
-export function isChannelTimeoutEvent(
-  event: ChannelEvent
-): event is ChannelTimeoutEvent {
-  return (event as any).InputLedgerTime !== '0001-01-01T00:00:00Z'
-}
-
-export function isAccountReserveEvent(
-  event: AccountEvent
-): event is AccountReserveEvent {
-  return event.InputCommand !== null
-}
