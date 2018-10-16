@@ -6,7 +6,7 @@ import { Redirect } from 'react-router'
 import * as moment from 'moment'
 
 import { ApplicationState } from 'schema'
-import { ChannelState } from 'types'
+import { ChannelState } from 'schema'
 
 import { ConnectedChannelActions } from 'components/channel/ChannelActions'
 import { ChannelActivityTable } from 'components/channel/ChannelActivityTable'
@@ -51,7 +51,7 @@ export class Channel extends React.Component<Props, {}> {
       return (
         <Redirect
           to={{
-            pathname: "/channels",
+            pathname: '/channels',
             state: {
               message: `Channel not found: ${this.props.match.params.id}`,
             },

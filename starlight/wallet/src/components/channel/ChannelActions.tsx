@@ -2,7 +2,7 @@ import * as React from 'react'
 import { connect } from 'react-redux'
 import { Dispatch } from 'redux'
 
-import { ChannelState } from 'types'
+import { ChannelState } from 'schema'
 
 import { ConnectedCreateChannel } from 'components/forms/CreateChannel'
 import { ConnectedDeposit } from 'components/forms/Deposit'
@@ -89,7 +89,6 @@ export class ChannelActions extends React.Component<Props, State> {
                   onClick={() => this.openModal('deposit')}
                 >
                   Deposit
-
                 </BtnHeading>
               </DisabledBtnHover>
             </span>
@@ -111,9 +110,7 @@ export class ChannelActions extends React.Component<Props, State> {
         <Modal isOpen={this.hasOpenModal('open')} onClose={this.closeModal}>
           <ConnectedCreateChannel
             closeModal={() => this.closeModal()}
-            prefill={
-              { counterparty: this.props.channel.CounterpartyAddress }
-            }
+            prefill={{ counterparty: this.props.channel.CounterpartyAddress }}
           />
         </Modal>
       </div>

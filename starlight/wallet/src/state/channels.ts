@@ -1,8 +1,8 @@
 import { Reducer, Dispatch } from 'redux'
 import * as moment from 'moment'
 
-import { ApplicationState, ChannelsState } from 'schema'
-import { ChannelState, ChannelActivity } from 'types'
+import { ApplicationState, ChannelState, ChannelsState } from 'schema'
+import { ChannelActivity } from 'types'
 import { Starlightd } from 'lib/starlightd'
 
 // Actions
