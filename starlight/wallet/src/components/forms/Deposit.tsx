@@ -6,6 +6,7 @@ import { Dispatch } from 'redux'
 import { BtnSubmit } from 'components/styled/Button'
 import { RADICALRED } from 'components/styled/Colors'
 import { Heading } from 'components/styled/Heading'
+import { Icon } from 'components/styled/Icon'
 import { Hint, Input, Label, HelpBlock } from 'components/styled/Input'
 import { HorizontalLine } from 'components/styled/HorizontalLine'
 import { TransactionFee } from 'components/styled/TransactionFee'
@@ -41,6 +42,7 @@ interface State {
   Amount: string // TODO(croaky): number?
   ChannelName: string
   showError: boolean
+  loading: boolean
 }
 
 export class Deposit extends React.Component<Props, State> {
@@ -51,6 +53,7 @@ export class Deposit extends React.Component<Props, State> {
       Amount: '',
       ChannelName: this.props.channel.CounterpartyAddress,
       showError: false,
+      loading: false,
     }
 
     this.handleSubmit = this.handleSubmit.bind(this)
@@ -132,7 +135,13 @@ export class Deposit extends React.Component<Props, State> {
   }
 
   private formatSubmitButton() {
-    if (this.state.showError) {
+    if (this.state.loading) {
+      return (
+        <BtnSubmit disabled>
+          Depositing <Icon className="fa-pulse" name="spinner" />
+        </BtnSubmit>
+      )
+    } else if (this.state.showError) {
       return (
         <BtnSubmit color={RADICALRED} disabled>
           Error depositing
@@ -149,6 +158,8 @@ export class Deposit extends React.Component<Props, State> {
 
   private async handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    this.setState({ loading: true })
+
     const amount = this.amount()
     if (amount === undefined) {
       throw new Error('amount unexpectedly undefined')
@@ -161,7 +172,7 @@ export class Deposit extends React.Component<Props, State> {
     if (ok) {
       this.props.closeModal()
     } else {
-      this.setState({ showError: true })
+      this.setState({ loading: false, showError: true })
       window.setTimeout(() => {
         this.setState({ showError: false })
       }, 3000)

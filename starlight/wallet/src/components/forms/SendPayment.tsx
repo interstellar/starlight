@@ -5,6 +5,7 @@ import { Dispatch } from 'redux'
 
 import { BtnSubmit } from 'components/styled/Button'
 import { Heading } from 'components/styled/Heading'
+import { Icon } from 'components/styled/Icon'
 import { Hint, Input, Label, HelpBlock } from 'components/styled/Input'
 import { HorizontalLine } from 'components/styled/HorizontalLine'
 import { Total } from 'components/styled/Total'
@@ -34,6 +35,7 @@ interface State {
   Recipient: string
   Amount: string // TODO(croaky): number?
   showError: boolean
+  loading: boolean
 }
 
 interface Props {
@@ -54,6 +56,7 @@ export class SendPayment extends React.Component<Props, State> {
       Recipient: props.InitialRecipient || '',
       Amount: '',
       showError: false,
+      loading: false,
     }
 
     this.handleSubmit = this.handleSubmit.bind(this)
@@ -224,25 +227,35 @@ export class SendPayment extends React.Component<Props, State> {
   }
 
   private formatSubmitButton(displayChannelBtn: boolean, submittable: boolean) {
-    if (this.state.showError) {
+    if (this.state.loading) {
+      return (
+        <BtnSubmit disabled>
+          Sending <Icon className="fa-pulse" name="spinner" />
+        </BtnSubmit>
+      )
+    } else if (this.state.showError) {
       return (
         <BtnSubmit color={RADICALRED} disabled>
           Payment not sent
         </BtnSubmit>
       )
-    } else if (displayChannelBtn) {
-      return <BtnSubmit disabled={!submittable}>Send via channel</BtnSubmit>
     } else {
-      return (
-        <BtnSubmit disabled={!submittable} color={SEAFOAM}>
-          Send on Stellar
-        </BtnSubmit>
-      )
+      if (displayChannelBtn) {
+        return <BtnSubmit disabled={!submittable}>Send via channel</BtnSubmit>
+      } else {
+        return (
+          <BtnSubmit disabled={!submittable} color={SEAFOAM}>
+            Send on Stellar
+          </BtnSubmit>
+        )
+      }
     }
   }
 
   private async handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    this.setState({ loading: true })
+
     const amount = this.amount()
     if (amount === undefined) {
       throw new Error('invalid amount: ' + this.state.Amount)
@@ -267,7 +280,7 @@ export class SendPayment extends React.Component<Props, State> {
       this.props.closeModal()
       // TODO: drop you into channel view when successful
     } else {
-      this.setState({ showError: true })
+      this.setState({ loading: false, showError: true })
       window.setTimeout(() => {
         this.setState({ showError: false })
       }, 3000)
