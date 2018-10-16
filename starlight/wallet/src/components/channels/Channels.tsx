@@ -15,7 +15,7 @@ import { Modal } from 'components/styled/Modal'
 import { ConnectedCreateChannel } from 'components/forms/CreateChannel'
 import { Section, SectionHeading } from 'components/styled/Section'
 
-import { ChannelState } from 'types'
+import { ChannelState } from 'schema'
 
 import {
   getChannels,
@@ -79,9 +79,9 @@ export class Channels extends React.Component<Props, State> {
   public render() {
     return (
       <Container>
-        { this.state.showFlash &&
+        {this.state.showFlash && (
           <AlertFlash>{this.props.location.state.message}</AlertFlash>
-        }
+        )}
         <Heading>Channels</Heading>
         <BtnHeading onClick={this.openModal}>Create channel</BtnHeading>
         <Modal isOpen={this.state.hasOpenModal} onClose={this.closeModal}>
@@ -97,10 +97,13 @@ export class Channels extends React.Component<Props, State> {
           />
         </Section>
         <ChannelListSection>
-          {this.props.channels.length > 0 ? this.props.channels.map(channel => (
-            <ChannelRow channel={channel} key={channel.ID} />
-          )) : (<Row>You haven't created any channels yet.</Row>)
-          }
+          {this.props.channels.length > 0 ? (
+            this.props.channels.map(channel => (
+              <ChannelRow channel={channel} key={channel.ID} />
+            ))
+          ) : (
+            <Row>You haven't created any channels yet.</Row>
+          )}
         </ChannelListSection>
       </Container>
     )

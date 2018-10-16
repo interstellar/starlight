@@ -20,7 +20,7 @@ import {
   getTheirAccount,
 } from 'state/channels'
 import { stroopsToLumens, lumensToStroops } from 'lumens'
-import { ChannelState } from 'types'
+import { ChannelState } from 'schema'
 const StrKey = require('stellar-base').StrKey
 
 const View = styled.div`

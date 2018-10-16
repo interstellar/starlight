@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-import { ChannelState } from 'types'
+import { ChannelState } from 'schema'
 
 import { ActivityRow } from 'components/channel/ActivityRow'
 import { Table, TableHeaderRow, TableHeader } from 'components/styled/Table'

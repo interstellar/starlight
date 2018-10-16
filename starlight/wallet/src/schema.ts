@@ -1,4 +1,4 @@
-import { WalletOp, ChannelState } from 'types'
+import { ChannelOp, WalletOp } from 'types'
 
 export interface ApplicationState {
   config: ConfigState
@@ -38,4 +38,26 @@ export interface WalletState {
 
 export interface ChannelsState {
   [id: string]: ChannelState
+}
+
+export interface ChannelState {
+  ChannelFeerate: number
+  CounterpartyAddress: string
+  EscrowAcct: string
+  FinalityDelay: number
+  FundingTime: string
+  GuestAcct: string
+  GuestAmount: number
+  GuestRatchetAcct: string
+  HostAcct: string
+  HostAmount: number
+  ID: string
+  MaxRoundDuration: number
+  Ops: ChannelOp[]
+  PaymentTime: string
+  PendingAmountReceived: number
+  PendingAmountSent: number
+  PrevState: string
+  Role: string
+  State: string
 }

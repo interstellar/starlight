@@ -5,7 +5,8 @@ import { DUSTYGRAY } from 'components/styled/Colors'
 import { TableData } from 'components/styled/Table'
 import { Timestamp } from 'components/styled/Timestamp'
 import { ValueChange } from 'components/styled/ValueChange'
-import { ChannelOp, ChannelState } from 'types'
+import { ChannelOp } from 'types'
+import { ChannelState } from 'schema'
 import { stroopsToLumens } from 'lumens'
 
 const activityTitle = (op: ChannelOp): string => {
@@ -20,9 +21,7 @@ const activityTitle = (op: ChannelOp): string => {
     case 'withdrawal':
       return 'Withdraw'
     case 'paymentCompleted':
-      throw new Error(
-        `activityTitle shouldn't be called for ${op.type} op`
-      )
+      throw new Error(`activityTitle shouldn't be called for ${op.type} op`)
   }
 }
 

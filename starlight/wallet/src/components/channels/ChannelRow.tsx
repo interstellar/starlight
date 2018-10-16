@@ -2,7 +2,7 @@ import * as React from 'react'
 import styled from 'styled-components'
 import { Link } from 'react-router-dom'
 
-import { ChannelState } from 'types'
+import { ChannelState } from 'schema'
 
 import { MiniBarGraph } from 'components/graphs/MiniBarGraph'
 import { DUSTYGRAY, EBONYCLAY, WILDSAND_LIGHT } from 'components/styled/Colors'

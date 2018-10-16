@@ -1,3 +1,5 @@
+import { ChannelState } from 'schema'
+
 export interface Credentials {
   Username: string
   Password: string
@@ -115,7 +117,7 @@ export interface ConfigEvent {
     Username: string
     HorizonURL: string
   }
-  Account: AccountState
+  Account: Account
   UpdateNum: number
   UpdateLedgerTime: string
 }
@@ -145,7 +147,7 @@ export interface InputTx {
 
 export interface TxSuccessEvent {
   Type: 'tx_success'
-  Account: AccountState
+  Account: Account
   UpdateNum: number
   InputTx: InputTx
   UpdateLedgerTime: string
@@ -160,14 +162,14 @@ export interface TxFailedEvent {
 
 export type AccountEvent = AccountPaymentEvent | AccountReserveEvent
 
-export interface AccountState {
+export interface Account {
   Balance: number
   ID: string
 }
 
 export interface AccountPaymentEvent {
   Type: 'account'
-  Account: AccountState
+  Account: Account
   InputTx: InputTx
   InputCommand: null
   OpIndex: number
@@ -177,7 +179,7 @@ export interface AccountPaymentEvent {
 
 export interface AccountReserveEvent {
   Type: 'account'
-  Account: AccountState
+  Account: Account
   InputCommand: {
     Amount: number
     Recipient: string
@@ -188,28 +190,6 @@ export interface AccountReserveEvent {
   UpdateNum: number
   PendingSequence: string
   UpdateLedgerTime: string
-}
-
-export interface ChannelState {
-  ChannelFeerate: number
-  CounterpartyAddress: string
-  EscrowAcct: string
-  FinalityDelay: number
-  FundingTime: string
-  GuestAcct: string
-  GuestAmount: number
-  GuestRatchetAcct: string
-  HostAcct: string
-  HostAmount: number
-  ID: string
-  MaxRoundDuration: number
-  Ops: ChannelOp[]
-  PaymentTime: string
-  PendingAmountReceived: number
-  PendingAmountSent: number
-  PrevState: string
-  Role: string
-  State: string
 }
 
 export type ChannelEvent =
@@ -238,7 +218,7 @@ export interface ChannelAcceptMsg {
 
 export interface ChannelCmdEvent {
   Type: 'channel'
-  Account: AccountState
+  Account: Account
   InputCommand: ChannelCommand
   InputTx: null
   InputMessage: null
@@ -250,7 +230,7 @@ export interface ChannelCmdEvent {
 
 export interface ChannelTxEvent {
   Type: 'channel'
-  Account: AccountState
+  Account: Account
   InputTx: InputTx
   InputMessage: null
   InputCommand: null
@@ -263,7 +243,7 @@ export interface ChannelTxEvent {
 
 export interface ChannelMsgEvent {
   Type: 'channel'
-  Account: AccountState
+  Account: Account
   InputMessage: ChannelMsg
   InputTx: null
   InputCommand: null
@@ -276,7 +256,7 @@ export interface ChannelMsgEvent {
 
 export interface ChannelTimeoutEvent {
   Type: 'channel'
-  Account: AccountState
+  Account: Account
   InputMessage: null
   InputTx: null
   InputCommand: null

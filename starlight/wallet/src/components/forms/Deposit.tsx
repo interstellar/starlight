@@ -13,7 +13,7 @@ import { Total } from 'components/styled/Total'
 import { Unit, UnitContainer } from 'components/styled/Unit'
 import { ApplicationState } from 'schema'
 import { deposit } from 'state/channels'
-import { ChannelState } from 'types'
+import { ChannelState } from 'schema'
 import { getWalletStroops } from 'state/wallet'
 import { stroopsToLumens, lumensToStroops } from 'lumens'
 
