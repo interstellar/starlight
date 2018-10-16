@@ -611,12 +611,12 @@ func (g *Agent) checkChannelUnique(a, b string) error {
 
 // DoCreateChannel creates a channel between the agent host and the guest
 // specified at guestFedAddr, funding the channel with hostAmount
-func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount, hostURL string) error {
+func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount, hostURL string) (*fsm.Channel, error) {
 	if guestFedAddr == "" {
-		return errEmptyAddress
+		return nil, errEmptyAddress
 	}
 	if hostAmount == 0 {
-		return errEmptyAmount
+		return nil, errEmptyAmount
 	}
 	// TODO(debnil): Distinguish account string and federation server address better, i.e. using type aliases for string.
 	var hostAcctStr string
@@ -627,17 +627,18 @@ func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount, host
 
 	guestAcctStr, starlightURL, err := findAccount(&g.httpclient, guestFedAddr)
 	if err != nil {
-		return errors.Wrapf(err, "finding account %s", guestFedAddr)
+		return nil, errors.Wrapf(err, "finding account %s", guestFedAddr)
 	}
 	if guestAcctStr == hostAcctStr {
-		return errAcctsSame
+		return nil, errAcctsSame
 	}
 	err = g.checkChannelUnique(hostAcctStr, guestAcctStr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return db.Update(g.db, func(root *db.Root) error {
+	var ch *fsm.Channel
+	err = db.Update(g.db, func(root *db.Root) error {
 		if !g.isReadyFunded(root) {
 			return errNotFunded
 		}
@@ -681,11 +682,11 @@ func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount, host
 
 		fundingTime := g.wclient.Now()
 
-		if ch := g.getChannel(root, channelID); ch.State != fsm.Start {
+		if ch = g.getChannel(root, channelID); ch.State != fsm.Start {
 			return errors.Wrap(ErrExists, string(channelID))
 		}
 
-		ch := &fsm.Channel{
+		ch = &fsm.Channel{
 			ID:                  channelID,
 			Role:                fsm.Host,
 			HostAmount:          hostAmount,
@@ -727,6 +728,7 @@ func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount, host
 			return updater.Cmd(c)
 		})
 	})
+	return ch, err
 }
 
 func (g *Agent) DoWalletPay(dest string, amount xlm.Amount) error {
