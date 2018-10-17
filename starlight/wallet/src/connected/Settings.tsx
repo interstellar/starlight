@@ -89,7 +89,12 @@ export class Settings extends React.Component<Props, State> {
                 isOpen={this.hasOpenModal('server')}
                 onClose={this.closeModal}
               >
-                <ConnectedChangeServer />
+                <ConnectedChangeServer
+                  closeModal={() => this.closeModal()}
+                  showFlash={() =>
+                    this.showFlash('Your server has been changed')
+                  }
+                />
               </Modal>
             </DetailValue>
           </Detail>
