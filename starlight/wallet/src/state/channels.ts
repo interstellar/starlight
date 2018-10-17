@@ -210,10 +210,6 @@ export const close = async (dispatch: Dispatch, id: string) => {
   } else {
     console.log('error', response)
   }
-
-  dispatch({
-    type: 'TODO',
-  })
 }
 
 export const channelPay = async (
@@ -234,11 +230,6 @@ export const channelPay = async (
   } else {
     console.log('error', response)
   }
-
-  dispatch({
-    type: 'TODO',
-  })
-
   return response.ok
 }
 

@@ -39,7 +39,7 @@ interface Props {
 }
 
 interface State {
-  Amount: string // TODO(croaky): number?
+  Amount: string
   ChannelName: string
   showError: boolean
   loading: boolean
@@ -122,7 +122,6 @@ export class Deposit extends React.Component<Props, State> {
     if (isNaN(lumensAmount)) {
       return undefined
     }
-    // TODO: fix floating point problems
     return lumensToStroops(lumensAmount)
   }
 

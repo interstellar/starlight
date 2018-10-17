@@ -143,11 +143,6 @@ export const send = async (
   } else {
     console.log('error', response)
   }
-
-  dispatch({
-    type: 'TODO',
-  })
-
   return response.ok
 }
 
