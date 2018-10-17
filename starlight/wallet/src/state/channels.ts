@@ -143,57 +143,48 @@ export const getTotalChannelCounterpartyBalance = (state: ApplicationState) => {
 }
 
 export const getChannelActivity = (channel: ChannelState) => {
+  // payments === 'outgoingChannelPayments' & 'incomingChannelPayments'
+  // all payments are considered pending until we see a 'paymentCompleted' Op
   let pending = true
   let timestamp
-  const activity: ChannelActivity[] = []
+  const channelID = channel.ID
+  const counterparty = channel.CounterpartyAddress
+  const isHost = channel.Role === 'Host'
+
+  const activities: ChannelActivity[] = []
+
   for (let i = channel.Ops.length - 1; i >= 0; i--) {
-    const channelOp = channel.Ops[i]
-    if (channelOp.type === 'paymentCompleted') {
+    const op = channel.Ops[i]
+
+    if (op.type === 'paymentCompleted') {
+      // update attrs for payments
       pending = false
-      timestamp = channelOp.timestamp
-    } else if (channelOp.type === 'deposit') {
-      activity.push({
-        type: 'channelActivity',
-        op: channelOp,
-        timestamp: channelOp.fundingTx.LedgerTime,
-        pending: false,
-        channelID: channel.ID,
-        counterparty: channel.CounterpartyAddress,
-        isHost: channel.Role === 'Host',
-      })
-    } else if (channelOp.type === 'topUp') {
-      activity.push({
-        type: 'channelActivity',
-        op: channelOp,
-        timestamp: channelOp.topUpTx.LedgerTime,
-        pending: false,
-        channelID: channel.ID,
-        counterparty: channel.CounterpartyAddress,
-        isHost: channel.Role === 'Host',
-      })
-    } else if (channelOp.type === 'withdrawal') {
-      activity.push({
-        type: 'channelActivity',
-        op: channelOp,
-        timestamp: channelOp.withdrawalTx.LedgerTime,
-        pending: false,
-        channelID: channel.ID,
-        counterparty: channel.CounterpartyAddress,
-        isHost: channel.Role === 'Host',
-      })
+      timestamp = op.timestamp
     } else {
-      activity.push({
+      if (op.type === 'deposit') {
+        timestamp = op.fundingTx.LedgerTime
+        pending = false
+      } else if (op.type === 'topUp') {
+        timestamp = op.topUpTx.LedgerTime
+        pending = false
+      } else if (op.type === 'withdrawal') {
+        timestamp = op.withdrawalTx.LedgerTime
+        pending = false
+      }
+
+      // payment, deposit, topUp, and withdrawal Ops are added here
+      activities.push({
         type: 'channelActivity',
-        op: channelOp,
+        op,
         timestamp,
         pending,
-        channelID: channel.ID,
-        counterparty: channel.CounterpartyAddress,
-        isHost: channel.Role === 'Host',
+        channelID,
+        counterparty,
+        isHost,
       })
     }
   }
-  return activity
+  return activities
 }
 
 // Side effects
