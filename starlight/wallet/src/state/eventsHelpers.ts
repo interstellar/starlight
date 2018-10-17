@@ -98,7 +98,7 @@ export const getChannelOps = (event: ChannelEvent): ChannelOp[] => {
             return [
               {
                 type: 'deposit',
-                fundingTx: event.InputTx,
+                tx: event.InputTx,
                 myDelta: isHost ? event.Channel.HostAmount : 0,
                 theirDelta: isHost ? 0 : event.Channel.HostAmount,
                 myBalance: 0,
@@ -113,7 +113,7 @@ export const getChannelOps = (event: ChannelEvent): ChannelOp[] => {
             return [
               {
                 type: 'topUp',
-                topUpTx: event.InputTx,
+                tx: event.InputTx,
                 myDelta: isHost ? topUpAmount : 0,
                 theirDelta: isHost ? 0 : topUpAmount,
                 myBalance: myBalance - myDelta, // because we use the old balance
@@ -129,7 +129,7 @@ export const getChannelOps = (event: ChannelEvent): ChannelOp[] => {
         return [
           {
             type: 'withdrawal',
-            withdrawalTx: event.InputTx,
+            tx: event.InputTx,
             myDelta: -1 * myBalance,
             theirDelta: -1 * theirBalance,
             myBalance,

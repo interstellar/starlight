@@ -44,7 +44,7 @@ export class ActivityRow extends React.Component<Props, {}> {
     }
     const time =
       op.type === 'deposit'
-        ? moment(op.fundingTx.LedgerTime).fromNow()
+        ? moment(op.tx.LedgerTime).fromNow()
         : this.props.timestamp
           ? moment(this.props.timestamp).fromNow()
           : ''

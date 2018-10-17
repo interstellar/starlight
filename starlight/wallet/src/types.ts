@@ -279,7 +279,7 @@ export type ChannelOp =
 
 interface DepositOp {
   type: 'deposit'
-  fundingTx: InputTx
+  tx: InputTx
   myDelta: number
   theirDelta: number
   myBalance: number
@@ -292,7 +292,7 @@ interface TopUpOp {
   theirDelta: number
   myBalance: number
   theirBalance: number
-  topUpTx: InputTx
+  tx: InputTx
 }
 
 export interface OutgoingChannelPaymentOp {
@@ -317,7 +317,7 @@ export interface WithdrawalOp {
   theirDelta: number
   myBalance: number
   theirBalance: number
-  withdrawalTx: InputTx
+  tx: InputTx
 }
 
 // channel activities
