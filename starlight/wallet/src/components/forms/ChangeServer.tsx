@@ -24,6 +24,8 @@ const RadioGroup = styled.div`
 interface Props {
   HorizonURL: string
   editServer: (params: { HorizonURL: string }) => any
+  closeModal: () => void
+  showFlash: () => void
 }
 interface State {
   DemoServer: boolean
@@ -112,12 +114,17 @@ export class ChangeServer extends React.Component<Props, State> {
     }
   }
 
-  private async handleSubmit() {
+  private async handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+
     const ok = await this.props.editServer({
       HorizonURL: this.state.HorizonURL,
     })
 
-    if (!ok) {
+    if (ok) {
+      this.props.closeModal()
+      this.props.showFlash()
+    } else {
       this.setState({ showError: true })
       window.setTimeout(() => {
         this.setState({ showError: false })
@@ -138,7 +145,14 @@ const mapDispatchToProps = (dispatch: Dispatch) => {
     },
   }
 }
-export const ConnectedChangeServer = connect(
+export const ConnectedChangeServer = connect<
+  {},
+  {},
+  {
+    closeModal: () => void
+    showFlash: () => void
+  }
+>(
   mapStateToProps,
   mapDispatchToProps
 )(ChangeServer)
