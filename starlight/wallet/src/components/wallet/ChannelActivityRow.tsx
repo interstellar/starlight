@@ -34,10 +34,7 @@ export class ChannelActivityRow extends React.Component<Props, {}> {
         if (!activity.isHost) {
           return <tr />
         }
-        const fee =
-          op.type === 'deposit'
-            ? op.fundingTx.Env.Tx.Fee
-            : op.topUpTx.Env.Tx.Fee
+        const fee = op.tx.Env.Tx.Fee
         return (
           <tr>
             <TableData align="left">
@@ -62,9 +59,7 @@ export class ChannelActivityRow extends React.Component<Props, {}> {
         if (op.myDelta === 0) {
           return <tr />
         }
-        const fee = this.props.activity.isHost
-          ? -1 * op.withdrawalTx.Env.Tx.Fee
-          : 0
+        const fee = this.props.activity.isHost ? -1 * op.tx.Env.Tx.Fee : 0
         return (
           <tr>
             <TableData align="left">
@@ -125,7 +120,7 @@ export class ChannelActivityRow extends React.Component<Props, {}> {
               <ValueChange value={-1 * op.myDelta} />
             </TableData>
             <TableData align="right">
-              <ValueChange value={-1 * op.withdrawalTx.Env.Tx.Fee} />
+              <ValueChange value={-1 * op.tx.Env.Tx.Fee} />
             </TableData>
           </tr>
         )

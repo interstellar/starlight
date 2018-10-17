@@ -143,13 +143,8 @@ export const getTotalChannelCounterpartyBalance = (state: ApplicationState) => {
 }
 
 export const getChannelActivity = (channel: ChannelState) => {
-  // payments === 'outgoingChannelPayments' & 'incomingChannelPayments'
-  // all payments are considered pending until we see a 'paymentCompleted' Op
-  let pending = true
+  let pendingPayments = true
   let timestamp
-  const channelID = channel.ID
-  const counterparty = channel.CounterpartyAddress
-  const isHost = channel.Role === 'Host'
 
   const activities: ChannelActivity[] = []
 
@@ -157,31 +152,34 @@ export const getChannelActivity = (channel: ChannelState) => {
     const op = channel.Ops[i]
 
     if (op.type === 'paymentCompleted') {
-      // update attrs for payments
-      pending = false
+      // all payments ('outgoingChannelPayment' & 'incomingChannelPayment')
+      // are considered pending until / unless a 'paymentCompleted' op occurs
+      pendingPayments = false
       timestamp = op.timestamp
     } else {
-      if (op.type === 'deposit') {
-        timestamp = op.fundingTx.LedgerTime
-        pending = false
-      } else if (op.type === 'topUp') {
-        timestamp = op.topUpTx.LedgerTime
-        pending = false
-      } else if (op.type === 'withdrawal') {
-        timestamp = op.withdrawalTx.LedgerTime
-        pending = false
+      if (op.type === ('deposit' || 'topUp' || 'withdrawal')) {
+        activities.push({
+          type: 'channelActivity',
+          op,
+          timestamp: op.tx.LedgerTime,
+          pending: false,
+          channelID: channel.ID,
+          counterparty: channel.CounterpartyAddress,
+          isHost: channel.Role === 'Host',
+        })
+      } else if (
+        op.type === ('outgoingChannelPayment' || 'incomingChannelPayment')
+      ) {
+        activities.push({
+          type: 'channelActivity',
+          op,
+          timestamp,
+          pending: pendingPayments,
+          channelID: channel.ID,
+          counterparty: channel.CounterpartyAddress,
+          isHost: channel.Role === 'Host',
+        })
       }
-
-      // payment, deposit, topUp, and withdrawal Ops are added here
-      activities.push({
-        type: 'channelActivity',
-        op,
-        timestamp,
-        pending,
-        channelID,
-        counterparty,
-        isHost,
-      })
     }
   }
   return activities
