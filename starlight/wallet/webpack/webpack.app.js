@@ -10,6 +10,9 @@ var fs = require('fs')
 // change this URL to point to where you've deployed your changes.
 // See ./sync-frontend.sh for how we're hosting the client.
 let publicPath = 'https://starlight-client.s3.amazonaws.com/'
+if (process.env.NODE_ENV !== 'production') {
+  publicPath = '/'
+}
 
 // Set base path to JS and CSS files when
 // required by other files
