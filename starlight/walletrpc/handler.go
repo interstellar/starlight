@@ -62,8 +62,25 @@ func Handler(g *starlight.Agent) http.Handler {
 }
 
 func index(w http.ResponseWriter, req *http.Request) {
-	// TODO(kr): serve index.html react app
-	io.WriteString(w, "hello! this is where index.html goes!")
+	io.WriteString(w, `
+		<html>
+			<script>
+				let xmlhttp = new XMLHttpRequest();
+				xmlhttp.onreadystatechange = function(){
+					if (xmlhttp.readyState == 4 && xmlhttp.status == 200){
+						document.open();
+						document.write(xmlhttp.responseText);
+						document.close();
+					}
+				}
+				// If you want to make changes to the client and deploy them,
+				// change this URL to point to where you've deployed your changes.
+				// See ./sync-frontend.sh for how we're hosting the client.
+				xmlhttp.open('GET', 'https://starlight-client.s3.amazonaws.com/index.html', true);
+				xmlhttp.send();
+			</script>
+		</html>
+	`)
 }
 
 func (wt *wallet) updates(w http.ResponseWriter, req *http.Request) {

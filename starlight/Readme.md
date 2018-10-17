@@ -73,6 +73,23 @@ Start the React app
 	$ cd $I10R/starlight/wallet
 	$ STARLIGHTD_URL=https://localhost:7001 PORT=5001 npm start
 
+# Deploying your own custom client
+
+Starlight serves the client by grabbing a deployed version from an S3 bucket.
+The go server loads html that, with JS, fetches the webpack compiled
+`index.html` and replaces its contents with the S3 bucket `index.html`.
+
+If you'd like to make changes to the client, you can do so by deploying your
+own version of the react app to your own S3 bucket.
+
+1. Update [`sync-frontend.sh`](https://github.com/interstellar/i10r/blob/main/starlight/sync-frontend.sh) to point to your S3 bucket.
+1. Update the [webpack configuration](https://github.com/interstellar/i10r/blob/main/starlight/wallet/webpack/webpack.app.js)
+	 `publicPath` to point to your S3 bucket URL.
+1. Run `./sync-frontend.sh`. This script uses the aws cli, so make
+	 sure your system is set up with proper credentials. We use [`aws-vault`](https://github.com/99designs/aws-vault) to
+	 manage our credentials.
+1. Update the [api index endpoint](https://github.com/interstellar/i10r/blob/main/starlight/walletrpc/handler.go#L64) to point to
+	 the `index.html` that has been uploaded to your S3 bucket.
 
 # Running tests
 
@@ -90,4 +107,3 @@ To run the Starlight wallet unit tests:
 To run the Starlight integration tests:
 	$ cd $I10R/starlight/starlighttest
 	$ go test
-

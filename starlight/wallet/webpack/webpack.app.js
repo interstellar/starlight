@@ -6,9 +6,13 @@ var getConfig = require('hjs-webpack')
 var path = require('path')
 var fs = require('fs')
 
+// If you want to make changes to the client and deploy them,
+// change this URL to point to where you've deployed your changes.
+// See ./sync-frontend.sh for how we're hosting the client.
+let publicPath = 'https://starlight-client.s3.amazonaws.com/'
+
 // Set base path to JS and CSS files when
 // required by other files
-let publicPath = '/'
 let outPath = 'public'
 if (process.env.NODE_ENV !== 'production') {
   outPath = 'node_modules/starlight-react-dlls'
