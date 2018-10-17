@@ -8,6 +8,7 @@ import { ConnectedChangePassword } from 'components/forms/ChangePassword'
 import { ConnectedChangeServer } from 'components/forms/ChangeServer'
 import { Container } from 'components/styled/Container'
 import { Detail, DetailLabel, DetailValue } from 'components/styled/Detail'
+import { Flash } from 'components/styled/Flash'
 import { Heading } from 'components/styled/Heading'
 import { Link } from 'components/styled/Link'
 import { Modal } from 'components/styled/Modal'
@@ -15,25 +16,30 @@ import { Section, SectionHeading } from 'components/styled/Section'
 import { RADICALRED } from 'components/styled/Colors'
 import { lifecycle } from 'state/lifecycle'
 
-export class Settings extends React.Component<
-  {
-    Username: string
-    HorizonURL: string
-    logout: () => any
-  },
-  {
-    openedModalName: string
-  }
-> {
+interface Props {
+  Username: string
+  HorizonURL: string
+  logout: () => any
+}
+interface State {
+  openedModalName: string
+  showFlash: boolean
+  flashMessage: string
+}
+
+export class Settings extends React.Component<Props, State> {
   public constructor(props: any) {
     super(props)
 
     this.state = {
       openedModalName: '',
+      showFlash: false,
+      flashMessage: '',
     }
 
     this.openModal = this.openModal.bind(this)
     this.closeModal = this.closeModal.bind(this)
+    this.showFlash = this.showFlash.bind(this)
   }
 
   private openModal(name: string) {
@@ -48,6 +54,14 @@ export class Settings extends React.Component<
     this.setState({ openedModalName: '' })
   }
 
+  private showFlash(message: string) {
+    this.setState({ showFlash: true, flashMessage: message })
+
+    window.setTimeout(() => {
+      this.setState({ showFlash: false, flashMessage: '' })
+    }, 3000)
+  }
+
   public componentDidMount() {
     document.title = `Settings - ${this.props.Username}`
   }
@@ -55,6 +69,7 @@ export class Settings extends React.Component<
   public render() {
     return (
       <Container>
+        {this.state.showFlash && <Flash>{this.state.flashMessage}</Flash>}
         <Heading>Settings</Heading>
         <BtnHeading color={RADICALRED} onClick={this.props.logout}>
           Log Out
@@ -63,9 +78,7 @@ export class Settings extends React.Component<
           <SectionHeading>Configuration</SectionHeading>
           <Detail>
             <DetailLabel>Network</DetailLabel>
-            <DetailValue>
-              Testnet
-            </DetailValue>
+            <DetailValue>Testnet</DetailValue>
           </Detail>
           <Detail>
             <DetailLabel>Horizon API Server</DetailLabel>
@@ -97,7 +110,12 @@ export class Settings extends React.Component<
                 isOpen={this.hasOpenModal('password')}
                 onClose={this.closeModal}
               >
-                <ConnectedChangePassword />
+                <ConnectedChangePassword
+                  closeModal={() => this.closeModal()}
+                  showFlash={() =>
+                    this.showFlash('Your password has been changed')
+                  }
+                />
               </Modal>
             </DetailValue>
           </Detail>

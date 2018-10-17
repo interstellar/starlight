@@ -7,12 +7,11 @@ import { CreateChannel } from 'components/forms/CreateChannel'
 import { Deposit } from 'components/forms/Deposit'
 import { SendPayment } from 'components/forms/SendPayment'
 
-const editPasswordFunc = (params: {
-  OldPassword: string
-  NewPassword: string
-}) => params
+const editPasswordFunc = (params: { OldPassword: string; Password: string }) =>
+  params
 const editServerFunc = (params: { HorizonURL: string }) => params
 const createChannel = (_1: string, _2: number) => undefined
+const showFlashFunc = () => undefined
 
 const sendFunc = async (_1: string, _2: number) => {
   return undefined
@@ -22,7 +21,13 @@ const deposit = (_1: string, _2: number) => undefined
 
 it('renders ChangePassword', () => {
   const tree = renderer
-    .create(<ChangePassword editPassword={editPasswordFunc} />)
+    .create(
+      <ChangePassword
+        closeModal={closeModal}
+        showFlash={showFlashFunc}
+        editPassword={editPasswordFunc}
+      />
+    )
     .toJSON()
   expect(tree).toBeTruthy()
 })

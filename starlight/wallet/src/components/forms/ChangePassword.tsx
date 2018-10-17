@@ -17,7 +17,9 @@ const Form = styled.form`
 `
 
 interface Props {
-  editPassword: (params: { OldPassword: string; NewPassword: string }) => any
+  editPassword: (params: { OldPassword: string; Password: string }) => any
+  closeModal: () => void
+  showFlash: () => void
 }
 
 interface State {
@@ -82,13 +84,18 @@ export class ChangePassword extends React.Component<Props, State> {
     }
   }
 
-  private async handleSubmit() {
+  private async handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+
     const ok = await this.props.editPassword({
       OldPassword: this.state.OldPassword,
-      NewPassword: this.state.NewPassword,
+      Password: this.state.NewPassword,
     })
 
-    if (!ok) {
+    if (ok) {
+      this.props.closeModal()
+      this.props.showFlash()
+    } else {
       this.setState({ showError: true })
       window.setTimeout(() => {
         this.setState({ showError: false })
@@ -99,13 +106,20 @@ export class ChangePassword extends React.Component<Props, State> {
 
 const mapDispatchToProps = (dispatch: Dispatch) => {
   return {
-    editPassword: (params: { OldPassword: string; NewPassword: string }) => {
+    editPassword: (params: { OldPassword: string; Password: string }) => {
       return config.edit(dispatch, params)
     },
   }
 }
 
-export const ConnectedChangePassword = connect(
+export const ConnectedChangePassword = connect<
+  {},
+  {},
+  {
+    closeModal: () => void
+    showFlash: () => void
+  }
+>(
   null,
   mapDispatchToProps
 )(ChangePassword)

@@ -60,7 +60,7 @@ const init = async (dispatch: Dispatch, params: ConfigState) => {
 interface EditParams {
   HorizonURL?: string
   OldPassword?: string
-  NewPassword?: string
+  Password?: string
 }
 
 const edit = async (dispatch: Dispatch, params: EditParams) => {
