@@ -52,7 +52,7 @@ interface Props {
 
 interface State {
   Counterparty: string
-  InitialDeposit: string // TODO(croaky): number?
+  InitialDeposit: string
   showError: boolean
   loading: boolean
 }

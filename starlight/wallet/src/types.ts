@@ -208,12 +208,12 @@ export type ChannelMsg = ChannelProposeMsg | ChannelAcceptMsg
 
 export interface ChannelProposeMsg {
   ChannelID: string
-  ChannelProposeMsg: any // TODO: use or remove?
+  ChannelProposeMsg: any
 }
 
 export interface ChannelAcceptMsg {
   ChannelID: string
-  ChannelAcceptMsg: any // TODO: use or remove?
+  ChannelAcceptMsg: any
 }
 
 export interface ChannelCmdEvent {

@@ -33,7 +33,7 @@ const Form = styled.form`
 
 interface State {
   Recipient: string
-  Amount: string // TODO(croaky): number?
+  Amount: string
   showError: boolean
   loading: boolean
 }
@@ -228,7 +228,6 @@ export class SendPayment extends React.Component<Props, State> {
     if (isNaN(lumensAmount)) {
       return undefined
     }
-    // TODO: fix floating point problems
     return lumensToStroops(lumensAmount)
   }
 

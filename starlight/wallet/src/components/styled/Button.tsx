@@ -40,7 +40,6 @@ export const BtnHeading = styled(Btn)<{
   }
 `
 
-// TODO: add disabled styles
 export const BtnSubmit = styled(Btn)<{ color?: string }>`
   background-color: ${props => (props.color ? props.color : CORNFLOWER)};
   width: 250px;

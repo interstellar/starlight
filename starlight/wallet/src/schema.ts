@@ -18,8 +18,6 @@ export interface EventsState {
   list: Array<{
     Type: string
     UpdateNum: number
-
-    // TODO: include remaining event types
     Config: any
   }>
 }
