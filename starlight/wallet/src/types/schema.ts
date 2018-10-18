@@ -1,4 +1,4 @@
-import { ChannelOp, WalletOp } from 'types'
+import { ChannelOp, WalletOp } from 'types/types'
 
 export interface ApplicationState {
   config: ConfigState

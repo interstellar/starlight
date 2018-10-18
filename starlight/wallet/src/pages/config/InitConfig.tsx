@@ -9,7 +9,7 @@ import { Hint, Input, Label } from 'pages/shared/Input'
 import { Icon } from 'pages/shared/Icon'
 import { RadioButton } from 'pages/shared/RadioButton'
 import { BtnSubmit } from 'pages/shared/Button'
-import { ConfigState } from 'schema'
+import { ConfigState } from 'types/schema'
 import { RADICALRED, WHITE } from 'pages/shared/Colors'
 import { config } from 'state/config'
 

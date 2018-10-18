@@ -6,7 +6,7 @@ import { connectRouter, routerMiddleware } from 'connected-react-router'
 import thunk from 'redux-thunk'
 
 import { rootReducer } from 'reducers'
-import { ApplicationState } from 'schema'
+import { ApplicationState } from 'types/schema'
 
 const persistConfig = {
   key: 'root',

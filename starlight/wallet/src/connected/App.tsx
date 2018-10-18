@@ -3,7 +3,7 @@ import { Dispatch } from 'redux'
 import { Route } from 'react-router'
 import { connect } from 'react-redux'
 
-import { ApplicationState } from 'schema'
+import { ApplicationState } from 'types/schema'
 import { ConfigLanding } from 'pages/config/ConfigLanding'
 import { ConnectedEventLoop } from 'connected/EventLoop'
 import { ConnectedInitConfig } from 'pages/config/InitConfig'

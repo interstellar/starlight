@@ -12,7 +12,7 @@ import { Total } from 'pages/shared/Total'
 import { TransactionFee } from 'pages/shared/TransactionFee'
 import { Unit, UnitContainer } from 'pages/shared/Unit'
 import { RADICALRED, SEAFOAM } from 'pages/shared/Colors'
-import { ApplicationState, ChannelsState } from 'schema'
+import { ApplicationState, ChannelsState } from 'types/schema'
 import { getWalletStroops, send } from 'state/wallet'
 import {
   channelPay,
@@ -21,7 +21,7 @@ import {
   getTheirAccount,
 } from 'state/channels'
 import { stroopsToLumens, lumensToStroops } from 'helpers/lumens'
-import { ChannelState } from 'schema'
+import { ChannelState } from 'types/schema'
 const StrKey = require('stellar-base').StrKey
 
 const View = styled.div`

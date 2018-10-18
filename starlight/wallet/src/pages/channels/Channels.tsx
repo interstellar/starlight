@@ -3,7 +3,7 @@ import styled from 'styled-components'
 import { connect } from 'react-redux'
 import { Redirect } from 'react-router'
 
-import { ApplicationState } from 'schema'
+import { ApplicationState } from 'types/schema'
 
 import { ChannelRow } from 'pages/channels/ChannelRow'
 import { BarGraph } from 'pages/shared/graphs/BarGraph'
@@ -16,7 +16,7 @@ import { Modal } from 'pages/shared/Modal'
 import { ConnectedCreateChannel } from 'pages/shared/forms/CreateChannel'
 import { Section, SectionHeading } from 'pages/shared/Section'
 
-import { ChannelState } from 'schema'
+import { ChannelState } from 'types/schema'
 
 import {
   getChannels,

@@ -1,4 +1,4 @@
-import { ChannelState } from 'schema'
+import { ChannelState } from 'types/schema'
 
 export interface Credentials {
   Username: string

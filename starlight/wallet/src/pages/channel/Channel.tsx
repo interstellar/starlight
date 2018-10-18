@@ -5,8 +5,8 @@ import { connect } from 'react-redux'
 import { Redirect } from 'react-router'
 import * as moment from 'moment'
 
-import { ApplicationState } from 'schema'
-import { ChannelState } from 'schema'
+import { ApplicationState } from 'types/schema'
+import { ChannelState } from 'types/schema'
 
 import { ConnectedChannelActions } from 'pages/channel/ChannelActions'
 import { ChannelActivityTable } from 'pages/channel/ChannelActivityTable'

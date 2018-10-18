@@ -1,10 +1,10 @@
 import { Starlightd } from 'lib/starlightd'
-import { EventsState, ApplicationState } from 'schema'
+import { EventsState, ApplicationState } from 'types/schema'
 import { CONFIG_INIT, CONFIG_EDIT } from 'state/config'
 import { CHANNEL_UPDATE, getEscrowAccounts } from 'state/channels'
 import { getWalletOp, getChannelOps } from 'state/eventsHelpers'
 import { WALLET_UPDATE, ADD_WALLET_ACTIVITY } from 'state/wallet'
-import { Event } from 'types'
+import { Event } from 'types/types'
 
 const StrKey = require('stellar-base').StrKey
 
