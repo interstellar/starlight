@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 
-import { ALTO, CORNFLOWER, DUSTYGRAY } from 'pages/shared/Colors'
+import { ALTO, CORNFLOWER, DUSTYGRAY, RADICALRED } from 'pages/shared/Colors'
 
 export const Label = styled.label`
   display: inline-block;
@@ -17,9 +17,9 @@ export const Hint = styled.span`
   font-size: 14px;
   margin-top: 5px;
 `
-export const Input = styled.input`
+export const Input = styled.input<{ error?: boolean}>`
   border-radius: 5px;
-  border: 1px solid ${ALTO};
+  border: 1px solid ${props => (props.error ? RADICALRED : ALTO)};
   box-sizing: border-box;
   font-family: 'Nitti Grotesk';
   font-size: 18px;
