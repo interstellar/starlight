@@ -84,6 +84,7 @@ it('renders SendPayment', () => {
         closeModal={closeModal}
         Channels={{}}
         CounterpartyAccounts={{}}
+        username="jessicard"
       />
     )
     .toJSON()

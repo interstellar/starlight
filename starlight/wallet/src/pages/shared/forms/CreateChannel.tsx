@@ -3,6 +3,9 @@ import { connect } from 'react-redux'
 import { Dispatch } from 'redux'
 import styled from 'styled-components'
 
+import { validRecipientAccount } from 'helpers/account'
+import { stroopsToLumens } from 'helpers/lumens'
+
 import { BtnSubmit } from 'pages/shared/Button'
 import { Heading } from 'pages/shared/Heading'
 import { Icon } from 'pages/shared/Icon'
@@ -14,9 +17,6 @@ import { CORNFLOWER, RADICALRED } from 'pages/shared/Colors'
 import { ApplicationState } from 'types/schema'
 import { getWalletStroops } from 'state/wallet'
 import { createChannel } from 'state/channels'
-import { stroopsToLumens } from 'helpers/lumens'
-
-const StrKey = require('stellar-base').StrKey
 
 const Amount = styled.div`
   font-family: 'Nitti Grotesk';
@@ -91,7 +91,13 @@ export class CreateChannel extends React.Component<Props, State> {
           <Input
             value={this.state.Counterparty}
             onBlur={() => {
-              if (this.state.Counterparty && !this.recipientIsValidAccount()) {
+              if (
+                this.state.Counterparty &&
+                !validRecipientAccount(
+                  this.props.username,
+                  this.state.Counterparty
+                )
+              ) {
                 this.setState({ formErrors: {
                   deposit: this.state.formErrors.deposit,
                   counterparty: true,
@@ -208,20 +214,10 @@ export class CreateChannel extends React.Component<Props, State> {
   }
 
   private formIsValid() {
-    return (this.recipientIsValidAccount() && this.walletHasSufficientBalance())
-  }
-
-  private recipientIsValidAccount() {
-    const currentUserAddress = `${this.props.username}*${window.location.host}`
-
-    if (this.state.Counterparty === currentUserAddress) {
-      return false
-    } else {
-      return (
-        this.state.Counterparty.includes('*') ||
-        StrKey.isValidEd25519PublicKey(this.state.Counterparty)
-      )
-    }
+    return (
+      validRecipientAccount(this.props.username, this.state.Counterparty) &&
+      this.walletHasSufficientBalance()
+    )
   }
 
   private walletHasSufficientBalance() {

@@ -5,6 +5,8 @@ import { connect } from 'react-redux'
 import { Redirect } from 'react-router'
 import * as moment from 'moment'
 
+import { usernameToAddress } from 'helpers/account'
+
 import { ApplicationState } from 'types/schema'
 import { ChannelState } from 'types/schema'
 
@@ -60,7 +62,6 @@ export class Channel extends React.Component<Props, {}> {
       )
     }
 
-    const currentUserAddress = `${this.props.username}*${window.location.host}`
     const isHost = channel.Role === 'Host'
     const sendCapacity = getMyBalance(channel)
     const receiveCapacity = getTheirBalance(channel)
@@ -92,7 +93,7 @@ export class Channel extends React.Component<Props, {}> {
             <DetailLabel>Opened by</DetailLabel>
             <DetailValue>
               {isHost
-                ? `${currentUserAddress} (You)`
+                ? `${usernameToAddress(this.props.username)} (You)`
                 : channel.CounterpartyAddress}
             </DetailValue>
           </Detail>

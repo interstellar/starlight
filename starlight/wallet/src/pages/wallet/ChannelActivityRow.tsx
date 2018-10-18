@@ -1,16 +1,15 @@
 import * as React from 'react'
 import * as moment from 'moment'
 
+import { validPublicKey } from 'helpers/account'
+import { stroopsToLumens } from 'helpers/lumens'
+
 import { ChannelActivity } from 'types/types'
 
 import { CopyableString } from 'pages/shared/CopyableString'
 import { TableData } from 'pages/shared/Table'
 import { Timestamp } from 'pages/shared/Timestamp'
 import { ValueChange } from 'pages/shared/ValueChange'
-
-import { stroopsToLumens } from 'helpers/lumens'
-
-const StrKey = require('stellar-base').StrKey
 
 interface Props {
   activity: ChannelActivity
@@ -43,7 +42,7 @@ export class ChannelActivityRow extends React.Component<Props, {}> {
             <TableData align="left">
               <CopyableString
                 id={activity.counterparty}
-                truncate={StrKey.isValidEd25519PublicKey(activity.counterparty)}
+                truncate={validPublicKey(activity.counterparty)}
               />
             </TableData>
             <TableData align="right">
@@ -68,7 +67,7 @@ export class ChannelActivityRow extends React.Component<Props, {}> {
             <TableData align="left">
               <CopyableString
                 id={activity.counterparty}
-                truncate={StrKey.isValidEd25519PublicKey(activity.counterparty)}
+                truncate={validPublicKey(activity.counterparty)}
               />
             </TableData>
             <TableData align="right">
@@ -94,7 +93,7 @@ export class ChannelActivityRow extends React.Component<Props, {}> {
             <TableData align="left">
               <CopyableString
                 id={activity.counterparty}
-                truncate={StrKey.isValidEd25519PublicKey(activity.counterparty)}
+                truncate={validPublicKey(activity.counterparty)}
               />
             </TableData>
             <TableData align="right">
@@ -113,7 +112,7 @@ export class ChannelActivityRow extends React.Component<Props, {}> {
             <TableData align="left">
               <CopyableString
                 id={activity.counterparty}
-                truncate={StrKey.isValidEd25519PublicKey(activity.counterparty)}
+                truncate={validPublicKey(activity.counterparty)}
               />
             </TableData>
             <TableData align="right">

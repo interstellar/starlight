@@ -3,6 +3,9 @@ import styled from 'styled-components'
 import { connect } from 'react-redux'
 import { Dispatch } from 'redux'
 
+import { validRecipientAccount } from 'helpers/account'
+import { stroopsToLumens, lumensToStroops } from 'helpers/lumens'
+
 import { BtnSubmit } from 'pages/shared/Button'
 import { Heading } from 'pages/shared/Heading'
 import { Icon } from 'pages/shared/Icon'
@@ -14,15 +17,14 @@ import { Unit, UnitContainer } from 'pages/shared/Unit'
 import { RADICALRED, SEAFOAM } from 'pages/shared/Colors'
 import { ApplicationState, ChannelsState } from 'types/schema'
 import { getWalletStroops, send } from 'state/wallet'
+
 import {
   channelPay,
   getCounterpartyAccounts,
   getMyBalance,
   getTheirAccount,
 } from 'state/channels'
-import { stroopsToLumens, lumensToStroops } from 'helpers/lumens'
 import { ChannelState } from 'types/schema'
-const StrKey = require('stellar-base').StrKey
 
 const View = styled.div`
   padding: 25px;
@@ -46,6 +48,7 @@ interface Props {
   channelPay: (id: string, amount: number) => Promise<void>
   closeModal: () => void
   CounterpartyAccounts: { [id: string]: string }
+  username: string
 }
 
 export class SendPayment extends React.Component<Props, State> {
@@ -69,11 +72,10 @@ export class SendPayment extends React.Component<Props, State> {
       validAmount && hasChannel && !this.channelHasSufficientBalance()
     const hasChannelWithSufficientBalance =
       validAmount && hasChannel && !hasChannelWithInsufficientBalance
-    const validRecipient = this.recipientIsValidAccount()
     const submittable =
       validAmount &&
       (hasChannelWithSufficientBalance ||
-        (validRecipient && this.walletHasSufficientBalance()))
+        (this.recipientIsValid() && this.walletHasSufficientBalance()))
     const amount = this.amount()
     let total = amount !== undefined ? amount : undefined
     if (total !== undefined && !hasChannel) {
@@ -134,7 +136,7 @@ export class SendPayment extends React.Component<Props, State> {
             {/* TODO: validate this is a number, and not more than the wallet balance */}
             <Unit>XLM</Unit>
           </UnitContainer>
-          <HelpBlock isShowing={!hasChannel && validRecipient}>
+          <HelpBlock isShowing={!hasChannel && this.recipientIsValid()}>
             You do not have a channel open with this recipient. Open a channel
             or proceed to send this payment from your account on the Stellar
             network.
@@ -151,7 +153,7 @@ export class SendPayment extends React.Component<Props, State> {
           </HelpBlock>
           <HelpBlock
             isShowing={
-              validRecipient &&
+              this.recipientIsValid() &&
               validAmount &&
               !hasChannelWithSufficientBalance &&
               !this.walletHasSufficientBalance()
@@ -187,11 +189,10 @@ export class SendPayment extends React.Component<Props, State> {
     )
   }
 
-  private recipientIsValidAccount() {
-    const validAccountId = StrKey.isValidEd25519PublicKey(this.state.Recipient)
-
+  private recipientIsValid() {
     return (
-      this.destinationChannel() || validAccountId // TODO: || is valid Stellar address
+      this.destinationChannel() ||
+      validRecipientAccount(this.props.username, this.state.Recipient)
     )
   }
 
@@ -318,6 +319,7 @@ const mapStateToProps = (state: ApplicationState) => {
     AvailableBalance: getWalletStroops(state),
     Channels: state.channels,
     CounterpartyAccounts: getCounterpartyAccounts(state),
+    username: state.config.Username,
   }
 }
 

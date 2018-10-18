@@ -1,14 +1,14 @@
 import * as React from 'react'
 import * as moment from 'moment'
 
+import { validPublicKey } from 'helpers/account'
+
 import { WalletOp } from 'types/types'
 
 import { CopyableString } from 'pages/shared/CopyableString'
 import { TableData } from 'pages/shared/Table'
 import { Timestamp } from 'pages/shared/Timestamp'
 import { ValueChange } from 'pages/shared/ValueChange'
-
-const StrKey = require('stellar-base').StrKey
 
 interface Props {
   op: WalletOp
@@ -34,7 +34,7 @@ export class WalletActivityRow extends React.Component<Props, {}> {
             <TableData align="left">
               <CopyableString
                 id={this.props.op.sourceAccount}
-                truncate={StrKey.isValidEd25519PublicKey(
+                truncate={validPublicKey(
                   this.props.op.sourceAccount
                 )}
               />
@@ -60,7 +60,7 @@ export class WalletActivityRow extends React.Component<Props, {}> {
             <TableData align="left">
               <CopyableString
                 id={this.props.op.recipient}
-                truncate={StrKey.isValidEd25519PublicKey(
+                truncate={validPublicKey(
                   this.props.op.recipient
                 )}
               />
