@@ -157,7 +157,11 @@ export const getChannelActivity = (channel: ChannelState) => {
       pendingPayments = false
       timestamp = op.timestamp
     } else {
-      if (op.type === ('deposit' || 'topUp' || 'withdrawal')) {
+      if (
+        op.type === 'deposit' ||
+        op.type === 'topUp' ||
+        op.type === 'withdrawal'
+      ) {
         activities.push({
           type: 'channelActivity',
           op,
@@ -168,7 +172,8 @@ export const getChannelActivity = (channel: ChannelState) => {
           isHost: channel.Role === 'Host',
         })
       } else if (
-        op.type === ('outgoingChannelPayment' || 'incomingChannelPayment')
+        op.type === 'outgoingChannelPayment' ||
+        op.type === 'incomingChannelPayment'
       ) {
         activities.push({
           type: 'channelActivity',
