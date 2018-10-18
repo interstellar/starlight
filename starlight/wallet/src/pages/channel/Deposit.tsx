@@ -16,7 +16,7 @@ import { ApplicationState } from 'schema'
 import { deposit } from 'state/channels'
 import { ChannelState } from 'schema'
 import { getWalletStroops } from 'state/wallet'
-import { stroopsToLumens, lumensToStroops } from 'lumens'
+import { stroopsToLumens, lumensToStroops } from 'helpers/lumens'
 
 const View = styled.div`
   padding: 25px;

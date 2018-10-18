@@ -14,7 +14,7 @@ import { CORNFLOWER, RADICALRED } from 'pages/shared/Colors'
 import { ApplicationState } from 'schema'
 import { getWalletStroops } from 'state/wallet'
 import { createChannel } from 'state/channels'
-import { stroopsToLumens } from 'lumens'
+import { stroopsToLumens } from 'helpers/lumens'
 
 const View = styled.div`
   padding: 25px;
