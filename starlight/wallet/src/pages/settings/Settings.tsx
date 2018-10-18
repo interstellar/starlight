@@ -2,7 +2,7 @@ import * as React from 'react'
 import { Dispatch } from 'redux'
 import { connect } from 'react-redux'
 
-import { ApplicationState } from 'schema'
+import { ApplicationState } from 'types/schema'
 import { BtnHeading } from 'pages/shared/Button'
 import { ConnectedChangePassword } from 'pages/settings/ChangePassword'
 import { ConnectedChangeServer } from 'pages/settings/ChangeServer'

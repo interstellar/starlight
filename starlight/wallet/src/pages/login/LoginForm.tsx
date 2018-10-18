@@ -4,7 +4,7 @@ import { Dispatch } from 'redux'
 import { connect } from 'react-redux'
 
 import { Arrow } from 'pages/shared/Arrow'
-import { Credentials } from 'types'
+import { Credentials } from 'types/types'
 import { Heading } from 'pages/shared/Heading'
 import { Icon } from 'pages/shared/Icon'
 import { Input, Label } from 'pages/shared/Input'

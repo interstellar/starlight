@@ -1,7 +1,7 @@
 import { Dispatch, Reducer } from 'redux'
 
-import { Credentials } from 'types'
-import { LifecycleState } from 'schema'
+import { Credentials } from 'types/types'
+import { LifecycleState } from 'types/schema'
 import { Starlightd } from 'lib/starlightd'
 
 // Actions

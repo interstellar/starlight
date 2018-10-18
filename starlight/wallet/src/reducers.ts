@@ -1,6 +1,6 @@
 import { combineReducers } from 'redux'
 
-import { ApplicationState } from 'schema'
+import { ApplicationState } from 'types/schema'
 import { config } from 'state/config'
 import { events } from 'state/events'
 import { lifecycle, LOGOUT_SUCCESS } from 'state/lifecycle'

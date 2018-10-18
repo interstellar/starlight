@@ -2,7 +2,7 @@ import * as React from 'react'
 import { Dispatch } from 'redux'
 import { connect } from 'react-redux'
 
-import { ApplicationState } from 'schema'
+import { ApplicationState } from 'types/schema'
 import { events } from 'state/events'
 
 interface Props {

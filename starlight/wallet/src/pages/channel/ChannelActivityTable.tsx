@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-import { ChannelState } from 'schema'
+import { ChannelState } from 'types/schema'
 
 import { ActivityRow } from 'pages/channel/ActivityRow'
 import { Table, TableHeaderRow, TableHeader } from 'pages/shared/Table'

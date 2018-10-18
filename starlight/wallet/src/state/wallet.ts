@@ -1,9 +1,9 @@
 import { Reducer, Dispatch } from 'redux'
 
-import { WalletState, ApplicationState } from 'schema'
+import { WalletState, ApplicationState } from 'types/schema'
 import { Starlightd } from 'lib/starlightd'
 import { TX_SUCCESS, TX_FAILED } from 'state/events'
-import { WalletActivity, OutgoingPaymentOp } from 'types'
+import { WalletActivity, OutgoingPaymentOp } from 'types/types'
 
 // Actions
 export const ADD_WALLET_ACTIVITY = 'wallet/ADD_WALLET_ACTIVITY'

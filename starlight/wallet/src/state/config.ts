@@ -1,6 +1,6 @@
 import { Dispatch, Reducer } from 'redux'
 
-import { ConfigState } from 'schema'
+import { ConfigState } from 'types/schema'
 import { STATUS_UPDATE, LOGIN_SUCCESS } from 'state/lifecycle'
 import { Starlightd } from 'lib/starlightd'
 

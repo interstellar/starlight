@@ -3,7 +3,7 @@ import { connect } from 'react-redux'
 import { Dispatch } from 'redux'
 import styled from 'styled-components'
 
-import { ApplicationState } from 'schema'
+import { ApplicationState } from 'types/schema'
 import { RADICALRED } from 'pages/shared/Colors'
 import { Heading } from 'pages/shared/Heading'
 import { Icon } from 'pages/shared/Icon'

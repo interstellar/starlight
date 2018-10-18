@@ -48,10 +48,9 @@ export class CopyableString extends React.Component<Props, State> {
     return (
       <span>
         <span title={this.props.id}>
-          { this.props.truncate ?
-            this.truncateStr(this.props.id) :
-            this.props.id
-          }
+          {this.props.truncate
+            ? this.truncateStr(this.props.id)
+            : this.props.id}
         </span>
         <CopyToClipboard
           text={this.props.id}
@@ -76,12 +75,12 @@ export class CopyableString extends React.Component<Props, State> {
   }
 
   private truncateStr(str: string, length = 6) {
-    if (!str) { return "" }
+    if (!str) {
+      return ''
+    }
 
     const strLength = str.length
 
-    return `${str.substring(0, length)}...${str.substring(
-      strLength - length,
-    )}`
+    return `${str.substring(0, length)}...${str.substring(strLength - length)}`
   }
 }

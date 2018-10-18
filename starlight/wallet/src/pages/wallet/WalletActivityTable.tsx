@@ -2,8 +2,8 @@ import * as React from 'react'
 import * as moment from 'moment'
 import { connect } from 'react-redux'
 
-import { ApplicationState } from 'schema'
-import { Activity } from 'types'
+import { ApplicationState } from 'types/schema'
+import { Activity } from 'types/types'
 
 import { ChannelActivityRow } from 'pages/wallet/ChannelActivityRow'
 import { Table, TableHeaderRow, TableHeader } from 'pages/shared/Table'

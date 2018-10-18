@@ -5,8 +5,8 @@ import { DUSTYGRAY } from 'pages/shared/Colors'
 import { TableData } from 'pages/shared/Table'
 import { Timestamp } from 'pages/shared/Timestamp'
 import { ValueChange } from 'pages/shared/ValueChange'
-import { ChannelOp } from 'types'
-import { ChannelState } from 'schema'
+import { ChannelOp } from 'types/types'
+import { ChannelState } from 'types/schema'
 import { stroopsToLumens } from 'helpers/lumens'
 
 const activityTitle = (op: ChannelOp): string => {

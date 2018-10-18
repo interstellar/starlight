@@ -1,7 +1,7 @@
 import * as React from 'react'
 import * as moment from 'moment'
 
-import { WalletOp } from 'types'
+import { WalletOp } from 'types/types'
 
 import { CopyableString } from 'pages/shared/CopyableString'
 import { TableData } from 'pages/shared/Table'

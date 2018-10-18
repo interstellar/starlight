@@ -8,7 +8,7 @@ const mockStore = configureMockStore()
 
 import { ConfigLanding } from 'pages/config/ConfigLanding'
 import { Channels } from 'pages/channels/Channels'
-import { Credentials } from 'types'
+import { Credentials } from 'types/types'
 import { InitConfig } from 'pages/config/InitConfig'
 import { LoginForm } from 'pages/login/LoginForm'
 import { Login } from 'pages/login/Login'

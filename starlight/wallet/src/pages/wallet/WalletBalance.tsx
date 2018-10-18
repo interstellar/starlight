@@ -2,7 +2,7 @@ import * as React from 'react'
 import styled from 'styled-components'
 import { connect } from 'react-redux'
 
-import { ApplicationState } from 'schema'
+import { ApplicationState } from 'types/schema'
 
 import { BarGraph } from 'pages/shared/graphs/BarGraph'
 import {

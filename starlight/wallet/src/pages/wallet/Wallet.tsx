@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { connect } from 'react-redux'
 
-import { ApplicationState } from 'schema'
+import { ApplicationState } from 'types/schema'
 
 import { ConnectedWalletActivityTable } from 'pages/wallet/WalletActivityTable'
 import { ConnectedWalletBalance } from 'pages/wallet/WalletBalance'

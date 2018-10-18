@@ -1,4 +1,4 @@
-import { ApplicationState } from 'schema'
+import { ApplicationState } from 'types/schema'
 
 export const initialState: ApplicationState = {
   lifecycle: {
