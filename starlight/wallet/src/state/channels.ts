@@ -169,7 +169,6 @@ export const getChannelActivity = (channel: ChannelState) => {
           pending: false,
           channelID: channel.ID,
           counterparty: channel.CounterpartyAddress,
-          isHost: channel.Role === 'Host',
         })
       } else if (
         op.type === 'outgoingChannelPayment' ||
@@ -182,7 +181,6 @@ export const getChannelActivity = (channel: ChannelState) => {
           pending: pendingPayments,
           channelID: channel.ID,
           counterparty: channel.CounterpartyAddress,
-          isHost: channel.Role === 'Host',
         })
       }
     }

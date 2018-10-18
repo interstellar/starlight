@@ -31,7 +31,7 @@ export class ChannelActivityRow extends React.Component<Props, {}> {
     switch (op.type) {
       case 'deposit':
       case 'topUp': {
-        if (!activity.isHost) {
+        if (!op.isHost) {
           return <tr />
         }
         const fee = op.tx.Env.Tx.Fee
@@ -59,7 +59,7 @@ export class ChannelActivityRow extends React.Component<Props, {}> {
         if (op.myDelta === 0) {
           return <tr />
         }
-        const fee = this.props.activity.isHost ? -1 * op.tx.Env.Tx.Fee : 0
+        const fee = op.isHost ? -1 * op.tx.Env.Tx.Fee : 0
         return (
           <tr>
             <TableData align="left">
