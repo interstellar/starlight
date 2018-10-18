@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Dispatch } from 'redux'
-import { Route } from 'react-router'
+import { Route, Switch } from 'react-router'
+import { Redirect } from 'react-router-dom'
 import { connect } from 'react-redux'
 
 import { ApplicationState } from 'types/schema'
@@ -27,25 +28,47 @@ class App extends React.Component<Props, {}> {
   public render() {
     if (this.props.isLoggedIn) {
       return (
-        <ConnectedEventLoop>
-          <Route path="/" component={Navigation} />
-        </ConnectedEventLoop>
+        <div>
+          <ConnectedEventLoop>
+            <Switch>
+              <Route path="/wallet" exact={true} component={Navigation} />
+
+              <Route path="/channels" exact={true} component={Navigation} />
+
+              <Route path="/channel/*" exact={true} component={Navigation} />
+
+              <Route path="/settings" exact={true} component={Navigation} />
+
+              <Route path="/" exact={true} component={Navigation} />
+
+              <Route path="/*" render={() => <Redirect to="/wallet" />} />
+            </Switch>
+          </ConnectedEventLoop>
+        </div>
       )
     } else if (this.props.isConfigured) {
       return (
-        <Route
-          path="/"
-          render={props => <Login {...props} form={<ConnectedLoginForm />} />}
-        />
+        <Switch>
+          <Route
+            path="/"
+            exact={true}
+            render={props => <Login {...props} form={<ConnectedLoginForm />} />}
+          />
+          <Route path="/*" render={() => <Redirect to="/" />} />}
+        </Switch>
       )
     } else {
       return (
-        <Route
-          path="/"
-          render={props => (
-            <ConfigLanding {...props} form={<ConnectedInitConfig />} />
-          )}
-        />
+        <Switch>
+          <Route
+            path="/"
+            exact={true}
+            render={props => (
+              <ConfigLanding {...props} form={<ConnectedInitConfig />} />
+            )}
+          />
+          <Route path="/*" render={() => <Redirect to="/" />} />}
+        </Switch>
       )
     }
   }
