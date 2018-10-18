@@ -1,6 +1,8 @@
 import * as React from 'react'
 import { connect } from 'react-redux'
 
+import { usernameToAddress, validPublicKey } from 'helpers/account'
+
 import { ApplicationState } from 'types/schema'
 
 import { ConnectedWalletActivityTable } from 'pages/wallet/WalletActivityTable'
@@ -13,8 +15,6 @@ import { Heading } from 'pages/shared/Heading'
 import { Modal } from 'pages/shared/Modal'
 import { Section, SectionHeading } from 'pages/shared/Section'
 import { ConnectedSendPayment } from 'pages/shared/forms/SendPayment'
-
-const StrKey = require('stellar-base').StrKey
 
 interface Props {
   id: string
@@ -50,7 +50,6 @@ export class Wallet extends React.Component<Props, State> {
   }
 
   public render() {
-    const address = `${this.props.username}*${window.location.host}`
     return (
       <Container>
         <Heading>Wallet</Heading>
@@ -68,8 +67,10 @@ export class Wallet extends React.Component<Props, State> {
             <DetailLabel>Address</DetailLabel>
             <DetailValue>
               <CopyableString
-                id={address}
-                truncate={StrKey.isValidEd25519PublicKey(address)}
+                id={usernameToAddress(this.props.username)}
+                truncate={validPublicKey(
+                  usernameToAddress(this.props.username)
+                )}
               />
             </DetailValue>
           </Detail>
@@ -78,7 +79,7 @@ export class Wallet extends React.Component<Props, State> {
             <DetailValue>
               <CopyableString
                 id={this.props.id}
-                truncate={StrKey.isValidEd25519PublicKey(this.props.id)}
+                truncate={validPublicKey(this.props.id)}
               />
             </DetailValue>
           </Detail>
