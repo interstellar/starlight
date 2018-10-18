@@ -79,7 +79,7 @@ export class ChannelActions extends React.Component<Props, State> {
               </BtnHeading>
 
               <DisabledBtnHover
-                content="Only the person who opened
+                content="Only the party who opened
                   <br> the channel can deposit
                   <br> funds at this time."
                 disable={isHost}
