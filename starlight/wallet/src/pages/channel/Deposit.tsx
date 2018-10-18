@@ -16,7 +16,7 @@ import { ApplicationState } from 'types/schema'
 import { deposit } from 'state/channels'
 import { ChannelState } from 'types/schema'
 import { getWalletStroops } from 'state/wallet'
-import { stroopsToLumens, lumensToStroops } from 'helpers/lumens'
+import { formatAmount, stroopsToLumens, lumensToStroops } from 'helpers/lumens'
 
 const View = styled.div`
   padding: 25px;
@@ -72,7 +72,9 @@ export class Deposit extends React.Component<Props, State> {
           <div>
             <Label htmlFor="Amount">Amount</Label>
             <Hint>
-              <strong>{stroopsToLumens(this.props.AvailableBalance)}</strong>{' '}
+              <strong>{formatAmount(
+                stroopsToLumens(this.props.AvailableBalance)
+              )}</strong>{' '}
               XLM available in account
             </Hint>
           </div>
@@ -95,7 +97,9 @@ export class Deposit extends React.Component<Props, State> {
               amount !== undefined && !this.walletHasSufficientBalance()
             }
           >
-            You only have {stroopsToLumens(this.props.AvailableBalance)} XLM
+            You only have {formatAmount(
+              stroopsToLumens(this.props.AvailableBalance)
+            )} XLM
             available in your wallet.
           </HelpBlock>
 
@@ -106,7 +110,7 @@ export class Deposit extends React.Component<Props, State> {
 
           <Label>Total Required</Label>
           {amount !== undefined ? (
-            <Total>{stroopsToLumens(amount + 100)} XLM</Total>
+            <Total>{formatAmount(stroopsToLumens(amount + 100))} XLM</Total>
           ) : (
             <Total>&mdash;</Total>
           )}

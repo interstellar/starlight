@@ -12,3 +12,7 @@ export const stroopsToLumens = (stroops: number, options: any = {}) => {
 export const lumensToStroops = (lumens: number) => {
   return Math.floor(lumens * 10000000)
 }
+
+export const formatAmount = (amount: string) => {
+  return Number(amount).toLocaleString()
+}
