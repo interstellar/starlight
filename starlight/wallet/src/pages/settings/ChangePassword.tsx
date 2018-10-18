@@ -6,7 +6,9 @@ import styled from 'styled-components'
 import { BtnSubmit } from 'pages/shared/Button'
 import { RADICALRED } from 'pages/shared/Colors'
 import { Heading } from 'pages/shared/Heading'
+import { Icon } from 'pages/shared/Icon'
 import { Input, Label } from 'pages/shared/Input'
+
 import { config } from 'state/config'
 
 const View = styled.div`
@@ -26,6 +28,7 @@ interface State {
   OldPassword: string
   NewPassword: string
   showError: boolean
+  loading: boolean
 }
 
 export class ChangePassword extends React.Component<Props, State> {
@@ -36,6 +39,7 @@ export class ChangePassword extends React.Component<Props, State> {
       OldPassword: '',
       NewPassword: '',
       showError: false,
+      loading: false,
     }
 
     this.handleSubmit = this.handleSubmit.bind(this)
@@ -73,7 +77,13 @@ export class ChangePassword extends React.Component<Props, State> {
   }
 
   private formatSubmitButton() {
-    if (this.state.showError) {
+    if (this.state.loading) {
+      return (
+        <BtnSubmit disabled>
+          Saving <Icon className="fa-pulse" name="spinner" />
+        </BtnSubmit>
+      )
+    } else if (this.state.showError) {
       return (
         <BtnSubmit color={RADICALRED} disabled>
           Error changing password
@@ -86,6 +96,7 @@ export class ChangePassword extends React.Component<Props, State> {
 
   private async handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    this.setState({ loading: true })
 
     const ok = await this.props.editPassword({
       OldPassword: this.state.OldPassword,
@@ -96,7 +107,7 @@ export class ChangePassword extends React.Component<Props, State> {
       this.props.closeModal()
       this.props.showFlash()
     } else {
-      this.setState({ showError: true })
+      this.setState({ loading: false, showError: true })
       window.setTimeout(() => {
         this.setState({ showError: false })
       }, 3000)
