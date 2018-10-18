@@ -4,7 +4,7 @@ import { connect } from 'react-redux'
 import { Dispatch } from 'redux'
 
 import { validRecipientAccount } from 'helpers/account'
-import { stroopsToLumens, lumensToStroops } from 'helpers/lumens'
+import { formatAmount, stroopsToLumens, lumensToStroops } from 'helpers/lumens'
 
 import { BtnSubmit } from 'pages/shared/Button'
 import { Heading } from 'pages/shared/Heading'
@@ -108,16 +108,17 @@ export class SendPayment extends React.Component<Props, State> {
               {hasChannel && (
                 <span>
                   <strong>
-                    {stroopsToLumens(
-                      this.channelBalance() as number
-                    ).toString()}{' '}
-                    XLM
+                    {formatAmount(
+                      stroopsToLumens(this.channelBalance() as number)
+                    )} XLM
                   </strong>{' '}
                   available in channel;{' '}
                 </span>
               )}
               <strong>
-                {stroopsToLumens(this.props.AvailableBalance).toString()} XLM
+                {formatAmount(
+                  stroopsToLumens(this.props.AvailableBalance).toString()
+                )} XLM
               </strong>{' '}
               available in account
             </Hint>
@@ -147,7 +148,9 @@ export class SendPayment extends React.Component<Props, State> {
               this.walletHasSufficientBalance()
             }
           >
-            You only have {stroopsToLumens(this.channelBalance() || 0)} XLM
+            You only have {formatAmount(
+              stroopsToLumens(this.channelBalance() || 0)
+            )} XLM
             available in this channel. The entire payment will occur on the
             Stellar network from your account instead.
           </HelpBlock>
@@ -161,12 +164,12 @@ export class SendPayment extends React.Component<Props, State> {
           >
             {channelBalance === undefined ||
             this.props.AvailableBalance > channelBalance
-              ? `You only have ${stroopsToLumens(
+              ? `You only have ${formatAmount(stroopsToLumens(
                   this.props.AvailableBalance
-                )} XLM available in your wallet.`
-              : `You only have ${stroopsToLumens(
+                ))} XLM available in your wallet.`
+              : `You only have ${formatAmount(stroopsToLumens(
                   channelBalance
-                )} XLM available in this channel.`}
+                ))} XLM available in this channel.`}
           </HelpBlock>
           <Label>Transaction Fee</Label>
           {(!validAmount && hasChannel) ||
@@ -178,7 +181,7 @@ export class SendPayment extends React.Component<Props, State> {
           <HorizontalLine />
           <Label>Total</Label>
           {total !== undefined ? (
-            <Total>{stroopsToLumens(total)} XLM</Total>
+            <Total>{formatAmount(stroopsToLumens(total))} XLM</Total>
           ) : (
             <Total>&mdash;</Total>
           )}

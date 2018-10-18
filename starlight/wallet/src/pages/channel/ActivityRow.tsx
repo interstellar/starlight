@@ -7,7 +7,7 @@ import { Timestamp } from 'pages/shared/Timestamp'
 import { ValueChange } from 'pages/shared/ValueChange'
 import { ChannelOp } from 'types/types'
 import { ChannelState } from 'types/schema'
-import { stroopsToLumens } from 'helpers/lumens'
+import { formatAmount, stroopsToLumens } from 'helpers/lumens'
 
 const activityTitle = (op: ChannelOp): string => {
   switch (op.type) {
@@ -62,13 +62,13 @@ export class ActivityRow extends React.Component<Props, {}> {
           <ValueChange value={op.myDelta} />
         </TableData>
         <TableData align="right" color={DUSTYGRAY}>
-          {stroopsToLumens(op.myBalance + op.myDelta)} XLM
+          {formatAmount(stroopsToLumens(op.myBalance + op.myDelta))} XLM
         </TableData>
         <TableData align="right">
           <ValueChange value={op.theirDelta} />
         </TableData>
         <TableData align="right" color={DUSTYGRAY}>
-          {stroopsToLumens(op.theirBalance + op.theirDelta)} XLM
+          {formatAmount(stroopsToLumens(op.theirBalance + op.theirDelta))} XLM
         </TableData>
       </tr>
     )

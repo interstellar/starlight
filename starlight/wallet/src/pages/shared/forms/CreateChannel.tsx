@@ -4,7 +4,7 @@ import { Dispatch } from 'redux'
 import styled from 'styled-components'
 
 import { validRecipientAccount } from 'helpers/account'
-import { stroopsToLumens, lumensToStroops } from 'helpers/lumens'
+import { formatAmount, stroopsToLumens, lumensToStroops } from 'helpers/lumens'
 
 import { BtnSubmit } from 'pages/shared/Button'
 import { Heading } from 'pages/shared/Heading'
@@ -121,7 +121,9 @@ export class CreateChannel extends React.Component<Props, State> {
 
           <Label htmlFor="InitialDeposit">Initial Deposit</Label>
           <Hint>
-            <strong>{stroopsToLumens(this.props.AvailableBalance)} XLM</strong>{' '}
+            <strong>{formatAmount(
+              stroopsToLumens(this.props.AvailableBalance)
+            )} XLM</strong>{' '}
             available in account
           </Hint>
           <UnitContainer>

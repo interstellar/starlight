@@ -14,7 +14,7 @@ import {
 } from 'pages/shared/Colors'
 
 import { getWalletStroops } from 'state/wallet'
-import { lumensToStroops, stroopsToLumens } from 'helpers/lumens'
+import { formatAmount, lumensToStroops, stroopsToLumens } from 'helpers/lumens'
 
 import {
   getNumberOfOpenHostChannels,
@@ -68,16 +68,19 @@ export class WalletBalance extends React.Component<Props, {}> {
       <AvailableWrapper>
         <BalanceContainer>
           <Balance>
-            {stroopsToLumens(this.total(), { short: true })} XLM
+            {formatAmount(stroopsToLumens(this.total(), { short: true }))} XLM
           </Balance>
           {!!this.props.reserve && (
             <Reserve>
-              {stroopsToLumens(
-                this.props.walletBalance + this.props.channelBalance,
-                { short: true }
-              )}
-              {' XLM Available + '}
-              {stroopsToLumens(this.props.reserve, { short: true })} XLM Reserve
+              {formatAmount(
+                stroopsToLumens(
+                  this.props.walletBalance + this.props.channelBalance,
+                  { short: true }
+                )
+              )} XLM Available{' '}
+              {formatAmount(
+                stroopsToLumens(this.props.reserve, { short: true })
+              )} XLM Reserve
             </Reserve>
           )}
         </BalanceContainer>
