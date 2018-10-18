@@ -4,7 +4,7 @@ import { Dispatch } from 'redux'
 import styled from 'styled-components'
 
 import { validRecipientAccount } from 'helpers/account'
-import { stroopsToLumens } from 'helpers/lumens'
+import { stroopsToLumens, lumensToStroops } from 'helpers/lumens'
 
 import { BtnSubmit } from 'pages/shared/Button'
 import { Heading } from 'pages/shared/Heading'
@@ -199,7 +199,7 @@ export class CreateChannel extends React.Component<Props, State> {
 
     const ok = await this.props.createChannel(
       this.state.Counterparty,
-      parseInt(this.state.InitialDeposit, 10) * 10000000
+      lumensToStroops(parseInt(this.state.InitialDeposit, 10))
     )
 
     if (ok) {
@@ -222,7 +222,7 @@ export class CreateChannel extends React.Component<Props, State> {
 
   private walletHasSufficientBalance() {
     return this.props.AvailableBalance >=
-      (parseFloat(this.state.InitialDeposit) * 10000000)
+      lumensToStroops(parseFloat(this.state.InitialDeposit))
   }
 }
 
