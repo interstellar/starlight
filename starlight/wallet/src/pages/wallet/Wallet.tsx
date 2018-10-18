@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { connect } from 'react-redux'
 
-import { usernameToAddress, validPublicKey } from 'helpers/account'
+import { usernameToAddress } from 'helpers/account'
 
 import { ApplicationState } from 'types/schema'
 
@@ -66,21 +66,13 @@ export class Wallet extends React.Component<Props, State> {
           <Detail>
             <DetailLabel>Address</DetailLabel>
             <DetailValue>
-              <CopyableString
-                id={usernameToAddress(this.props.username)}
-                truncate={validPublicKey(
-                  usernameToAddress(this.props.username)
-                )}
-              />
+              <CopyableString id={usernameToAddress(this.props.username)} />
             </DetailValue>
           </Detail>
           <Detail>
             <DetailLabel>Account ID </DetailLabel>
             <DetailValue>
-              <CopyableString
-                id={this.props.id}
-                truncate={validPublicKey(this.props.id)}
-              />
+              <CopyableString id={this.props.id} />
             </DetailValue>
           </Detail>
         </Section>
