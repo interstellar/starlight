@@ -93,7 +93,7 @@ export class Channel extends React.Component<Props, {}> {
             <DetailLabel>Opened by</DetailLabel>
             <DetailValue>
               {isHost
-                ? `${usernameToAddress(this.props.username)} (You)`
+                ? `${usernameToAddress(this.props.username)} (you)`
                 : channel.CounterpartyAddress}
             </DetailValue>
           </Detail>
