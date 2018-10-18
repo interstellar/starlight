@@ -103,6 +103,7 @@ export const getChannelOps = (event: ChannelEvent): ChannelOp[] => {
                 theirDelta: isHost ? 0 : event.Channel.HostAmount,
                 myBalance: 0,
                 theirBalance: 0,
+                isHost,
               },
             ]
           case 'Open': {
@@ -118,6 +119,7 @@ export const getChannelOps = (event: ChannelEvent): ChannelOp[] => {
                 theirDelta: isHost ? 0 : topUpAmount,
                 myBalance: myBalance - myDelta, // because we use the old balance
                 theirBalance: theirBalance - theirDelta, // same
+                isHost,
               },
             ]
           }
@@ -134,6 +136,7 @@ export const getChannelOps = (event: ChannelEvent): ChannelOp[] => {
             theirDelta: -1 * theirBalance,
             myBalance,
             theirBalance,
+            isHost,
           },
         ]
       }
@@ -166,6 +169,7 @@ export const getChannelOps = (event: ChannelEvent): ChannelOp[] => {
                 theirDelta: -1 * event.Channel.PendingAmountReceived,
                 myBalance,
                 theirBalance,
+                isHost,
               },
             ]
           }
@@ -183,6 +187,7 @@ export const getChannelOps = (event: ChannelEvent): ChannelOp[] => {
                 theirDelta: -1 * event.Channel.PendingAmountReceived,
                 myBalance,
                 theirBalance,
+                isHost,
               },
             ]
           }
@@ -203,6 +208,7 @@ export const getChannelOps = (event: ChannelEvent): ChannelOp[] => {
             theirDelta: -1 * event.Channel.PendingAmountReceived,
             myBalance,
             theirBalance,
+            isHost,
           },
         ]
       }
@@ -221,6 +227,7 @@ export const getChannelOps = (event: ChannelEvent): ChannelOp[] => {
                 theirDelta: event.Channel.PendingAmountSent,
                 myBalance,
                 theirBalance,
+                isHost,
               },
             ]
           }

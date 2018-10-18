@@ -284,6 +284,7 @@ interface DepositOp {
   theirDelta: number
   myBalance: number
   theirBalance: number
+  isHost: boolean
 }
 
 interface TopUpOp {
@@ -293,6 +294,7 @@ interface TopUpOp {
   myBalance: number
   theirBalance: number
   tx: InputTx
+  isHost: boolean
 }
 
 export interface OutgoingChannelPaymentOp {
@@ -301,6 +303,7 @@ export interface OutgoingChannelPaymentOp {
   theirDelta: number
   myBalance: number
   theirBalance: number
+  isHost: boolean
 }
 
 export interface IncomingChannelPaymentOp {
@@ -309,6 +312,7 @@ export interface IncomingChannelPaymentOp {
   theirDelta: number
   myBalance: number
   theirBalance: number
+  isHost: boolean
 }
 
 export interface WithdrawalOp {
@@ -318,6 +322,7 @@ export interface WithdrawalOp {
   myBalance: number
   theirBalance: number
   tx: InputTx
+  isHost: boolean
 }
 
 // channel activities
@@ -335,7 +340,6 @@ export interface ChannelActivity {
   pending: boolean
   channelID: string
   counterparty: string
-  isHost: boolean
 }
 
 export interface WalletActivity {
