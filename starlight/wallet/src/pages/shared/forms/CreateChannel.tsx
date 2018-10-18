@@ -16,8 +16,14 @@ import { getWalletStroops } from 'state/wallet'
 import { createChannel } from 'state/channels'
 import { stroopsToLumens } from 'helpers/lumens'
 
-const View = styled.div`
-  padding: 25px;
+const StrKey = require('stellar-base').StrKey
+
+const Amount = styled.div`
+  font-family: 'Nitti Grotesk';
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 45px;
+  text-transform: uppercase;
 `
 const Form = styled.form`
   margin-top: 45px;
@@ -34,12 +40,8 @@ const InfoIcon = styled(Icon)`
     opacity: 0.8;
   }
 `
-const Amount = styled.div`
-  font-family: 'Nitti Grotesk';
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 45px;
-  text-transform: uppercase;
+const View = styled.div`
+  padding: 25px;
 `
 
 interface Props {
@@ -48,6 +50,7 @@ interface Props {
   createChannel: (recipient: string, initialDeposit: number) => void
   prefill?: { counterparty: string }
   redirect?: (account: string) => void
+  username: string
 }
 
 interface State {
@@ -55,6 +58,10 @@ interface State {
   InitialDeposit: string
   showError: boolean
   loading: boolean
+  formErrors: {
+    deposit: boolean,
+    counterparty: boolean
+  }
 }
 
 export class CreateChannel extends React.Component<Props, State> {
@@ -66,6 +73,10 @@ export class CreateChannel extends React.Component<Props, State> {
       InitialDeposit: '',
       showError: false,
       loading: false,
+      formErrors: {
+        deposit: false,
+        counterparty: false,
+      },
     }
 
     this.handleSubmit = this.handleSubmit.bind(this)
@@ -79,6 +90,19 @@ export class CreateChannel extends React.Component<Props, State> {
           <Label htmlFor="Counterparty">Counterparty</Label>
           <Input
             value={this.state.Counterparty}
+            onBlur={() => {
+              if (this.state.Counterparty && !this.recipientIsValidAccount()) {
+                this.setState({ formErrors: {
+                  deposit: this.state.formErrors.deposit,
+                  counterparty: true,
+                }})
+              } else {
+                this.setState({ formErrors: {
+                  deposit: this.state.formErrors.deposit,
+                  counterparty: false,
+                },
+              })
+            }}}
             onChange={e => {
               this.setState({ Counterparty: e.target.value })
             }}
@@ -86,6 +110,7 @@ export class CreateChannel extends React.Component<Props, State> {
             name="Counterparty"
             autoComplete="off"
             autoFocus={!this.state.Counterparty}
+            error={this.state.formErrors.counterparty}
           />
 
           <Label htmlFor="InitialDeposit">Initial Deposit</Label>
@@ -96,6 +121,19 @@ export class CreateChannel extends React.Component<Props, State> {
           <UnitContainer>
             <Input
               value={this.state.InitialDeposit}
+              onBlur={() => {
+                if (this.state.InitialDeposit && !this.walletHasSufficientBalance()) {
+                  this.setState({ formErrors: {
+                    deposit: true,
+                    counterparty: this.state.formErrors.counterparty,
+                  }})
+                } else {
+                  this.setState({ formErrors: {
+                    deposit: false,
+                    counterparty: this.state.formErrors.counterparty,
+                  },
+                })
+              }}}
               onChange={e => {
                 this.setState({ InitialDeposit: e.target.value })
               }}
@@ -103,6 +141,7 @@ export class CreateChannel extends React.Component<Props, State> {
               name="InitialDeposit"
               autoComplete="off"
               autoFocus={!!this.state.Counterparty}
+              error={this.state.formErrors.deposit}
             />
             <Unit>XLM</Unit>
           </UnitContainer>
@@ -144,7 +183,7 @@ export class CreateChannel extends React.Component<Props, State> {
         </BtnSubmit>
       )
     } else {
-      return <BtnSubmit>Open channel</BtnSubmit>
+      return <BtnSubmit disabled={!this.formIsValid()}>Open channel</BtnSubmit>
     }
   }
 
@@ -167,11 +206,34 @@ export class CreateChannel extends React.Component<Props, State> {
       }, 3000)
     }
   }
+
+  private formIsValid() {
+    return (this.recipientIsValidAccount() && this.walletHasSufficientBalance())
+  }
+
+  private recipientIsValidAccount() {
+    const currentUserAddress = `${this.props.username}*${window.location.host}`
+
+    if (this.state.Counterparty === currentUserAddress) {
+      return false
+    } else {
+      return (
+        this.state.Counterparty.includes('*') ||
+        StrKey.isValidEd25519PublicKey(this.state.Counterparty)
+      )
+    }
+  }
+
+  private walletHasSufficientBalance() {
+    return this.props.AvailableBalance >=
+      (parseFloat(this.state.InitialDeposit) * 10000000)
+  }
 }
 
 const mapStateToProps = (state: ApplicationState) => {
   return {
     AvailableBalance: getWalletStroops(state),
+    username: state.config.Username,
   }
 }
 

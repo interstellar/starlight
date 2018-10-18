@@ -53,6 +53,7 @@ it('renders CreateChannel', () => {
         AvailableBalance={0}
         closeModal={closeModal}
         createChannel={createChannel}
+        username="jessicard"
       />
     )
     .toJSON()
