@@ -625,7 +625,7 @@ func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount, host
 		return nil
 	})
 
-	guestAcctStr, starlightURL, err := findAccount(&g.httpclient, guestFedAddr)
+	guestAcctStr, starlightURL, err := g.FindAccount(guestFedAddr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "finding account %s", guestFedAddr)
 	}
@@ -893,7 +893,7 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, "error fetching accounts", http.StatusBadRequest)
 			return
 		}
-		hostAccount, starlightURL, err = findAccount(&g.httpclient, m.ChannelProposeMsg.CounterpartyAddress)
+		hostAccount, starlightURL, err = g.FindAccount(m.ChannelProposeMsg.CounterpartyAddress)
 		if starlightURL == "" {
 			http.Error(w, "counterparty starlight URL not found", http.StatusBadRequest)
 			return

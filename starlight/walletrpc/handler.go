@@ -54,6 +54,7 @@ func Handler(g *starlight.Agent) http.Handler {
 	mux.Handle("/api/do-create-channel", wt.auth(wt.doCreateChannel))
 	mux.Handle("/api/do-wallet-pay", wt.auth(wt.doWalletPay))
 	mux.Handle("/api/do-command", wt.auth(wt.doCommand))
+	mux.Handle("/api/find-account", wt.auth(wt.findAccount))
 	mux.HandleFunc("/api/login", wt.login)
 	mux.HandleFunc("/api/config-init", wt.configInit)
 	mux.HandleFunc("/api/status", wt.status)
@@ -194,6 +195,22 @@ func (wt *wallet) doCommand(w http.ResponseWriter, req *http.Request) {
 	err = wt.agent.DoCommand(v.ChannelID, &v.Command)
 	if err != nil {
 		httperror(req, w, err.Error(), 500)
+	}
+}
+
+func (wt *wallet) findAccount(w http.ResponseWriter, req *http.Request) {
+	// TODO(debnil): Add unit test and needed framework for this and other wallet RPCs.
+	var v struct {
+		Addr string `json:"starlight_addr"`
+	}
+	err := json.NewDecoder(req.Body).Decode(&v)
+	if err != nil {
+		httperror(req, w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	_, _, err = wt.agent.FindAccount(v.Addr)
+	if err != nil {
+		httperror(req, w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
