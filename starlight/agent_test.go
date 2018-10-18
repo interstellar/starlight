@@ -341,7 +341,7 @@ func TestAgentCreateChannel(t *testing.T) {
 			host:       successHostAddr,
 			agentFunc: func(g *Agent) {
 				db.Update(g.db, func(root *db.Root) error {
-					guestAcctStr, _, _ := findAccount(&g.httpclient, "alice*starlight.com")
+					guestAcctStr, _, _ := g.FindAccount("alice*starlight.com")
 					var guestAcct fsm.AccountId
 					err := guestAcct.SetAddress(guestAcctStr)
 					if err != nil {

@@ -1,7 +1,7 @@
 package starlight
 
 import (
-	"net/http"
+	"context"
 	"testing"
 
 	"github.com/interstellar/starlight/errors"
@@ -46,9 +46,11 @@ func TestFindAccount(t *testing.T) {
 		err          error
 	}
 	cases := []struct {
+		name   string
 		target string
 		want   want
 	}{{
+		name:   "success",
 		target: "alice*starlight.com",
 		want: want{
 			accountID:    "GDSRO6H2YM6MC6ZO7KORPJXSTUMBMT3E7MZ66CFVNMUAULFG6G2OP32I",
@@ -56,6 +58,7 @@ func TestFindAccount(t *testing.T) {
 			err:          nil,
 		},
 	}, {
+		name:   "federation address does not exist",
 		target: "doesnotexist*starlight.com",
 		want: want{
 			accountID:    "",
@@ -63,6 +66,7 @@ func TestFindAccount(t *testing.T) {
 			err:          errBadHttpStatus,
 		},
 	}, {
+		name:   "federation address ill-formed ",
 		target: "alice",
 		want: want{
 			accountID:    "",
@@ -70,6 +74,7 @@ func TestFindAccount(t *testing.T) {
 			err:          errBadAddress,
 		},
 	}, {
+		name:   "federation address email",
 		target: "invalid@address.com",
 		want: want{
 			accountID:    "",
@@ -77,20 +82,33 @@ func TestFindAccount(t *testing.T) {
 			err:          errBadAddress,
 		},
 	}}
-	client := &http.Client{
-		Transport: agentHTTP{},
-	}
 	for _, c := range cases {
-		accountID, starlightURL, err := findAccount(client, c.target)
-		if errors.Root(err) != c.want.err {
-			t.Errorf("Error finding %s: got %s, want %s", c.target, err, c.want.err)
-			continue
-		}
-		if accountID != c.want.accountID {
-			t.Errorf("Error finding %s account ID: got %s, want %s", c.target, accountID, c.want.accountID)
-		}
-		if starlightURL != c.want.starlightURL {
-			t.Errorf("Error finding %s starlight URL: got %s, want %s", c.target, starlightURL, c.want.starlightURL)
-		}
+		t.Run(c.name, func(t *testing.T) {
+			ctx := context.Background()
+			ctx, cancel := context.WithCancel(ctx)
+			defer cancel()
+			g := startTestAgent(ctx, t)
+			config := Config{
+				Username:   "alice",
+				Password:   "password",
+				HorizonURL: testHorizonURL,
+			}
+
+			err := g.ConfigInit(ctx, &config)
+			if err != nil {
+				t.Error(err)
+			}
+
+			accountID, starlightURL, err := g.FindAccount(c.target)
+			if errors.Root(err) != c.want.err {
+				t.Errorf("Error finding %s: got %s, want %s", c.target, err, c.want.err)
+			}
+			if accountID != c.want.accountID {
+				t.Errorf("Error finding %s account ID: got %s, want %s", c.target, accountID, c.want.accountID)
+			}
+			if starlightURL != c.want.starlightURL {
+				t.Errorf("Error finding %s starlight URL: got %s, want %s", c.target, starlightURL, c.want.starlightURL)
+			}
+		})
 	}
 }

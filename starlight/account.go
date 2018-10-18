@@ -3,7 +3,6 @@ package starlight
 import (
 	"encoding/json"
 	"io/ioutil"
-	"net/http"
 	"net/url"
 	"strings"
 	"unicode"
@@ -19,7 +18,7 @@ var (
 	errBadHttpStatus = errors.New("bad http status")
 )
 
-// findAccount looks up the account ID and Starlight URL
+// FindAccount looks up the account ID and Starlight URL
 // for the Stellar account named by target.
 //
 // The target must be a valid Stellar address, e.g.
@@ -29,13 +28,12 @@ var (
 // It will use the Stellar TOML file
 // and the Stellar federation server protocol
 // to look up the additional info.
-func findAccount(client *http.Client, target string) (accountID, starlightURL string, err error) {
+func (g *Agent) FindAccount(target string) (accountID, starlightURL string, err error) {
 	i := strings.Index(target, "*")
 	if i < 0 {
 		// TODO(kr): check if target is a valid account pubkey and if so,
 		// look up the "home domain" from the account's metadata on the
-		// ledger. (This prob means turning findAccount into a method
-		// on *Agent so we have access to the Horizon client.)
+		// ledger.
 		// See https://www.stellar.org/developers/guides/concepts/accounts.html#home-domain.
 		return "", "", errors.Wrap(errBadAddress, target)
 	}
@@ -44,7 +42,7 @@ func findAccount(client *http.Client, target string) (accountID, starlightURL st
 
 	// Get URLs from Stellar TOML configuration.
 	// See https://www.stellar.org/developers/guides/concepts/stellar-toml.html.
-	resp, err := client.Get("https://" + host + "/.well-known/stellar.toml")
+	resp, err := g.httpclient.Get("https://" + host + "/.well-known/stellar.toml")
 	if err != nil {
 		return "", "", err
 	}
@@ -70,7 +68,7 @@ func findAccount(client *http.Client, target string) (accountID, starlightURL st
 		"q":    {target},
 		"type": {"name"},
 	}
-	resp, err = client.Get(stellarTOML.FedURL + "?" + q.Encode())
+	resp, err = g.httpclient.Get(stellarTOML.FedURL + "?" + q.Encode())
 	if err != nil {
 		return "", "", errors.Wrapf(err, "getting account ID from %s", stellarTOML.FedURL)
 	}
