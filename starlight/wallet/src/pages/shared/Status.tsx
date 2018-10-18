@@ -4,8 +4,8 @@ import styled from 'styled-components'
 import { RADICALRED, SEAFOAM } from 'pages/shared/Colors'
 import { Icon } from 'pages/shared/Icon'
 
-const Span = styled.span<{ isLoading?: boolean }>`
-  color: ${props => (props.isLoading ? RADICALRED : SEAFOAM)};
+const Span = styled.span<{ color: string }>`
+  color: ${props => props.color};
 `
 
 interface Props {
@@ -19,10 +19,12 @@ export class Status extends React.Component<Props, {}> {
 
   public render() {
     if (this.props.value === 'Open') {
-      return <Span>{this.props.value}</Span>
+      return <Span color={SEAFOAM}>{this.props.value}</Span>
+    } else if (this.props.value === 'Closed') {
+      return <Span color={RADICALRED}>{this.props.value}</Span>
     } else {
       return (
-        <Span isLoading={true}>
+        <Span color={RADICALRED}>
           {this.props.value} <Icon className="fa-pulse" name="spinner" />
         </Span>
       )
