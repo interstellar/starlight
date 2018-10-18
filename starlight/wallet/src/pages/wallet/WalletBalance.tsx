@@ -14,7 +14,7 @@ import {
 } from 'pages/shared/Colors'
 
 import { getWalletStroops } from 'state/wallet'
-import { lumensToStroops, stroopsToLumens } from 'lumens'
+import { lumensToStroops, stroopsToLumens } from 'helpers/lumens'
 
 import {
   getNumberOfOpenHostChannels,

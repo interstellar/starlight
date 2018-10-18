@@ -8,7 +8,7 @@ import { TableData } from 'pages/shared/Table'
 import { Timestamp } from 'pages/shared/Timestamp'
 import { ValueChange } from 'pages/shared/ValueChange'
 
-import { stroopsToLumens } from 'lumens'
+import { stroopsToLumens } from 'helpers/lumens'
 
 const StrKey = require('stellar-base').StrKey
 

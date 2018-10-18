@@ -3,7 +3,7 @@ import styled from 'styled-components'
 
 import { GraphSegment } from 'pages/shared/graphs/GraphSegment'
 import { DUSTYGRAY } from 'pages/shared/Colors'
-import { stroopsToLumens } from 'lumens'
+import { stroopsToLumens } from 'helpers/lumens'
 
 const GraphWrapper = styled.span`
   display: flex;

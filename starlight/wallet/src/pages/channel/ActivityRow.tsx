@@ -7,7 +7,7 @@ import { Timestamp } from 'pages/shared/Timestamp'
 import { ValueChange } from 'pages/shared/ValueChange'
 import { ChannelOp } from 'types'
 import { ChannelState } from 'schema'
-import { stroopsToLumens } from 'lumens'
+import { stroopsToLumens } from 'helpers/lumens'
 
 const activityTitle = (op: ChannelOp): string => {
   switch (op.type) {

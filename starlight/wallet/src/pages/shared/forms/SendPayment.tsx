@@ -20,7 +20,7 @@ import {
   getMyBalance,
   getTheirAccount,
 } from 'state/channels'
-import { stroopsToLumens, lumensToStroops } from 'lumens'
+import { stroopsToLumens, lumensToStroops } from 'helpers/lumens'
 import { ChannelState } from 'schema'
 const StrKey = require('stellar-base').StrKey
 
