@@ -6,6 +6,7 @@ import { events } from 'state/events'
 import { lifecycle, LOGOUT_SUCCESS } from 'state/lifecycle'
 import { wallet } from 'state/wallet'
 import { channels } from 'state/channels'
+import { flash } from 'state/flash'
 
 const appReducer = combineReducers<ApplicationState>({
   config: config.reducer,
@@ -13,6 +14,7 @@ const appReducer = combineReducers<ApplicationState>({
   lifecycle: lifecycle.reducer,
   wallet: wallet.reducer,
   channels: channels.reducer,
+  flash: flash.reducer,
 })
 
 export const rootReducer = (state: any, action: any) => {

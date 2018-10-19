@@ -6,6 +6,7 @@ export interface ApplicationState {
   lifecycle: LifecycleState
   wallet: WalletState
   channels: ChannelsState
+  flash: FlashState
 }
 
 export interface ConfigState {
@@ -58,4 +59,9 @@ export interface ChannelState {
   PrevState: string
   Role: string
   State: string
+}
+
+export interface FlashState {
+  message: string
+  showFlash: boolean
 }

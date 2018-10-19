@@ -10,6 +10,7 @@ import { ConnectedEventLoop } from 'connected/EventLoop'
 import { ConnectedInitConfig } from 'pages/config/InitConfig'
 import { ConnectedLoginForm } from 'pages/login/LoginForm'
 import { Login } from 'pages/login/Login'
+import { Flash } from 'pages/shared/Flash'
 import { Navigation } from 'Navigation'
 import { lifecycle } from 'state/lifecycle'
 import { hot } from 'react-hot-loader'
@@ -17,6 +18,8 @@ import { hot } from 'react-hot-loader'
 interface Props {
   isConfigured: boolean
   isLoggedIn: boolean
+  flashMessage: string
+  showFlash: boolean
   status: () => any
 }
 
@@ -44,6 +47,7 @@ class App extends React.Component<Props, {}> {
               <Route path="/*" render={() => <Redirect to="/wallet" />} />
             </Switch>
           </ConnectedEventLoop>
+          {this.props.showFlash && <Flash>{this.props.flashMessage}</Flash>}
         </div>
       )
     } else if (this.props.isConfigured) {
@@ -78,6 +82,8 @@ const mapStateToProps = (state: ApplicationState) => {
   return {
     isConfigured: state.lifecycle.isConfigured,
     isLoggedIn: state.lifecycle.isLoggedIn,
+    flashMessage: state.flash.message,
+    showFlash: state.flash.showFlash,
   }
 }
 const mapDispatchToProps = (dispatch: Dispatch) => {

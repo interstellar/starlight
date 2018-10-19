@@ -10,7 +10,9 @@ import { Icon } from 'pages/shared/Icon'
 import { Input, Label } from 'pages/shared/Input'
 import { RadioButton } from 'pages/shared/RadioButton'
 import { BtnSubmit } from 'pages/shared/Button'
+
 import { config } from 'state/config'
+import { flash } from 'state/flash'
 
 const View = styled.div`
   padding: 25px;
@@ -26,7 +28,7 @@ interface Props {
   HorizonURL: string
   editServer: (params: { HorizonURL: string }) => any
   closeModal: () => void
-  showFlash: () => void
+  setFlash: (message: string) => void
 }
 interface State {
   DemoServer: boolean
@@ -133,7 +135,7 @@ export class ChangeServer extends React.Component<Props, State> {
 
     if (ok) {
       this.props.closeModal()
-      this.props.showFlash()
+      this.props.setFlash('Your server has been changed')
     } else {
       this.setState({ loading: false, showError: true })
       window.setTimeout(() => {
@@ -153,6 +155,9 @@ const mapDispatchToProps = (dispatch: Dispatch) => {
     editServer: (params: { HorizonURL: string }) => {
       return config.edit(dispatch, params)
     },
+    setFlash: (message: string) => {
+      return flash.set(dispatch, message)
+    },
   }
 }
 export const ConnectedChangeServer = connect<
@@ -160,7 +165,6 @@ export const ConnectedChangeServer = connect<
   {},
   {
     closeModal: () => void
-    showFlash: () => void
   }
 >(
   mapStateToProps,
