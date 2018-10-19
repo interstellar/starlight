@@ -3,6 +3,7 @@ import styled from 'styled-components'
 import { RouteComponentProps } from 'react-router-dom'
 import { connect } from 'react-redux'
 import { Redirect } from 'react-router'
+import { Dispatch } from 'redux'
 import * as moment from 'moment'
 
 import { usernameToAddress } from 'helpers/account'
@@ -13,7 +14,7 @@ import { ChannelState } from 'types/schema'
 import { ConnectedChannelActions } from 'pages/channel/ChannelActions'
 import { ChannelActivityTable } from 'pages/channel/ChannelActivityTable'
 import { BarGraph } from 'pages/shared/graphs/BarGraph'
-import { CORNFLOWER, EBONYCLAY } from 'pages/shared/Colors'
+import { CORNFLOWER, EBONYCLAY, RADICALRED } from 'pages/shared/Colors'
 import { Container } from 'pages/shared/Container'
 import { Detail, DetailLabel, DetailValue } from 'pages/shared/Detail'
 import { Heading, HeadingContainer } from 'pages/shared/Heading'
@@ -21,6 +22,7 @@ import { Section, SectionHeading } from 'pages/shared/Section'
 import { Status } from 'pages/shared/Status'
 
 import { getMyBalance, getTheirBalance } from 'state/channels'
+import { flash } from 'state/flash'
 
 const ChannelHeading = styled(Heading)`
   color: ${CORNFLOWER};
@@ -34,6 +36,7 @@ const Subtitle = styled.span`
 interface Props extends RouteComponentProps<{ id: string }> {
   channel: ChannelState | undefined
   username: string
+  setFlash: (message: string, color: string) => void
 }
 
 export class Channel extends React.Component<Props, {}> {
@@ -49,17 +52,13 @@ export class Channel extends React.Component<Props, {}> {
 
   public render() {
     const channel = this.props.channel
+
     if (channel === undefined) {
-      return (
-        <Redirect
-          to={{
-            pathname: '/channels',
-            state: {
-              message: `Channel not found: ${this.props.match.params.id}`,
-            },
-          }}
-        />
+      this.props.setFlash(
+        `Channel not found: ${this.props.match.params.id}`,
+        RADICALRED
       )
+      return <Redirect to={{ pathname: '/channels' }} />
     }
 
     const isHost = channel.Role === 'Host'
@@ -131,8 +130,14 @@ const mapStateToProps = (
     username: state.config.Username,
   }
 }
-
-export const ConnectedChannel = connect(
+const mapDispatchToProps = (dispatch: Dispatch) => {
+  return {
+    setFlash: (message: string, color: string) => {
+      return flash.set(dispatch, message, color)
+    },
+  }
+}
+export const ConnectedChannel = connect<{}, {}, {}>(
   mapStateToProps,
-  {}
+  mapDispatchToProps
 )(Channel)

@@ -2,9 +2,9 @@ import styled from 'styled-components'
 
 import { RADICALRED, SEAFOAM, WILDSAND } from 'pages/shared/Colors'
 
-export const Flash = styled.div`
+export const Flash = styled.div<{ color?: string }>`
   align-items: center;
-  background-color: ${SEAFOAM};
+  background-color: ${props => props.color || SEAFOAM};
   border-radius: 5px;
   color: ${WILDSAND};
   display: flex;

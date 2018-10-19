@@ -63,5 +63,6 @@ export interface ChannelState {
 
 export interface FlashState {
   message: string
+  color?: string
   showFlash: boolean
 }

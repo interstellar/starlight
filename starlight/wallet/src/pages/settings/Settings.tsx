@@ -8,7 +8,6 @@ import { ConnectedChangePassword } from 'pages/settings/ChangePassword'
 import { ConnectedChangeServer } from 'pages/settings/ChangeServer'
 import { Container } from 'pages/shared/Container'
 import { Detail, DetailLabel, DetailValue } from 'pages/shared/Detail'
-import { Flash } from 'pages/shared/Flash'
 import { Heading } from 'pages/shared/Heading'
 import { Link } from 'pages/shared/Link'
 import { Modal } from 'pages/shared/Modal'
@@ -69,7 +68,6 @@ export class Settings extends React.Component<Props, State> {
   public render() {
     return (
       <Container>
-        {this.state.showFlash && <Flash>{this.state.flashMessage}</Flash>}
         <Heading>Settings</Heading>
         <BtnHeading color={RADICALRED} onClick={this.props.logout}>
           Log Out

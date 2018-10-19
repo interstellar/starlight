@@ -18,8 +18,11 @@ import { hot } from 'react-hot-loader'
 interface Props {
   isConfigured: boolean
   isLoggedIn: boolean
-  flashMessage: string
-  showFlash: boolean
+  flash: {
+    message: string
+    color: string
+    show: boolean
+  }
   status: () => any
 }
 
@@ -47,7 +50,11 @@ class App extends React.Component<Props, {}> {
               <Route path="/*" render={() => <Redirect to="/wallet" />} />
             </Switch>
           </ConnectedEventLoop>
-          {this.props.showFlash && <Flash>{this.props.flashMessage}</Flash>}
+          {this.props.flash.show && (
+            <Flash color={this.props.flash.color}>
+              {this.props.flash.message}
+            </Flash>
+          )}
         </div>
       )
     } else if (this.props.isConfigured) {
@@ -82,8 +89,11 @@ const mapStateToProps = (state: ApplicationState) => {
   return {
     isConfigured: state.lifecycle.isConfigured,
     isLoggedIn: state.lifecycle.isLoggedIn,
-    flashMessage: state.flash.message,
-    showFlash: state.flash.showFlash,
+    flash: {
+      message: state.flash.message,
+      color: state.flash.color,
+      show: state.flash.showFlash,
+    },
   }
 }
 const mapDispatchToProps = (dispatch: Dispatch) => {

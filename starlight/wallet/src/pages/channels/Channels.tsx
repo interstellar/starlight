@@ -3,20 +3,17 @@ import styled from 'styled-components'
 import { connect } from 'react-redux'
 import { Redirect } from 'react-router'
 
-import { ApplicationState } from 'types/schema'
-
 import { ChannelRow } from 'pages/channels/ChannelRow'
 import { BarGraph } from 'pages/shared/graphs/BarGraph'
 import { BtnHeading } from 'pages/shared/Button'
 import { CORNFLOWER, EBONYCLAY } from 'pages/shared/Colors'
 import { Container } from 'pages/shared/Container'
-import { AlertFlash } from 'pages/shared/Flash'
 import { Heading } from 'pages/shared/Heading'
 import { Modal } from 'pages/shared/Modal'
 import { ConnectedCreateChannel } from 'pages/shared/forms/CreateChannel'
 import { Section, SectionHeading } from 'pages/shared/Section'
 
-import { ChannelState } from 'types/schema'
+import { ApplicationState, ChannelState } from 'types/schema'
 
 import {
   getChannels,
@@ -41,8 +38,6 @@ interface Props {
 
 interface State {
   hasOpenModal: boolean
-  showFlash: boolean
-  timer?: number
   redirectTo: string
 }
 
@@ -52,10 +47,6 @@ export class Channels extends React.Component<Props, State> {
 
     this.state = {
       hasOpenModal: false,
-      showFlash: !!this.props.location.state,
-      timer: window.setTimeout(() => {
-        this.setState({ showFlash: false })
-      }, 3000),
       redirectTo: '',
     }
 
@@ -66,10 +57,6 @@ export class Channels extends React.Component<Props, State> {
 
   public componentDidMount() {
     document.title = `Channels - ${this.props.username}`
-  }
-
-  public componentWillUnmount() {
-    clearTimeout(this.state.timer)
   }
 
   private openModal() {
@@ -91,9 +78,6 @@ export class Channels extends React.Component<Props, State> {
 
     return (
       <Container>
-        {this.state.showFlash && (
-          <AlertFlash>{this.props.location.state.message}</AlertFlash>
-        )}
         <Heading>Channels</Heading>
         <BtnHeading onClick={this.openModal}>Create channel</BtnHeading>
         <Modal isOpen={this.state.hasOpenModal} onClose={this.closeModal}>

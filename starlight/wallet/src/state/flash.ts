@@ -16,10 +16,15 @@ export const initialState: FlashState = {
 const reducer: Reducer<FlashState> = (state = initialState, action) => {
   switch (action.type) {
     case SET_FLASH: {
-      return { ...state, message: action.message, showFlash: true }
+      return {
+        ...state,
+        message: action.message,
+        color: action.color,
+        showFlash: true,
+      }
     }
     case CLEAR_FLASH: {
-      return { ...state, message: '', showFlash: false }
+      return { ...state, message: '', color: '', showFlash: false }
     }
     default: {
       return state
@@ -28,8 +33,8 @@ const reducer: Reducer<FlashState> = (state = initialState, action) => {
 }
 
 // side effects
-const set = async (dispatch: Dispatch, message: string) => {
-  dispatch({ type: SET_FLASH, message })
+const set = async (dispatch: Dispatch, message: string, color?: string) => {
+  dispatch({ type: SET_FLASH, message, color })
 
   timer(() => dispatch({ type: CLEAR_FLASH }), 3000)
 }
