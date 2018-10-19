@@ -77,7 +77,7 @@ export class WalletBalance extends React.Component<Props, {}> {
                   this.props.walletBalance + this.props.channelBalance,
                   { short: true }
                 )
-              )} XLM Available{' '}
+              )} XLM Available +{' '}
               {formatAmount(
                 stroopsToLumens(this.props.reserve, { short: true })
               )} XLM Reserve
