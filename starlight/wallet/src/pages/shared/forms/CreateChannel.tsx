@@ -161,7 +161,14 @@ export class CreateChannel extends React.Component<Props, State> {
 
           <HalfWidth>
             <Label>
-              Channel Reserve <InfoIcon name="info-circle" />
+              Channel Reserve{' '}
+              <InfoIcon
+                tooltipContent="This a required minimum balance for a <br>
+                  Starlight payment channel. It cannot be <br>
+                  spent while the channel is open, but will <br>
+                  be returned when the channel is closed."
+                name="info-circle"
+              />
             </Label>
             <Amount>5 XLM</Amount>
           </HalfWidth>
