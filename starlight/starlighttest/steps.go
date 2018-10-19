@@ -737,6 +737,128 @@ func hostTopUpSteps(alice, bob *Starlightd) []step {
 	}
 }
 
+// mergingPaymentSteps sends payments from Alice and Bob that, if one of the agents is not
+// receiving messages, will eventually create a payment merge state when the agent comes
+// back online.
+func mergingPaymentSteps(alice, bob *Starlightd, hostBalance, guestBalance xlm.Amount) []step {
+	return []step{
+		{
+			name:  "alice channel pay bob",
+			agent: alice,
+			path:  "/api/do-command",
+			body: `
+			{
+				"ChannelID": "%s",
+				"Command": {
+					"UserCommand": "ChannelPay",
+					"Amount": 1000,
+					"Time": "2018-10-02T10:26:43.511Z"
+				}
+			}`,
+			injectChanID: true,
+		}, {
+			name:  "bob channel pay alice",
+			agent: bob,
+			path:  "/api/do-command",
+			body: `
+			{
+				"ChannelID": "%s",
+				"Command": {
+					"UserCommand": "ChannelPay",
+					"Amount": 1500,
+					"Time": "2018-10-02T10:26:43.511Z"
+				}
+			}`,
+			injectChanID: true,
+		},
+	}
+}
+
+// paymentMergeResolutionSteps represents the state transitions that Alice and Bob go through to merge
+// the conflict payment, sending a merged payment from Bob to Alice.
+func paymentMergeResolutionSteps(alice, bob *Starlightd, hostBalance, guestBalance xlm.Amount) []step {
+	return []step{
+		{
+			name:  "bob channel pay alice payment proposed update",
+			agent: bob,
+			update: &update.Update{
+				Type: update.ChannelType,
+				Channel: &fsm.Channel{
+					State:       fsm.PaymentProposed,
+					HostAmount:  hostBalance,
+					GuestAmount: guestBalance,
+				},
+			},
+		}, {
+			name:  "alice channel pay bob payment proposed update",
+			agent: alice,
+			update: &update.Update{
+				Type: update.ChannelType,
+				Channel: &fsm.Channel{
+					State:       fsm.PaymentProposed,
+					HostAmount:  hostBalance,
+					GuestAmount: guestBalance,
+				},
+			},
+		}, {
+			name:  "alice channel pay awaiting payment merge update",
+			agent: alice,
+			update: &update.Update{
+				Type: update.ChannelType,
+				Channel: &fsm.Channel{
+					State:       fsm.AwaitingPaymentMerge,
+					HostAmount:  hostBalance,
+					GuestAmount: guestBalance,
+				},
+			},
+		}, {
+			name:  "bob channel pay payment proposed upate",
+			agent: bob,
+			update: &update.Update{
+				Type: update.ChannelType,
+				Channel: &fsm.Channel{
+					State:       fsm.PaymentProposed,
+					HostAmount:  hostBalance,
+					GuestAmount: guestBalance,
+				},
+			},
+		}, {
+			name:  "alice channel pay payment accepted update",
+			agent: alice,
+			update: &update.Update{
+				Type: update.ChannelType,
+				Channel: &fsm.Channel{
+					State:       fsm.PaymentAccepted,
+					HostAmount:  hostBalance,
+					GuestAmount: guestBalance,
+				},
+			},
+		}, {
+			name:  "bob channel pay payment complete state open update",
+			agent: bob,
+			update: &update.Update{
+				Type: update.ChannelType,
+				Channel: &fsm.Channel{
+					State:       fsm.Open,
+					HostAmount:  hostBalance - 500*xlm.Stroop,
+					GuestAmount: guestBalance + 500*xlm.Stroop,
+				},
+			},
+		}, {
+			name:  "alice channel pay open update",
+			agent: alice,
+			update: &update.Update{
+				Type: update.ChannelType,
+				Channel: &fsm.Channel{
+					State:       fsm.Open,
+					HostAmount:  hostBalance - 500*xlm.Stroop,
+					GuestAmount: guestBalance + 500*xlm.Stroop,
+				},
+			},
+		},
+	}
+}
+
 func logoutSteps(alice, bob *Starlightd) []step {
 	return []step{
 		{

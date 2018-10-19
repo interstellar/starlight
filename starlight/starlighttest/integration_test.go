@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
@@ -138,4 +140,42 @@ func TestLogoutLogin(t *testing.T) {
 			testStep(t, ctx, s, &channelID)
 		}
 	})
+}
+
+func TestPaymentMerge(t *testing.T) {
+	itest(t, func(ctx context.Context, alice, bob *Starlightd) {
+		steps := append(channelCreationSteps(alice, bob, 0, 0), bobChannelPayAliceSteps(alice, bob)...)
+
+		// Create channel and do one payment
+		var channelID string
+		for _, s := range steps {
+			testStep(t, ctx, s, &channelID)
+		}
+
+		address := bob.address
+		bob.server.Close()
+
+		hostBalance := 1000*xlm.Lumen - 1000*xlm.Stroop
+		guestBalance := 1000 * xlm.Stroop
+
+		steps = mergingPaymentSteps(alice, bob, hostBalance, guestBalance)
+		for _, s := range steps {
+			testStep(t, ctx, s, &channelID)
+		}
+
+		bob.server = httptest.NewUnstartedServer(bob.handler)
+		l, err := net.Listen("tcp", address)
+		if err != nil {
+			t.Fatal(err)
+		}
+		bob.server.Listener.Close()
+		bob.server.Listener = l
+		bob.server.StartTLS()
+
+		steps = paymentMergeResolutionSteps(alice, bob, hostBalance, guestBalance)
+		for _, s := range steps {
+			testStep(t, ctx, s, &channelID)
+		}
+	})
+
 }

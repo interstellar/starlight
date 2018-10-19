@@ -1,6 +1,7 @@
 package fsm
 
 import (
+	"log"
 	"testing"
 	"time"
 
@@ -881,6 +882,7 @@ func TestHandleCloseMsg(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			log.Println(c.name)
 			hostChannel, err := createTestChannel()
 			if err != nil {
 				t.Fatal(err)
@@ -914,9 +916,11 @@ func TestHandleCloseMsg(t *testing.T) {
 			case Host:
 				sender, senderSeed = guestChannel, []byte(guestSeed)
 				recipient, recipientSeed = hostChannel, []byte(hostSeed)
+				recipient.PendingAmountSent = 0
 			case Guest:
 				sender, senderSeed = hostChannel, []byte(hostSeed)
 				recipient, recipientSeed = guestChannel, []byte(guestSeed)
+				recipient.PendingAmountSent = 0
 			}
 
 			h := createTestHost()
