@@ -22,6 +22,8 @@ export class Status extends React.Component<Props, {}> {
       return <Span color={SEAFOAM}>{this.props.value}</Span>
     } else if (this.props.value === 'Closed') {
       return <Span color={RADICALRED}>{this.props.value}</Span>
+    } else if (this.props.value === 'Awaiting Settlement Mintime') {
+      return <Span color={RADICALRED}>Awaiting Forced Settlement</Span>
     } else {
       return (
         <Span color={RADICALRED}>
