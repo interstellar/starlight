@@ -29,6 +29,7 @@ describe('reducer', () => {
     )
     const expected = {
       message: '',
+      color: '',
       showFlash: false,
     }
     expect(result).toEqual(expected)
