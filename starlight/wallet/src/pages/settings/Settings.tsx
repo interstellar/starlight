@@ -89,12 +89,7 @@ export class Settings extends React.Component<Props, State> {
                 isOpen={this.hasOpenModal('server')}
                 onClose={this.closeModal}
               >
-                <ConnectedChangeServer
-                  closeModal={() => this.closeModal()}
-                  showFlash={() =>
-                    this.showFlash('Your server has been changed')
-                  }
-                />
+                <ConnectedChangeServer closeModal={() => this.closeModal()} />
               </Modal>
             </DetailValue>
           </Detail>
@@ -115,12 +110,7 @@ export class Settings extends React.Component<Props, State> {
                 isOpen={this.hasOpenModal('password')}
                 onClose={this.closeModal}
               >
-                <ConnectedChangePassword
-                  closeModal={() => this.closeModal()}
-                  showFlash={() =>
-                    this.showFlash('Your password has been changed')
-                  }
-                />
+                <ConnectedChangePassword closeModal={() => this.closeModal()} />
               </Modal>
             </DetailValue>
           </Detail>

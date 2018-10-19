@@ -11,7 +11,7 @@ const editPasswordFunc = (params: { OldPassword: string; Password: string }) =>
   params
 const editServerFunc = (params: { HorizonURL: string }) => params
 const createChannel = (_1: string, _2: number) => undefined
-const showFlash = () => undefined
+const setFlash = () => undefined
 
 const sendFunc = async (_1: string, _2: number) => {
   return undefined
@@ -24,7 +24,7 @@ it('renders ChangePassword', () => {
     .create(
       <ChangePassword
         closeModal={closeModal}
-        showFlash={showFlash}
+        setFlash={setFlash}
         editPassword={editPasswordFunc}
       />
     )
@@ -39,7 +39,7 @@ it('renders ChangeServer', () => {
         HorizonURL="https://horizon-testnet.stellar.org"
         editServer={editServerFunc}
         closeModal={closeModal}
-        showFlash={showFlash}
+        setFlash={setFlash}
       />
     )
     .toJSON()

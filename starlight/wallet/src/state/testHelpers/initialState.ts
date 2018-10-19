@@ -20,4 +20,8 @@ export const initialState: ApplicationState = {
     Pending: {},
   },
   channels: {},
+  flash: {
+    message: '',
+    showFlash: false,
+  },
 }

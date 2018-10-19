@@ -10,6 +10,7 @@ import { Icon } from 'pages/shared/Icon'
 import { Input, Label } from 'pages/shared/Input'
 
 import { config } from 'state/config'
+import { flash } from 'state/flash'
 
 const View = styled.div`
   padding: 25px;
@@ -21,7 +22,7 @@ const Form = styled.form`
 interface Props {
   editPassword: (params: { OldPassword: string; Password: string }) => any
   closeModal: () => void
-  showFlash: () => void
+  setFlash: (message: string) => void
 }
 
 interface State {
@@ -105,7 +106,7 @@ export class ChangePassword extends React.Component<Props, State> {
 
     if (ok) {
       this.props.closeModal()
-      this.props.showFlash()
+      this.props.setFlash('Your password has been changed')
     } else {
       this.setState({ loading: false, showError: true })
       window.setTimeout(() => {
@@ -120,6 +121,9 @@ const mapDispatchToProps = (dispatch: Dispatch) => {
     editPassword: (params: { OldPassword: string; Password: string }) => {
       return config.edit(dispatch, params)
     },
+    setFlash: (message: string) => {
+      return flash.set(dispatch, message)
+    },
   }
 }
 
@@ -128,7 +132,6 @@ export const ConnectedChangePassword = connect<
   {},
   {
     closeModal: () => void
-    showFlash: () => void
   }
 >(
   null,
