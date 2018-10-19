@@ -85,10 +85,11 @@ func (u *Updater) handlePaymentCompleteMsg(m *Message) error {
 		senderKey            keypair.KP
 		err                  error
 	)
+	delta := u.C.PendingAmountReceived - u.C.PendingAmountSent
 	switch u.C.Role {
 	case Guest:
-		u.C.GuestAmount += u.C.PendingAmountReceived
-		u.C.HostAmount -= u.C.PendingAmountReceived
+		u.C.GuestAmount += delta
+		u.C.HostAmount -= delta
 		senderRatchetAccount = u.C.HostRatchetAcct
 		senderRatchetSeqNum = u.C.HostRatchetAcctSeqNum
 		senderKey, err = keypair.Parse(u.C.EscrowAcct.Address())
@@ -96,8 +97,8 @@ func (u *Updater) handlePaymentCompleteMsg(m *Message) error {
 			return err
 		}
 	case Host:
-		u.C.HostAmount += u.C.PendingAmountReceived
-		u.C.GuestAmount -= u.C.PendingAmountReceived
+		u.C.HostAmount += delta
+		u.C.GuestAmount -= delta
 		senderRatchetAccount = u.C.GuestRatchetAcct
 		senderRatchetSeqNum = u.C.GuestRatchetAcctSeqNum
 		senderKey, err = keypair.Parse(u.C.GuestAcct.Address())
@@ -120,6 +121,8 @@ func (u *Updater) handlePaymentCompleteMsg(m *Message) error {
 		return err
 	}
 	u.C.PaymentTime = u.C.PendingPaymentTime
+	u.C.PendingAmountReceived = 0
+	u.C.PendingAmountSent = 0
 	return u.transitionTo(Open)
 }
 
@@ -194,6 +197,8 @@ func (u *Updater) handlePaymentAcceptMsg(m *Message) error {
 		return err
 	}
 	u.C.PaymentTime = u.C.PendingPaymentTime
+	u.C.PendingAmountReceived = 0
+	u.C.PendingAmountSent = 0
 	return u.transitionTo(Open)
 }
 
@@ -321,7 +326,10 @@ func (u *Updater) handlePaymentProposeMsg(m *Message) error {
 	}
 	// Verify signatures
 	ch2 := *u.C
-	ch2.RoundNumber++
+
+	if u.C.State == Open || u.C.State == AwaitingPaymentMerge {
+		ch2.RoundNumber++
+	}
 
 	switch ch2.Role {
 	case Guest:
@@ -405,7 +413,7 @@ func (u *Updater) handlePaymentProposeMsg(m *Message) error {
 			u.C.PendingAmountSent = u.C.PendingAmountSent - payment.PaymentAmount
 			return u.transitionTo(PaymentProposed)
 		}
-		u.C.RoundNumber++
+		// Receive merge payment
 		u.C.PendingAmountReceived = payment.PaymentAmount
 		return u.transitionTo(AwaitingPaymentMerge)
 	}
