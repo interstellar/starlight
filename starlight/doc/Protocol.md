@@ -1105,6 +1105,40 @@ _ `PendingPaymentTime` as `PaymentTime`
 
 ## Messages
 
+Every message has two top-level fields:
+
+1. `Body`
+2. `MessageSignature`
+
+The message-specific fields
+(specified in the following sections)
+go in the `Body`.
+
+`MessageSignature` is how a party authenticates that the message was sent by their channel counterparty.
+It is a signature on the serialized message (with the `MessageSignature` field excluded).
+It should be a signature from the public key of the message's sender.
+Specifically, that public key is `HostEscrowPubKey` if the message's sender is the `Host` on that channel,
+and `GuestEscrowPubKey` if the sender is the `Guest` on that channel.
+
+When any message is received,
+before taking the message-specific validation steps described below,
+the recipient looks up the channel using the `ChannelID` from the message `Body`
+and looks up their counterparty's public key,
+which is either `HostEscrowPubKey` or `GuestEscrowPubKey`,
+depending on their counterparty's role in the channel.
+(If the message is a
+[ChannelProposeMsg](#channelproposemsg),
+no channel will exist yet.
+They should instead use the `ChannelID` itself,
+which is the same as the `HostEscrowPubKey`,
+as the counterparty's public key.)
+The recipient validates that `MessageSignature` is a valid signature from that public key for the message.
+If it is not,
+or if the message is not a
+[ChannelProposeMsg](#channelproposemsg)
+and the channel lookup fails,
+the recipient ignores the message.
+
 ### ChannelProposeMsg
 
 #### Fields
