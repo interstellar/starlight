@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"time"
 
@@ -138,6 +139,9 @@ func (wt *wallet) configInit(w http.ResponseWriter, req *http.Request) {
 		httperror(req, w, err.Error(), 400)
 		return
 	}
+	if isLoopback(req.Host) {
+		wt.sess.Secure = false
+	}
 	session.Set(w, &struct{}{}, &wt.sess)
 }
 
@@ -247,6 +251,12 @@ func (wt *wallet) login(w http.ResponseWriter, req *http.Request) {
 		httperror(req, w, "unauthorized", 401)
 		return
 	}
+
+	// TODO(vniu): evaluate if we want to disable secure cookies
+	// on localhost for launch.
+	if isLoopback(req.Host) {
+		wt.sess.Secure = false
+	}
 	wt.sess.MaxAge = 14 * 24 * time.Hour
 	session.Set(w, &struct{}{}, &wt.sess)
 }
@@ -265,6 +275,11 @@ func (wt *wallet) auth(f http.HandlerFunc) http.Handler {
 		}
 		f(w, req)
 	})
+}
+
+func isLoopback(addr string) bool {
+	a, err := net.ResolveTCPAddr("tcp", addr)
+	return err == nil && a.IP.IsLoopback()
 }
 
 func genKey() *[32]byte {
