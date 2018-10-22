@@ -78,12 +78,12 @@ it('renders SendPayment', () => {
   const tree = renderer
     .create(
       <SendPayment
-        AvailableBalance={1000}
+        availableBalance={1000}
         walletPay={sendFunc}
         channelPay={sendFunc}
         closeModal={closeModal}
-        Channels={{}}
-        CounterpartyAccounts={{}}
+        channels={{}}
+        counterpartyAccounts={{}}
         username="jessicard"
       />
     )

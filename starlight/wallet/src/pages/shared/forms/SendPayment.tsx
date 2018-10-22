@@ -34,20 +34,20 @@ const Form = styled.form`
 `
 
 interface State {
-  Recipient: string
-  Amount: string
+  recipient: string
+  amount: string
   showError: boolean
   loading: boolean
 }
 
 interface Props {
-  AvailableBalance: number
-  Channels: ChannelsState
-  InitialRecipient?: string
+  availableBalance: number
+  channels: ChannelsState
+  initialRecipient?: string
   walletPay: (recipient: string, amount: number) => Promise<void>
   channelPay: (id: string, amount: number) => Promise<void>
   closeModal: () => void
-  CounterpartyAccounts: { [id: string]: string }
+  counterpartyAccounts: { [id: string]: string }
   username: string
 }
 
@@ -56,8 +56,8 @@ export class SendPayment extends React.Component<Props, State> {
     super(props)
 
     this.state = {
-      Recipient: props.InitialRecipient || '',
-      Amount: '',
+      recipient: props.initialRecipient || '',
+      amount: '',
       showError: false,
       loading: false,
     }
@@ -81,7 +81,7 @@ export class SendPayment extends React.Component<Props, State> {
     if (total !== undefined && !hasChannel) {
       total += 100
     }
-    const focusOnRecipient = this.props.InitialRecipient === undefined
+    const focusOnRecipient = this.props.initialRecipient === undefined
     const channelBalance = this.channelBalance()
     const displayChannelBtn =
       (hasChannel && !validAmount) || this.channelHasSufficientBalance()
@@ -90,20 +90,20 @@ export class SendPayment extends React.Component<Props, State> {
       <View>
         <Heading>Send payment</Heading>
         <Form onSubmit={this.handleSubmit}>
-          <Label htmlFor="Recipient">Recipient</Label>
+          <Label htmlFor="recipient">Recipient</Label>
           <Input
-            value={this.state.Recipient}
+            value={this.state.recipient}
             onChange={e => {
-              this.setState({ Recipient: e.target.value })
+              this.setState({ recipient: e.target.value })
             }}
             type="text"
-            name="Recipient"
+            name="recipient"
             autoComplete="off"
             autoFocus={focusOnRecipient}
           />
           {/* TODO: validate this is a Stellar account ID */}
           <div>
-            <Label htmlFor="Amount">Amount</Label>
+            <Label htmlFor="amount">Amount</Label>
             <Hint>
               {hasChannel && (
                 <span>
@@ -117,7 +117,7 @@ export class SendPayment extends React.Component<Props, State> {
               )}
               <strong>
                 {formatAmount(
-                  stroopsToLumens(this.props.AvailableBalance).toString()
+                  stroopsToLumens(this.props.availableBalance).toString()
                 )} XLM
               </strong>{' '}
               available in account
@@ -125,12 +125,12 @@ export class SendPayment extends React.Component<Props, State> {
           </div>
           <UnitContainer>
             <Input
-              value={this.state.Amount}
+              value={this.state.amount}
               onChange={e => {
-                this.setState({ Amount: e.target.value })
+                this.setState({ amount: e.target.value })
               }}
               type="number"
-              name="Amount"
+              name="amount"
               autoComplete="off"
               autoFocus={!focusOnRecipient}
             />
@@ -163,9 +163,9 @@ export class SendPayment extends React.Component<Props, State> {
             }
           >
             {channelBalance === undefined ||
-            this.props.AvailableBalance > channelBalance
+            this.props.availableBalance > channelBalance
               ? `You only have ${formatAmount(stroopsToLumens(
-                  this.props.AvailableBalance
+                  this.props.availableBalance
                 ))} XLM available in your wallet.`
               : `You only have ${formatAmount(stroopsToLumens(
                   channelBalance
@@ -195,13 +195,13 @@ export class SendPayment extends React.Component<Props, State> {
   private recipientIsValid() {
     return (
       this.destinationChannel() ||
-      validRecipientAccount(this.props.username, this.state.Recipient)
+      validRecipientAccount(this.props.username, this.state.recipient)
     )
   }
 
   private destinationChannel(): ChannelState | undefined {
-    const recipient = this.state.Recipient
-    const channels = this.props.Channels
+    const recipient = this.state.recipient
+    const channels = this.props.channels
 
     if (channels[recipient] && channels[recipient].State !== 'Closed') {
       return channels[recipient]
@@ -211,7 +211,7 @@ export class SendPayment extends React.Component<Props, State> {
   }
 
   private lookupChannelByAccountId(accountId: string, channels: ChannelsState) {
-    const counterpartyAccounts = this.props.CounterpartyAccounts
+    const counterpartyAccounts = this.props.counterpartyAccounts
     const chanId = counterpartyAccounts[accountId]
 
     if (chanId !== undefined) {
@@ -228,7 +228,7 @@ export class SendPayment extends React.Component<Props, State> {
   }
 
   private amount() {
-    const lumensAmount = parseFloat(this.state.Amount)
+    const lumensAmount = parseFloat(this.state.amount)
     if (isNaN(lumensAmount)) {
       return undefined
     }
@@ -267,7 +267,7 @@ export class SendPayment extends React.Component<Props, State> {
 
     const amount = this.amount()
     if (amount === undefined) {
-      throw new Error('invalid amount: ' + this.state.Amount)
+      throw new Error('invalid amount: ' + this.state.amount)
     }
 
     let ok
@@ -281,7 +281,7 @@ export class SendPayment extends React.Component<Props, State> {
       if (channel) {
         ok = await this.props.walletPay(getTheirAccount(channel), amount)
       } else {
-        ok = await this.props.walletPay(this.state.Recipient, amount)
+        ok = await this.props.walletPay(this.state.recipient, amount)
       }
     }
 
@@ -313,15 +313,15 @@ export class SendPayment extends React.Component<Props, State> {
     if (amount === undefined) {
       return false
     }
-    return this.props.AvailableBalance >= amount
+    return this.props.availableBalance >= amount
   }
 }
 
 const mapStateToProps = (state: ApplicationState) => {
   return {
-    AvailableBalance: getWalletStroops(state),
-    Channels: state.channels,
-    CounterpartyAccounts: getCounterpartyAccounts(state),
+    availableBalance: getWalletStroops(state),
+    channels: state.channels,
+    counterpartyAccounts: getCounterpartyAccounts(state),
     username: state.config.Username,
   }
 }
@@ -340,7 +340,7 @@ const mapDispatchToProps = (dispatch: Dispatch) => {
 export const ConnectedSendPayment = connect<
   {},
   {},
-  { closeModal: () => void; InitialRecipient?: string }
+  { closeModal: () => void; initialRecipient?: string }
 >(
   mapStateToProps,
   mapDispatchToProps
