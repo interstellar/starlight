@@ -15,6 +15,9 @@ import { Navigation } from 'Navigation'
 import { lifecycle } from 'state/lifecycle'
 import { hot } from 'react-hot-loader'
 
+import { flash } from 'state/flash'
+import { RADICALRED } from 'pages/shared/Colors'
+
 interface Props {
   isConfigured: boolean
   isLoggedIn: boolean
@@ -23,7 +26,9 @@ interface Props {
     color: string
     show: boolean
   }
+  location: any
   status: () => any
+  setFlash: (message: string, color: string) => void
 }
 
 class App extends React.Component<Props, {}> {
@@ -47,7 +52,13 @@ class App extends React.Component<Props, {}> {
 
               <Route path="/" exact={true} component={Navigation} />
 
-              <Route path="/*" render={() => <Redirect to="/wallet" />} />
+              <Route
+                path="/*"
+                render={() => {
+                  this.props.setFlash('That page does not exist', RADICALRED)
+                  return <Redirect to="/wallet" />
+                }}
+              />
             </Switch>
           </ConnectedEventLoop>
           {this.props.flash.show && (
@@ -65,7 +76,13 @@ class App extends React.Component<Props, {}> {
             exact={true}
             render={props => <Login {...props} form={<ConnectedLoginForm />} />}
           />
-          <Route path="/*" render={() => <Redirect to="/" />} />}
+          <Route
+            path="/*"
+            render={() => {
+              this.props.setFlash('That page does not exist', RADICALRED)
+              return <Redirect to="/" />
+            }}
+          />
         </Switch>
       )
     } else {
@@ -78,7 +95,13 @@ class App extends React.Component<Props, {}> {
               <ConfigLanding {...props} form={<ConnectedInitConfig />} />
             )}
           />
-          <Route path="/*" render={() => <Redirect to="/" />} />}
+          <Route
+            path="/*"
+            render={() => {
+              this.props.setFlash('That page does not exist', RADICALRED)
+              return <Redirect to="/" />
+            }}
+          />
         </Switch>
       )
     }
@@ -99,9 +122,12 @@ const mapStateToProps = (state: ApplicationState) => {
 const mapDispatchToProps = (dispatch: Dispatch) => {
   return {
     status: () => lifecycle.status(dispatch),
+    setFlash: (message: string, color: string) => {
+      return flash.set(dispatch, message, color)
+    },
   }
 }
-export const ConnectedApp = connect(
+export const ConnectedApp = connect<{}, {}, {}>(
   mapStateToProps,
   mapDispatchToProps
 )(hot(module)(App))
