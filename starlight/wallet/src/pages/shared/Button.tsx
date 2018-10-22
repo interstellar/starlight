@@ -36,6 +36,7 @@ export const BtnHeading = styled(Btn)<{
   &:disabled {
     background: ${DUSTYGRAY};
     opacity: 0.6;
+    pointer-events: none;
     cursor: default;
   }
 `
