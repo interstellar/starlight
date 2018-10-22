@@ -47,7 +47,7 @@ const View = styled.div`
 `
 
 interface Props {
-  AvailableBalance: number
+  availableBalance: number
   closeModal: () => void
   createChannel: (recipient: string, initialDeposit: number) => void
   prefill?: { counterparty: string }
@@ -56,8 +56,8 @@ interface Props {
 }
 
 interface State {
-  Counterparty: string
-  InitialDeposit: string
+  counterparty: string
+  initialDeposit: string
   showError: boolean
   showTooltip: boolean
   loading: boolean
@@ -72,8 +72,8 @@ export class CreateChannel extends React.Component<Props, State> {
     super(props)
 
     this.state = {
-      Counterparty: this.props.prefill ? this.props.prefill.counterparty : '',
-      InitialDeposit: '',
+      counterparty: this.props.prefill ? this.props.prefill.counterparty : '',
+      initialDeposit: '',
       showError: false,
       showTooltip: false,
       loading: false,
@@ -91,15 +91,15 @@ export class CreateChannel extends React.Component<Props, State> {
       <View>
         <Heading>Create channel</Heading>
         <Form onSubmit={this.handleSubmit}>
-          <Label htmlFor="Counterparty">Counterparty</Label>
+          <Label htmlFor="counterparty">counterparty</Label>
           <Input
-            value={this.state.Counterparty}
+            value={this.state.counterparty}
             onBlur={() => {
               if (
-                this.state.Counterparty &&
+                this.state.counterparty &&
                 !validRecipientAccount(
                   this.props.username,
-                  this.state.Counterparty
+                  this.state.counterparty
                 )
               ) {
                 this.setState({ formErrors: {
@@ -114,27 +114,27 @@ export class CreateChannel extends React.Component<Props, State> {
               })
             }}}
             onChange={e => {
-              this.setState({ Counterparty: e.target.value })
+              this.setState({ counterparty: e.target.value })
             }}
             type="text"
-            name="Counterparty"
+            name="counterparty"
             autoComplete="off"
-            autoFocus={!this.state.Counterparty}
+            autoFocus={!this.state.counterparty}
             error={this.state.formErrors.counterparty}
           />
 
-          <Label htmlFor="InitialDeposit">Initial Deposit</Label>
+          <Label htmlFor="initialDeposit">Initial Deposit</Label>
           <Hint>
             <strong>{formatAmount(
-              stroopsToLumens(this.props.AvailableBalance)
+              stroopsToLumens(this.props.availableBalance)
             )} XLM</strong>{' '}
             available in account
           </Hint>
           <UnitContainer>
             <Input
-              value={this.state.InitialDeposit}
+              value={this.state.initialDeposit}
               onBlur={() => {
-                if (this.state.InitialDeposit && !this.walletHasSufficientBalance()) {
+                if (this.state.initialDeposit && !this.walletHasSufficientBalance()) {
                   this.setState({ formErrors: {
                     deposit: true,
                     counterparty: this.state.formErrors.counterparty,
@@ -147,12 +147,12 @@ export class CreateChannel extends React.Component<Props, State> {
                 })
               }}}
               onChange={e => {
-                this.setState({ InitialDeposit: e.target.value })
+                this.setState({ initialDeposit: e.target.value })
               }}
               type="number"
-              name="InitialDeposit"
+              name="initialDeposit"
               autoComplete="off"
-              autoFocus={!!this.state.Counterparty}
+              autoFocus={!!this.state.counterparty}
               error={this.state.formErrors.deposit}
             />
             <Unit>XLM</Unit>
@@ -213,13 +213,13 @@ export class CreateChannel extends React.Component<Props, State> {
     this.setState({ loading: true })
 
     const ok = await this.props.createChannel(
-      this.state.Counterparty,
-      lumensToStroops(parseInt(this.state.InitialDeposit, 10))
+      this.state.counterparty,
+      lumensToStroops(parseInt(this.state.initialDeposit, 10))
     )
 
     if (ok) {
       this.props.closeModal()
-      this.props.redirect && this.props.redirect(this.state.Counterparty)
+      this.props.redirect && this.props.redirect(this.state.counterparty)
     } else {
       this.setState({ loading: false, showError: true })
       window.setTimeout(() => {
@@ -230,28 +230,28 @@ export class CreateChannel extends React.Component<Props, State> {
 
   private formIsValid() {
     return (
-      validRecipientAccount(this.props.username, this.state.Counterparty) &&
+      validRecipientAccount(this.props.username, this.state.counterparty) &&
       this.walletHasSufficientBalance()
     )
   }
 
   private walletHasSufficientBalance() {
-    return this.props.AvailableBalance >=
-      lumensToStroops(parseFloat(this.state.InitialDeposit))
+    return this.props.availableBalance >=
+      lumensToStroops(parseFloat(this.state.initialDeposit))
   }
 }
 
 const mapStateToProps = (state: ApplicationState) => {
   return {
-    AvailableBalance: getWalletStroops(state),
+    availableBalance: getWalletStroops(state),
     username: state.config.Username,
   }
 }
 
 const mapDispatchToProps = (dispatch: Dispatch) => {
   return {
-    createChannel: (Counterparty: string, InitialDeposit: number) => {
-      return createChannel(dispatch, Counterparty, InitialDeposit)
+    createChannel: (counterparty: string, initialDeposit: number) => {
+      return createChannel(dispatch, counterparty, initialDeposit)
     },
   }
 }
