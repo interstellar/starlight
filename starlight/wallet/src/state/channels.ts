@@ -83,10 +83,7 @@ export const createChannel = async (
       channel: response.body,
       Ops: [],
     })
-  } else {
-    console.log('error', response)
   }
-
   return response.ok
 }
 
@@ -196,12 +193,7 @@ export const close = async (dispatch: Dispatch, id: string) => {
       UserCommand: 'CloseChannel',
     },
   })
-
-  if (response.ok && response.body.length >= 1) {
-    console.log(response.body)
-  } else {
-    console.log('error', response)
-  }
+  return response.ok
 }
 
 export const channelPay = async (
@@ -216,12 +208,6 @@ export const channelPay = async (
       Amount: amount,
     },
   })
-
-  if (response.ok && response.body.length >= 1) {
-    console.log(response.body)
-  } else {
-    console.log('error', response)
-  }
   return response.ok
 }
 
@@ -237,17 +223,6 @@ export const deposit = async (
       Amount: amount,
     },
   })
-
-  if (response.ok && response.body.length >= 1) {
-    console.log(response.body)
-  } else {
-    console.log('error', response)
-  }
-
-  dispatch({
-    type: 'TODO',
-  })
-
   return response.ok
 }
 

@@ -137,12 +137,6 @@ export const send = async (
     Dest: recipient,
     Amount: amount,
   })
-
-  if (response.ok && response.body.length >= 1) {
-    console.log(response.body)
-  } else {
-    console.log('error', response)
-  }
   return response.ok
 }
 
