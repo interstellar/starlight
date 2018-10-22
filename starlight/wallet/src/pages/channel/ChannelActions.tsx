@@ -1,4 +1,5 @@
 import * as React from 'react'
+import styled from 'styled-components'
 import { connect } from 'react-redux'
 import { Dispatch } from 'redux'
 
@@ -10,11 +11,18 @@ import { ConnectedSendPayment } from 'pages/shared/forms/SendPayment'
 
 import { BtnHeading } from 'pages/shared/Button'
 import { RADICALRED, SEAFOAM } from 'pages/shared/Colors'
-import { DisabledBtnHover } from 'pages/shared/DisabledBtnHover'
 import { ActionContainer } from 'pages/shared/Heading'
 import { Modal } from 'pages/shared/Modal'
+import { Tooltip } from 'pages/shared/Tooltip'
 
 import { close, getMyBalance } from 'state/channels'
+
+const TooltipBtn = styled(BtnHeading)`
+  margin-left: 0;
+`
+const TooltipBtnWrapper = styled.span`
+  margin-left: 10px;
+`
 
 interface Props {
   channel: ChannelState
@@ -70,27 +78,39 @@ export class ChannelActions extends React.Component<Props, State> {
                 Close
               </BtnHeading>
 
-              <BtnHeading
-                disabled={getMyBalance(this.props.channel) <= 0}
-                onClick={() => this.openModal('send')}
-                color={SEAFOAM}
-              >
-                Send
-              </BtnHeading>
-
-              <DisabledBtnHover
-                content="Only the party who opened
-                  <br> the channel can deposit
-                  <br> funds at this time."
-                disable={isHost}
-              >
-                <BtnHeading
-                  disabled={!isHost}
-                  onClick={() => this.openModal('deposit')}
+              <TooltipBtnWrapper>
+                <Tooltip
+                  content="You have no money<br>
+                    in this channel."
+                  hover={getMyBalance(this.props.channel) <= 0}
+                  direction="bottom"
                 >
-                  Deposit
-                </BtnHeading>
-              </DisabledBtnHover>
+                  <TooltipBtn
+                    disabled={getMyBalance(this.props.channel) <= 0}
+                    onClick={() => this.openModal('send')}
+                    color={SEAFOAM}
+                  >
+                    Send
+                  </TooltipBtn>
+                </Tooltip>
+              </TooltipBtnWrapper>
+
+              <TooltipBtnWrapper>
+                <Tooltip
+                  content="Only the party who opened<br>
+                    the channel can deposit<br>
+                    funds at this time."
+                  hover={!isHost}
+                  direction="bottom"
+                >
+                  <TooltipBtn
+                    disabled={!isHost}
+                    onClick={() => this.openModal('deposit')}
+                  >
+                    Deposit
+                  </TooltipBtn>
+                </Tooltip>
+              </TooltipBtnWrapper>
             </span>
           )}
         </ActionContainer>

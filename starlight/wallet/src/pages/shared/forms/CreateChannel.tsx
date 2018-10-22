@@ -7,13 +7,15 @@ import { validRecipientAccount } from 'helpers/account'
 import { formatAmount, stroopsToLumens, lumensToStroops } from 'helpers/lumens'
 
 import { BtnSubmit } from 'pages/shared/Button'
+import { CORNFLOWER, RADICALRED } from 'pages/shared/Colors'
 import { Heading } from 'pages/shared/Heading'
 import { Icon } from 'pages/shared/Icon'
 import { Hint, Input, Label } from 'pages/shared/Input'
 import { HorizontalLine } from 'pages/shared/HorizontalLine'
+import { Tooltip } from 'pages/shared/Tooltip'
 import { Total } from 'pages/shared/Total'
 import { Unit, UnitContainer } from 'pages/shared/Unit'
-import { CORNFLOWER, RADICALRED } from 'pages/shared/Colors'
+
 import { ApplicationState } from 'types/schema'
 import { getWalletStroops } from 'state/wallet'
 import { createChannel } from 'state/channels'
@@ -57,6 +59,7 @@ interface State {
   Counterparty: string
   InitialDeposit: string
   showError: boolean
+  showTooltip: boolean
   loading: boolean
   formErrors: {
     deposit: boolean,
@@ -72,6 +75,7 @@ export class CreateChannel extends React.Component<Props, State> {
       Counterparty: this.props.prefill ? this.props.prefill.counterparty : '',
       InitialDeposit: '',
       showError: false,
+      showTooltip: false,
       loading: false,
       formErrors: {
         deposit: false,
@@ -162,13 +166,15 @@ export class CreateChannel extends React.Component<Props, State> {
           <HalfWidth>
             <Label>
               Channel Reserve{' '}
-              <InfoIcon
-                tooltipContent="This a required minimum balance for a <br>
-                  Starlight payment channel. It cannot be <br>
-                  spent while the channel is open, but will <br>
-                  be returned when the channel is closed."
-                name="info-circle"
-              />
+              <Tooltip
+                content="This a required minimum balance for a<br>
+                Starlight payment channel. It cannot be<br>
+                spent while the channel is open, but will<br>
+                be returned when the channel is closed."
+                hover
+              >
+                <InfoIcon name="info-circle" />
+              </Tooltip>
             </Label>
             <Amount>5 XLM</Amount>
           </HalfWidth>
