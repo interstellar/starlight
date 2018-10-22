@@ -87,9 +87,17 @@ export class WalletBalance extends React.Component<Props, {}> {
         <GraphContainer>
           <BarGraph
             leftLabel="Account"
+            leftTooltip="This is the money that is<br>
+              available in your wallet<br>
+              account for spending in<br>
+              an on-network transaction."
             leftAmount={this.props.walletBalance}
             rightAmount={this.props.channelBalance}
             rightLabel="Channels"
+            rightTooltip="This is the total amount<br>
+            that you have available<br>
+            for spending across all<br>
+            of your payment channels."
             leftColor={SEAFOAM_LIGHT}
             rightColor={CORNFLOWER}
           />
