@@ -58,62 +58,9 @@ export class ChannelActions extends React.Component<Props, State> {
   }
 
   public render() {
-    const isHost = this.props.channel.Role === 'Host'
-
     return (
       <div>
-        <ActionContainer>
-          {this.props.channel.State === 'Closed' ? (
-            <span>
-              <BtnHeading onClick={() => this.openModal('open')}>
-                Open
-              </BtnHeading>
-            </span>
-          ) : (
-            <span>
-              <BtnHeading
-                onClick={() => this.props.closeChannel(this.props.channel.ID)}
-                color={RADICALRED}
-              >
-                Close
-              </BtnHeading>
-
-              <TooltipBtnWrapper>
-                <Tooltip
-                  content="You have no money<br>
-                    in this channel."
-                  hover={getMyBalance(this.props.channel) <= 0}
-                  direction="bottom"
-                >
-                  <TooltipBtn
-                    disabled={getMyBalance(this.props.channel) <= 0}
-                    onClick={() => this.openModal('send')}
-                    color={SEAFOAM}
-                  >
-                    Send
-                  </TooltipBtn>
-                </Tooltip>
-              </TooltipBtnWrapper>
-
-              <TooltipBtnWrapper>
-                <Tooltip
-                  content="Only the party who opened<br>
-                    the channel can deposit<br>
-                    funds at this time."
-                  hover={!isHost}
-                  direction="bottom"
-                >
-                  <TooltipBtn
-                    disabled={!isHost}
-                    onClick={() => this.openModal('deposit')}
-                  >
-                    Deposit
-                  </TooltipBtn>
-                </Tooltip>
-              </TooltipBtnWrapper>
-            </span>
-          )}
-        </ActionContainer>
+        <ActionContainer>{this.buttonsForChannelState()}</ActionContainer>
 
         <Modal isOpen={this.hasOpenModal('deposit')} onClose={this.closeModal}>
           <ConnectedDeposit
@@ -134,6 +81,85 @@ export class ChannelActions extends React.Component<Props, State> {
           />
         </Modal>
       </div>
+    )
+  }
+
+  private buttonsForChannelState() {
+    const channelState = this.props.channel.State
+
+    if (channelState === 'Closed') {
+      return <span>{this.openChannelBtn()}</span>
+    } else {
+      return (
+        <span>
+          {this.closeChannelBtn()}
+          {this.sendBtn()}
+          {this.depositBtn()}
+        </span>
+      )
+    }
+  }
+
+  private openChannelBtn() {
+    return <BtnHeading onClick={() => this.openModal('open')}>Open</BtnHeading>
+  }
+
+  private closeChannelBtn() {
+    return (
+      <BtnHeading
+        disabled={this.props.channel.State !== 'Open'}
+        onClick={() => this.props.closeChannel(this.props.channel.ID)}
+        color={RADICALRED}
+      >
+        Close
+      </BtnHeading>
+    )
+  }
+
+  private sendBtn() {
+    return (
+      <TooltipBtnWrapper>
+        <Tooltip
+          content="You have no money<br>
+          in this channel."
+          hover={getMyBalance(this.props.channel) <= 0}
+          direction="bottom"
+        >
+          <TooltipBtn
+            disabled={
+              this.props.channel.State !== 'Open' ||
+              getMyBalance(this.props.channel) <= 0
+            }
+            onClick={() => this.openModal('send')}
+            color={SEAFOAM}
+          >
+            Send
+          </TooltipBtn>
+        </Tooltip>
+      </TooltipBtnWrapper>
+    )
+  }
+
+  private depositBtn() {
+    const isHost = this.props.channel.Role === 'Host'
+
+    return (
+      <TooltipBtnWrapper>
+        <Tooltip
+          content="Only the party who opened<br>
+          the channel can deposit<br>
+          funds at this time."
+          hover={!isHost}
+          direction="bottom"
+        >
+          <TooltipBtn
+            disabled={this.props.channel.State !== 'Open' || !isHost}
+            onClick={() => this.openModal('deposit')}
+          >
+            Deposit
+          </TooltipBtn>
+        </Tooltip>
+      </TooltipBtnWrapper>
     )
   }
 }
