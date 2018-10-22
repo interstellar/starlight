@@ -48,13 +48,10 @@ func main() {
 		fmt.Fprintln(os.Stderr, "error starting agent:", err)
 		os.Exit(1)
 	}
-	handler := walletrpc.Handler(g)
-	handler = secureheader.Handler(handler)
 
-	cert, key, err := findCertKey(*dir)
-	if err != nil && !os.IsNotExist(err) {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	handler := walletrpc.Handler(g)
+	if !isLoopback(*listen) {
+		handler = secureheader.Handler(handler)
 	}
 
 	serveLn, redirLn, err := systemdListenersOrListen(*listen)
@@ -63,6 +60,12 @@ func main() {
 		os.Exit(1)
 	}
 	serveLn = &keepAliveListener{serveLn}
+
+	cert, key, err := findCertKey(*dir)
+	if err != nil && !os.IsNotExist(err) {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 
 	if redirLn != nil {
 		go func() {
@@ -83,6 +86,7 @@ func main() {
 	// Timeout settings based on Filippo's late-2016 blog post
 	// https://blog.filippo.io/exposing-go-on-the-internet/.
 	srv := &http.Server{
+		Addr:        *listen,
 		ReadTimeout: 5 * time.Second,
 
 		// must be higher than the event handler timeout (10s)
@@ -91,6 +95,10 @@ func main() {
 		IdleTimeout: 120 * time.Second,
 		Handler:     handler,
 	}
+	if isLoopback(*listen) {
+		srv.Serve(serveLn)
+	}
+
 	if cert != "" {
 		err = srv.ServeTLS(serveLn, cert, key)
 	} else {
@@ -231,4 +239,9 @@ func (ln *keepAliveListener) Accept() (net.Conn, error) {
 	tcpConn.SetKeepAlivePeriod(3 * time.Minute)
 
 	return tcpConn, nil
+}
+
+func isLoopback(addr string) bool {
+	a, err := net.ResolveTCPAddr("tcp", addr)
+	return err == nil && a.IP.IsLoopback()
 }
