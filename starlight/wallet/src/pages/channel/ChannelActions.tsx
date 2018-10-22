@@ -70,7 +70,7 @@ export class ChannelActions extends React.Component<Props, State> {
         </Modal>
         <Modal isOpen={this.hasOpenModal('send')} onClose={this.closeModal}>
           <ConnectedSendPayment
-            InitialRecipient={this.props.channel.CounterpartyAddress}
+            initialRecipient={this.props.channel.CounterpartyAddress}
             closeModal={this.closeModal}
           />
         </Modal>
