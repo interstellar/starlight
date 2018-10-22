@@ -50,7 +50,7 @@ it('renders CreateChannel', () => {
   const tree = renderer
     .create(
       <CreateChannel
-        AvailableBalance={0}
+        availableBalance={0}
         closeModal={closeModal}
         createChannel={createChannel}
         username="jessicard"
