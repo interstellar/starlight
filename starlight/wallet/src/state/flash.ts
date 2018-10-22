@@ -1,6 +1,5 @@
 import { Dispatch, Reducer } from 'redux'
 
-import { timer } from 'helpers/timer'
 import { FlashState } from 'types/schema'
 
 // Actions
@@ -36,7 +35,9 @@ const reducer: Reducer<FlashState> = (state = initialState, action) => {
 const set = async (dispatch: Dispatch, message: string, color?: string) => {
   dispatch({ type: SET_FLASH, message, color })
 
-  timer(() => dispatch({ type: CLEAR_FLASH }), 3000)
+  setTimeout(() => {
+    dispatch({ type: CLEAR_FLASH })
+  }, 3000)
 }
 
 export const flash = {

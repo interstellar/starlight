@@ -22,8 +22,6 @@ interface Props {
 }
 interface State {
   openedModalName: string
-  showFlash: boolean
-  flashMessage: string
 }
 
 export class Settings extends React.Component<Props, State> {
@@ -32,13 +30,10 @@ export class Settings extends React.Component<Props, State> {
 
     this.state = {
       openedModalName: '',
-      showFlash: false,
-      flashMessage: '',
     }
 
     this.openModal = this.openModal.bind(this)
     this.closeModal = this.closeModal.bind(this)
-    this.showFlash = this.showFlash.bind(this)
   }
 
   private openModal(name: string) {
@@ -51,14 +46,6 @@ export class Settings extends React.Component<Props, State> {
 
   private closeModal() {
     this.setState({ openedModalName: '' })
-  }
-
-  private showFlash(message: string) {
-    this.setState({ showFlash: true, flashMessage: message })
-
-    window.setTimeout(() => {
-      this.setState({ showFlash: false, flashMessage: '' })
-    }, 3000)
   }
 
   public componentDidMount() {
