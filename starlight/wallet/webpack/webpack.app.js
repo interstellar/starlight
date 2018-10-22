@@ -74,7 +74,7 @@ var config = getConfig({
           '/starlight/**',
         ],
         options: {
-          target: process.env.STARLIGHTD_URL || 'https://localhost:7000',
+          target: process.env.STARLIGHTD_URL || 'http://localhost:7000',
           secure: false,
         },
       },
