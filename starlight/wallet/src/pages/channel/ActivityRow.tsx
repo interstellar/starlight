@@ -1,5 +1,6 @@
 import * as React from 'react'
 import * as moment from 'moment'
+import styled from 'styled-components'
 
 import { DUSTYGRAY } from 'pages/shared/Colors'
 import { TableData } from 'pages/shared/Table'
@@ -8,6 +9,10 @@ import { ValueChange } from 'pages/shared/ValueChange'
 import { ChannelOp } from 'types/types'
 import { ChannelState } from 'types/schema'
 import { formatAmount, stroopsToLumens } from 'helpers/lumens'
+
+const Row = styled.tr<{ pending: boolean }>`
+  ${props => (props.pending && 'opacity: 0.5; font-style: italic;') }
+`
 
 const activityTitle = (op: ChannelOp): string => {
   switch (op.type) {
@@ -48,14 +53,14 @@ export class ActivityRow extends React.Component<Props, {}> {
         : this.props.timestamp
           ? moment(this.props.timestamp).fromNow()
           : ''
-    const pendingParens =
+    const pendingPayment =
       this.props.pending &&
       (op.type === 'incomingChannelPayment' ||
         op.type === 'outgoingChannelPayment')
     return (
-      <tr>
+      <Row pending={pendingPayment}>
         <TableData align="left">
-          {activityTitle(op)} {pendingParens ? ' (pending)' : ''}{' '}
+          {activityTitle(op)} {pendingPayment ? ' (pending)' : ''}{' '}
           <Timestamp>{time}</Timestamp>
         </TableData>
         <TableData align="right">
@@ -70,7 +75,7 @@ export class ActivityRow extends React.Component<Props, {}> {
         <TableData align="right" color={DUSTYGRAY}>
           {formatAmount(stroopsToLumens(op.theirBalance + op.theirDelta))} XLM
         </TableData>
-      </tr>
+      </Row>
     )
   }
 }
