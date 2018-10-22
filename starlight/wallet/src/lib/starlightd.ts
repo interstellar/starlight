@@ -26,7 +26,6 @@ export const Starlightd = {
         return { body: '', ok: response.ok }
       }
     } catch (error) {
-      console.log(error)
       return { body: '', ok: false }
     }
   },
