@@ -69,7 +69,7 @@ export class SendPayment extends React.Component<Props, State> {
     const validAmount = this.amount() !== undefined
     const hasChannel = this.destinationChannel() !== undefined
     const hasChannelWithSufficientBalance =
-      validAmount && hasChannel && !this.channelHasSufficientBalance()
+      validAmount && hasChannel && this.channelHasSufficientBalance()
     const submittable =
       validAmount &&
       (hasChannelWithSufficientBalance ||
