@@ -200,7 +200,9 @@ func handleFundingTx(u *Updater, tx *Tx, success bool) (bool, error) {
 	}
 	if !success {
 		if u.C.Role == Host {
-			u.H.Balance += u.C.SetupAndFundingReserveAmount()
+			// Host gets back funding tx-related amounts, charged fees for cleanup tx.
+			u.H.Balance += u.C.fundingBalanceAmount() + u.C.fundingFeeAmount()
+			u.H.Balance -= 3 * u.C.HostFeerate
 			u.H.Seqnum++
 			err := u.transitionTo(AwaitingCleanup)
 			return true, err

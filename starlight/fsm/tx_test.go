@@ -363,8 +363,8 @@ func TestUpdateFailedFundingTx(t *testing.T) {
 	if err != nil {
 		t.Errorf("error updating from failed tx: got %s, want nil", err)
 	}
-	if h.Balance != original.Balance+ch.SetupAndFundingReserveAmount() {
-		t.Errorf("error unreserving host balance: got %s, want %s", h.Balance, original.Balance+ch.SetupAndFundingReserveAmount())
+	if h.Balance != original.Balance+ch.fundingBalanceAmount()+ch.fundingFeeAmount() {
+		t.Errorf("error unreserving host balance: got %s, want %s", h.Balance, original.Balance+ch.fundingBalanceAmount()+ch.fundingFeeAmount())
 	}
 	if h.Seqnum != original.Seqnum+1 {
 		t.Errorf("error incrementing host seqnum: got %d, want %d", h.Seqnum, original.Seqnum+1)

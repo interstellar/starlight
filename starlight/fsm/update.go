@@ -87,10 +87,10 @@ func (u *Updater) Time() error {
 		}
 
 		// Unreserve wallet balance
-		// TODO(bobg): double-check the logic here and test for expected balances.
-		// In particular,
-		// we should not expect to recover the fees of any txs that have been published.
-		u.H.Balance += u.C.SetupAndFundingReserveAmount()
+		// We should only recover the balance of the funding tx,
+		// since both the setup and funding txes have been published.
+		// TODO(debnil): test for expected balances.
+		u.H.Balance += u.C.fundingBalanceAmount()
 
 		u.C.FundingTimedOut = true
 		return u.transitionTo(AwaitingCleanup)
@@ -99,7 +99,7 @@ func (u *Updater) Time() error {
 		// ChannelProposedTimeout
 		log.Printf("ChannelProposedTimeout...")
 		if u.C.Role == Host {
-			u.H.Balance += u.C.SetupAndFundingReserveAmount()
+			u.H.Balance += u.C.fundingBalanceAmount() + u.C.fundingFeeAmount()
 			u.H.Seqnum++
 			return u.transitionTo(AwaitingCleanup)
 		}

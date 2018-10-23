@@ -45,11 +45,16 @@ func createChannelFn(_ *Command, u *Updater) error {
 	}
 	return u.transitionTo(SettingUp)
 }
+
 func cleanUpFn(_ *Command, u *Updater) error {
 	if u.C.State != ChannelProposed {
 		return errors.Wrapf(ErrUnexpectedState, "got %s, want %s", u.C.State, ChannelProposed)
 	}
-	u.H.Balance += u.C.SetupAndFundingReserveAmount()
+	// Get back funds associated with funding tx.
+	// Charged 3 * feerate for the three ops in cleanup tx.
+	// Setup balances are added back in processing MergeOps.
+	u.H.Balance += u.C.fundingBalanceAmount() + u.C.fundingFeeAmount()
+	u.H.Balance -= 3 * u.C.HostFeerate
 	u.H.Seqnum++
 	return u.transitionTo(AwaitingCleanup)
 }
