@@ -9,7 +9,7 @@ import (
 	"github.com/stellar/go/xdr"
 
 	"github.com/interstellar/starlight/errors"
-	"github.com/interstellar/starlight/starlight/xlm"
+	"github.com/interstellar/starlight/worizon/xlm"
 )
 
 func TestHandleChannelProposeMsg(t *testing.T) {

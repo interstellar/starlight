@@ -12,8 +12,8 @@ import (
 
 	"github.com/interstellar/starlight/starlight"
 	"github.com/interstellar/starlight/starlight/walletrpc"
-	"github.com/interstellar/starlight/starlight/xlm"
 	"github.com/interstellar/starlight/worizon"
+	"github.com/interstellar/starlight/worizon/xlm"
 )
 
 type Starlightd struct {

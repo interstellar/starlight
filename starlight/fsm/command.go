@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/interstellar/starlight/errors"
-	"github.com/interstellar/starlight/starlight/xlm"
+	"github.com/interstellar/starlight/worizon/xlm"
 )
 
 type UserCommand string

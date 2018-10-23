@@ -16,7 +16,7 @@ import (
 	"github.com/interstellar/starlight/net"
 	"github.com/interstellar/starlight/starlight"
 	"github.com/interstellar/starlight/starlight/fsm"
-	"github.com/interstellar/starlight/starlight/xlm"
+	"github.com/interstellar/starlight/worizon/xlm"
 )
 
 type wallet struct {

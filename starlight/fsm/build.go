@@ -8,7 +8,7 @@ import (
 	"github.com/stellar/go/xdr"
 
 	"github.com/interstellar/starlight/math/checked"
-	"github.com/interstellar/starlight/starlight/xlm"
+	"github.com/interstellar/starlight/worizon/xlm"
 )
 
 func (ch *Channel) buildWalletTx(seqnum xdr.SequenceNumber, m ...b.TransactionMutator) (*b.TransactionBuilder, error) {

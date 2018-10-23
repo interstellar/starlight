@@ -11,7 +11,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/interstellar/starlight/starlight/xlm"
+	"github.com/interstellar/starlight/worizon/xlm"
 )
 
 // itest runs an alice-and-bob integration test.

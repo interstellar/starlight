@@ -24,7 +24,7 @@ import (
 	b "github.com/stellar/go/build"
 	"github.com/stellar/go/xdr"
 
-	"github.com/interstellar/starlight/starlight/xlm"
+	"github.com/interstellar/starlight/worizon/xlm"
 )
 
 type Role string
