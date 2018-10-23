@@ -236,37 +236,34 @@ func (ch *Channel) signRatchetTx(ratchetTx *b.TransactionBuilder, ratchetSig xdr
 }
 
 func (ch *Channel) SetupAndFundingReserveAmount() xlm.Amount {
+
 	var result xlm.Amount
-
-	// host ratchet acct setup
-	result += ch.HostFeerate // fee
-	result += xlm.Lumen      // initial balance
-
-	// guest ratchet acct setup
-	result += ch.HostFeerate // fee
-	result += xlm.Lumen      // initial balance
-
-	// escrow acct setup
-	result += ch.HostFeerate // fee
-	result += xlm.Lumen      // initial balance
-
-	// funding tx fee
-	result += 7 * ch.HostFeerate // 7 operations * basefee
-
-	// funding tx, payment to escrow acct
-	result += ch.HostAmount         // funding amount
-	result += 500 * xlm.Millilumen  // reserve balance
-	result += 8 * ch.ChannelFeerate // fund fee payments
-
-	// funding tx, payment to guest ratchet acct
-	result += xlm.Lumen         // reserve balance
-	result += ch.ChannelFeerate // fund fee payment
-
-	// funding tx, payment to host ratchet acct
-	result += 500 * xlm.Millilumen // reserve balance
-	result += ch.ChannelFeerate    // fund fee payment
-
+	result += setupMinBalanceAmount()
+	result += ch.setupFeeAmount()
+	result += ch.fundingBalanceAmount()
+	result += ch.fundingFeeAmount()
 	return result
+}
+
+func setupMinBalanceAmount() xlm.Amount {
+	// Escrow, host ratchet, guest ratchet have min balance of 1 XLM.
+	return 3 * xlm.Lumen
+}
+
+func (ch *Channel) setupFeeAmount() xlm.Amount {
+	// Escrow, host ratchet, guest ratchet have same fees.
+	return 3 * ch.HostFeerate
+}
+
+func (ch *Channel) fundingBalanceAmount() xlm.Amount {
+	// Guest ratchet has 2 additional signers, escrow and host ratchet 1 each.
+	// Each additional signer adds .5 Lumen to the minimum reserve balance.
+	return ch.HostAmount + 2*xlm.Lumen
+}
+
+func (ch *Channel) fundingFeeAmount() xlm.Amount {
+	// Escrow fees are 8 * feerate XLM and ratchet accounts are 1 * feerate XLM each.
+	return 10 * ch.ChannelFeerate
 }
 
 func isSetupState(state State) bool {
