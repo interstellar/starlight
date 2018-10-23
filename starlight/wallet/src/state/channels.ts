@@ -87,6 +87,56 @@ export const createChannel = async (
   return response.ok
 }
 
+export const cancel = async (dispatch: Dispatch, id: string) => {
+  const response = await Starlightd.post(dispatch, '/api/do-command', {
+    ChannelID: id,
+    Command: {
+      UserCommand: 'CleanUp',
+    },
+  })
+  return response.ok
+}
+
+export const close = async (dispatch: Dispatch, id: string) => {
+  const response = await Starlightd.post(dispatch, '/api/do-command', {
+    ChannelID: id,
+    Command: {
+      UserCommand: 'CloseChannel',
+    },
+  })
+  return response.ok
+}
+
+export const channelPay = async (
+  dispatch: Dispatch,
+  id: string,
+  amount: number
+) => {
+  const response = await Starlightd.post(dispatch, '/api/do-command', {
+    ChannelID: id,
+    Command: {
+      UserCommand: 'ChannelPay',
+      Amount: amount,
+    },
+  })
+  return response.ok
+}
+
+export const deposit = async (
+  dispatch: Dispatch,
+  id: string,
+  amount: number
+) => {
+  const response = await Starlightd.post(dispatch, '/api/do-command', {
+    ChannelID: id,
+    Command: {
+      UserCommand: 'TopUp',
+      Amount: amount,
+    },
+  })
+  return response.ok
+}
+
 // selectors
 export const getChannels = (state: ApplicationState) => {
   const chans = Object.values(state.channels)
@@ -183,47 +233,6 @@ export const getChannelActivity = (channel: ChannelState) => {
     }
   }
   return activities
-}
-
-// Side effects
-export const close = async (dispatch: Dispatch, id: string) => {
-  const response = await Starlightd.post(dispatch, '/api/do-command', {
-    ChannelID: id,
-    Command: {
-      UserCommand: 'CloseChannel',
-    },
-  })
-  return response.ok
-}
-
-export const channelPay = async (
-  dispatch: Dispatch,
-  id: string,
-  amount: number
-) => {
-  const response = await Starlightd.post(dispatch, '/api/do-command', {
-    ChannelID: id,
-    Command: {
-      UserCommand: 'ChannelPay',
-      Amount: amount,
-    },
-  })
-  return response.ok
-}
-
-export const deposit = async (
-  dispatch: Dispatch,
-  id: string,
-  amount: number
-) => {
-  const response = await Starlightd.post(dispatch, '/api/do-command', {
-    ChannelID: id,
-    Command: {
-      UserCommand: 'TopUp',
-      Amount: amount,
-    },
-  })
-  return response.ok
 }
 
 export const channels = {

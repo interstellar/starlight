@@ -15,7 +15,7 @@ import { ActionContainer } from 'pages/shared/Heading'
 import { Modal } from 'pages/shared/Modal'
 import { Tooltip } from 'pages/shared/Tooltip'
 
-import { close, getMyBalance } from 'state/channels'
+import { cancel, close, getMyBalance } from 'state/channels'
 
 const TooltipBtn = styled(BtnHeading)`
   margin-left: 0;
@@ -26,6 +26,7 @@ const TooltipBtnWrapper = styled.span`
 
 interface Props {
   channel: ChannelState
+  cancelOpenChannel: (id: string) => void
   closeChannel: (id: string) => undefined
 }
 
@@ -89,11 +90,14 @@ export class ChannelActions extends React.Component<Props, State> {
 
     if (channelState === 'Closed') {
       return <span>{this.openChannelBtn()}</span>
+    } else if (channelState === 'ChannelProposed') {
+      return <span>{this.cancelOpenChannelBtn()}</span>
     } else {
       return (
         <span>
           {this.closeChannelBtn()}
           {this.sendBtn()}
+
           {this.depositBtn()}
         </span>
       )
@@ -102,6 +106,16 @@ export class ChannelActions extends React.Component<Props, State> {
 
   private openChannelBtn() {
     return <BtnHeading onClick={() => this.openModal('open')}>Open</BtnHeading>
+  }
+
+  private cancelOpenChannelBtn() {
+    return (
+      <BtnHeading
+        onClick={() => this.props.cancelOpenChannel(this.props.channel.ID)}
+      >
+        Cancel
+      </BtnHeading>
+    )
   }
 
   private closeChannelBtn() {
@@ -166,6 +180,9 @@ export class ChannelActions extends React.Component<Props, State> {
 
 const mapDispatchToProps = (dispatch: Dispatch) => {
   return {
+    cancelOpenChannel: (id: string) => {
+      cancel(dispatch, id)
+    },
     closeChannel: (id: string) => {
       close(dispatch, id)
     },
