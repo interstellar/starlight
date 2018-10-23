@@ -1,12 +1,9 @@
 # Starlight payment-channel protocol
 
-This document describes the Starlight payment-channel protocol,
-the first component of an adaptation of
-[Lightning](https://lightning.network/)
-to
+This document describes the Starlight payment-channel protocol for
 [the Stellar network](https://www.stellar.org/).
 
-It allows two participants to transact off-network in a secure fashion.
+Starlight allows two participants to transact off-network in a secure fashion.
 They do so by creating an on-network “channel” that locks up the funds they intend to use.
 During the lifetime of the channel,
 the two parties send payments to each other privately
@@ -27,7 +24,7 @@ and close it,
 with no delay,
 at any time.
 
-This specification is for payment channels that allow locking up and transferring lumens,
+This specification is for payment channels that lock up and transfer lumens,
 the native currency of the Stellar network.
 It generalizes,
 with some minor modifications,
@@ -49,49 +46,64 @@ You can learn more about the relevant features of the Stellar protocol
   - [Cooperative closing](#cooperative-closing)
   - [Force closing](#force-closing)
 - [Appendix](#appendix)
-  - [Timing Diagrams](#timing-diagrams)
-  - [Channel State Diagram](#channel-state-diagram)
+  - [Timing diagrams](#timing-diagrams)
+  - [Channel state diagram](#channel-state-diagram)
   - [Node states](#node-states)
   - [Accounts](#accounts)
   - [Computed Values](#computed-values)
   - [Messages](#messages)
   - [Transactions](#transactions)
-  - [User Commands](#user-commands)
+  - [User commands](#user-commands)
   - [Timers](#timers)
   - [Fees](#fees)
-  - [Timing Parameters](#timing-parameters)
+  - [Timing parameters](#timing-parameters)
   - [Stellar protocol background](#stellar-protocol-background)
 
 ## Starlight mechanism overview
 
-One party,
-called the _Host_,
-wants to open a payment channel with another,
-called the _Guest_.
-Host is responsible for setting up new accounts associated with the channel as described below,
-funding them with the required minimum balances of lumens
-(which are fully recovered when the channel closes)
-and paying transaction fees
-(which aren't).
-Host is also responsible for depositing the entire initial balance of the channel.
+There are two parties in a Starlight channel:
+a _Host_ and a _Guest_.
+The Host is the one proposing the channel and the Guest is the one accepting it.
 
-Host proposes a channel by sending a message to Guest,
-who responds with a message accepting the channel.
-Since channels do not require any upfront funding from Guest,
-Guest can automatically accept all incoming channels.
+Both parties run a software _agent_ that executes the steps of the protocol on their behalf.
+The agent must be highly available:
+it has to be online to receive channel payments and must also interact with each channel periodically to protect the funds they contain.
+The agent listens for commands from the user,
+monitors the Stellar network for relevant transactions,
+sends and receives RPC messages to and from other users’ Starlight agents,
+and triggers time-based events.
 
-Guest has a well-known
-(an account Host is able to find)
-Stellar account,
-`GuestAccount`,
-with a single public key.
-In this channel,
-that public key will be used as their `GuestEscrowPubKey`.
+The Host’s agent sets up a channel by creating various Stellar accounts as described below.
+The Host is also responsible for funding the channel with:
+
+- Lumens to cover each account’s required reserve balance.
+  These lumens are fully recovered by the Host when the channel closes.
+- Lumens to cover fees for the on-network parts of the Starlight protocol.
+  Some of these may be recovered by the Host when the channel closes.
+- The balance to be used for making payments from the Host to the Guest.
+  Once the Guest has received some payments in the channel,
+  he or she may use their balance to make payments to the Host.
+
+The Host has a Stellar account with a single public key.
+We’ll refer to this account as `HostAccount` and the key as `HostAccountKey`.
+The Guest also has a Stellar account with a single public key:
+`GuestAccount` and `GuestAccountKey`.
+The Guest’s account must be well-known
+(i.e.,
+an account that the Host is able to find).
+
+When creating a channel,
+the Host
+(via his or her agent)
+sends a channel-proposal protocol message to the Guest.
+The Guest responds with a message accepting the channel.
+(Since a channel does not require any funding from the Guest,
+he or she can accept all incoming channel proposals automatically.)
 
 The funds in the channel are held in a new
 [EscrowAccount](#escrowaccount)
 created for this purpose.
-Funds in that account can only be spent by transactions signed by both parties.
+Funds in that account can be spent only when both parties sign a transaction.
 Two other accounts,
 the
 [HostRatchetAccount](#hostratchetaccount)
@@ -101,58 +113,58 @@ are created for use with the channel but do not hold funds
 (other than their required minimum balances).
 Instead,
 they serve as dedicated Stellar-transaction “source accounts” with predictable sequence numbers.
-All three accounts are merged back to Host’s account when the channel closes.
+All three accounts are merged back to `HostAccount` when the channel closes.
 
 Once the channel is set up,
-the parties may make payments on the channel until one or both of them decide to close it.
+the parties may make any number of
+(private,
+instant)
+payments to each other using the funds in the channel.
+The Host may “top up” the channel with additional funds.
+Either party may decide to close the channel at any time.
+Closing the channel pays each party his or her respective balance of the funds in the channel and returns reserves and unused fees to the Host.
 
-Payments involve the off-ledger exchange of signed,
+Making a payment involves the off-ledger exchange of signed,
 _unpublished_ Stellar transactions.
 These transactions guarantee that if one party does not cooperate in continuing or closing the channel,
 the other party can close the channel unilaterally and extract their correct balance.
 
 In each payment round,
-the parties first exchange signed _settlement transactions_,
-which distribute the funds in the
+the parties first exchange signed _settlement transactions_ that distribute the funds in the
 [EscrowAccount](#escrowaccount)
-according to the current balance in the channel,
-but which have a higher sequence number
-(and are therefore unspendable unless the escrow account's sequence number is raised to that level).
+according to the respective balances in the channel.
+The settlement transactions have a too-high sequence number,
+however,
+so they are unpublishable until `EscrowAccount`’s sequence number is raised to that level.
 
-Next, the parties exchange signed _ratchet transactions_,
-which bump the sequence number of the
+Next,
+the parties exchange signed _ratchet transactions_.
+These use the ratchet accounts to bump up the sequence number of the
 [EscrowAccount](#escrowaccount)
 to set up the settlement transactions.
 
-For each round,
+A ratchet transaction must therefore be published before it’s possible to publish the corresponding settlement transactions.
+But it’s possible for one party to publish an outdated ratchet transaction
+(one from an earlier payment round),
+closing the channel with outdated settlement transactions.
+To combat this
+(which might allow one party to extract more from the channel than they’re entitled to),
 there is a gap between the maximum time of the ratchet transactions and the minimum time of the settlement transactions.
-This means that if a party attempts to exit an outdated state by publishing an old ratchet transaction,
-their counterparty will have a chance to publish a later ratchet transaction in response.
+In this time interval,
+it’s possible for the other party to notice the discrepancy and publish a more up-to-date ratchet transaction.
+This renders the old settlement transactions unpublishable
+(since `EscrowAccount`’s sequence number is now too high).
 
-Host can add funds to the channel at any time simply by making a payment to the
-[EscrowAccount](#escrowaccount).
-
-If Host and Guest agree to close the channel,
-they can sign and publish a
-[transaction](#cooperativeclosetx)
-that pays them their respective balances and merges the specially created accounts back to Host’s account.
-
-If one party is unavailable or declines to cooperate,
-the other party may close the channel unilaterally by publishing their latest ratchet transaction,
-waiting for the settlement transactions' mintime to arrive,
-and publishing the settlement transactions.
-
-Although the outcome is the same--both parties get paid--cooperative closing is generally preferable because it is near-instant.
-Unilateral closing has a built-in delay before the channel’s funds can be claimed,
-to allow the exit to be "challenged" by the reveal of a later ratchet transaction.
-
-Each user must run a Starlight software _agent_ that tracks the state of the channels in which they are participating.
-The agent updates its state in response to user input,
-RPC calls from other agents,
-the progression of the ledger timestamp,
-and the appearance in the ledger of relevant transactions.
-The agent should be highly available:
-it has to be online to receive channel payments and must also interact with each channel periodically to protect the funds they contain.
+These ratchet and settlement transactions are insurance for both parties in case either becomes unavailable or declines to cooperate.
+They allow one party unilaterally to close the channel,
+but as described,
+they involve a delay.
+If,
+however,
+the Host and the Guest agree to close the channel,
+they can sign and publish a new
+[cooperative close transaction](#cooperativeclosetx)
+that closes the channel without delay.
 
 ## Creating a channel
 
@@ -285,7 +297,7 @@ state.
 [ChannelProposeMsg](#channelproposemsg)
 is the first that Guest hears about the channel.
 Before this,
-Guest's channel is considered to be in the
+Guest’s channel is considered to be in the
 [Start](#start)
 state.
 
@@ -345,7 +357,7 @@ Sender will only attempt this when in an
 [Open](#open)
 state;
 otherwise,
-the agent will reject the user's request to make a payment.
+the agent will reject the user’s request to make a payment.
 
 Sender receives a
 [ChannelPayCmd](#channelpaycmd)
@@ -394,7 +406,7 @@ Recipient sets `CounterpartyLatestSettlementTxes` to
 [PaymentSettleWithGuestTx](#paymentsettlewithguesttx)
 and
 [PaymentSettleWithHostTx](#paymentsettlewithhosttx),
-with the counterparty's signatures included on them.
+with the counterparty’s signatures included on them.
 
 Recipient transitions to a
 [PaymentAccepted](#paymentaccepted)
@@ -467,7 +479,7 @@ A transaction including any such payment is considered a
 [TopUpTx](#topuptx).
 
 Host and Guest are always watching the account for any incoming payments,
-which they immediately credit to Host's balance.
+which they immediately credit to Host’s balance.
 
 ## Conflict resolution
 
@@ -490,16 +502,16 @@ they compare the `PaymentAmount` of the incoming message against the one from th
 [PaymentProposeMsg](#paymentproposemsg)
 that they had previously sent.
 
-If Sender's attempted payment was higher
+If Sender’s attempted payment was higher
 (or if the attempted payments were equal and Sender is the Host),
-they create a "merged" payment.
+they create a “merged” payment.
 They increment `RoundNumber`,
 then initiate a new
 [PaymentProposeMsg](#paymentproposemsg)
 with a `PaymentAmount` that is the difference between their attempted payments,
 and with the same `PaymentTime` as their own attempted payment.
 
-If Sender's attempted payment was lower,
+If Sender’s attempted payment was lower,
 (or if the attempted payments were equal and Sender is the Guest),
 they increment `RoundNumber`,
 then transition to an
@@ -564,7 +576,7 @@ each party must watch out for either of the following conditions:
 
 1. Their counterparty publishes a ratchet transaction from a previous round
    (i.e.,
-   one that bumps `EscrowAccount`'s sequence number to a number lower than `CurrentRatchetTx` does),
+   one that bumps `EscrowAccount`’s sequence number to a number lower than `CurrentRatchetTx` does),
    or
 2. The ledger timestamp approaches `PaymentTime` + `MaxRoundDuration`
    (which is also the maxtime for the `CurrentRatchetTx`,
@@ -603,7 +615,7 @@ they transition to state
 ### Handling later counterparty ratchet transactions
 
 In some cases,
-a party's counterparty can have a ratchet transaction that supersedes the party's own latest ratchet transaction.
+a party’s counterparty can have a ratchet transaction that supersedes the party’s own latest ratchet transaction.
 This can occur when there is an uncompleted payment round,
 such as when a party is in state
 [PaymentAccepted](#paymentaccepted),
@@ -626,21 +638,21 @@ they return to state
 
 # Appendix
 
-## Timing Diagrams
+## Timing diagrams
 
-### Open State Timing
+### Open state timing
 
 ![Open](diagrams/Open.jpg)
 
-### AwaitingRatchet State Timing
+### AwaitingRatchet state timing
 
 ![Awaiting Ratchet](diagrams/AwaitingRatchet.jpg)
 
-### Timing Reference
+### Timing reference
 
 ![Timing Reference](diagrams/Reference.jpg)
 
-## Channel State Diagram
+## Channel state diagram
 
 ![Channel state](channel-state.png)
 
@@ -763,13 +775,13 @@ the agent tracks the following information:
   the
   [RatchetTx](#ratchettx)
   from the latest round,
-  including the counterparty's signature on it;
+  including the counterparty’s signature on it;
 - `CurrentSettlementTxes`,
   the settlement transactions from the latest round,
-  including the counterparty's signature on them;
+  including the counterparty’s signature on them;
 - `CounterpartyLatestSettlementTxes`,
   the latest settlement transactions for which the _counterparty_ has a valid ratchet transaction,
-  including the counterparty's signature on them;
+  including the counterparty’s signature on them;
 - `PaymentTime`,
   the time of the latest completed payment
   (or `FundingTime` if no payment has been made).
@@ -794,7 +806,7 @@ See
 
 #### Open
 
-This is the "default" state of an open channel,
+This is the “default” state of an open channel,
 in which the channel is open,
 the round has not yet timed out,
 and the party is not aware of any pending payments or close attempts.
@@ -850,9 +862,9 @@ During this state,
 a party needs to maintain the following additional information:
 
 - `MyPaymentAmount`,
-  the amount of the party's own attempted payment
+  the amount of the party’s own attempted payment
 - `TheirPaymentAmount`,
-  the amount of the counterparty's attempted payment
+  the amount of the counterparty’s attempted payment
 
 ### Force closing states
 
@@ -923,7 +935,7 @@ because it has one additional signer.
 
 ### HostRatchetAccount
 
-This is the account that is the source account for `Host`'s
+This is the account that is the source account for `Host`’s
 [RatchetTx](#ratchettx).
 Its master key is `FirstThrowawayPubKey`.
 It is created by a
@@ -945,7 +957,7 @@ because it has one additional signer,
 
 ### GuestRatchetAccount
 
-This is the account that is the source account for `Guest`'s
+This is the account that is the source account for `Guest`’s
 [RatchetTx](#ratchettx).
 Its master key is `SecondThrowawayPubKey`.
 It is created by a
@@ -992,7 +1004,7 @@ in other channels in which they are the Host).
 This is the destination into which funds are paid in the
 [SettleWithGuestTx](#settlewithguesttx).
 
-## Computed Values
+## Computed values
 
 The following values are defined in the context of a particular payment round.
 
@@ -1044,7 +1056,7 @@ and is defined as `GuestEscrowPubKey` otherwise.
 
 ### NewGuestBalance
 
-`NewGuestBalance` is defined as the Guest's balance after the payment.
+`NewGuestBalance` is defined as the Guest’s balance after the payment.
 
 If `Sender` is the party whose `Role` in the channel is `Guest`,
 `NewGuestBalance` is defined as `GuestBalance - PaymentAmount`,
@@ -1054,7 +1066,7 @@ If `Sender` is the party whose `Role` in the channel is `Host`,
 
 ### NewHostBalance
 
-`NewHostBalance` is defined as the Host's balance after the payment.
+`NewHostBalance` is defined as the Host’s balance after the payment.
 
 If `Sender` is the party whose `Role` in the channel is `Guest`,
 `NewHostBalance` is defined as `HostBalance + PaymentAmount`,
@@ -1153,7 +1165,7 @@ the recipient ignores the message.
 8. `HostAmount`
 9. `FundingTime`
 10. `HostAddress`
-    (the Host's
+    (the Host’s
     [Stellar federation address](https://www.stellar.org/developers/guides/concepts/federation.html#stellar-addresses))
 
 #### Handling
@@ -1190,7 +1202,7 @@ the agent who receives it checks that the following conditions are true:
   [Start](#start)
   state).
 - the agent does not already have a channel where `HostAddress` is the counterparty.
-- `GuestEscrowPubKey` is the agent's own public key.
+- `GuestEscrowPubKey` is the agent’s own public key.
 - There exist accounts on the ledger with account IDs:
   - `ChannelID`
   - `HostRatchetAccount`
@@ -1199,7 +1211,7 @@ the agent who receives it checks that the following conditions are true:
   `MaxRoundDuration`,
   `FinalityDelay`,
   and `Feerate`,
-  are within the agent's accepted bounds.
+  are within the agent’s accepted bounds.
 - `HostAmount` is greater than 0.
 - The latest ledger timestamp is later than `FundingTime - MaxRoundDuration` and earlier than `FundingTime + MaxRoundDuration`.
 
@@ -1278,7 +1290,7 @@ as part of the process of
 [proposing a payment](#proposing-payment).
 
 To construct this message,
-Sender's agent creates a pair of transactions,
+Sender’s agent creates a pair of transactions,
 [PaymentSettleWithGuestTx](#paymentsettlewithguesttx)
 and
 [PaymentSettleWithHostTx](#paymentsettlewithhosttx).
@@ -1307,7 +1319,7 @@ the agent first checks that the following conditions are true:
   or
   [AwaitingPaymentMerge](#awaitingpaymentmerge).
 - `PaymentAmount` is greater than 0
-- `PaymentAmount` is less than the counterparty's balance
+- `PaymentAmount` is less than the counterparty’s balance
   (`HostBalance` if counterparty is the `Host`, `GuestBalance` otherwise).
 
 The remaining checks depend on which state the channel is in.
@@ -1329,7 +1341,7 @@ Then, for these next checks, all of the
 used are computed using the `RoundNumber` from the message,
 the `PaymentAmount` from the message as `PendingPaymentAmount`,
 and `PaymentTime` from the message as `PendingPaymentTime`,
-rather than using any values from the channel's own state.
+rather than using any values from the channel’s own state.
 
 - `NewGuestBalance` is greater than or equal to 0
 - If `SenderSettleWithGuestSig` is empty,
@@ -1402,7 +1414,7 @@ as part of the process of
 [accepting a payment](#accepting-payment).
 
 The agent creates [SenderRatchetTx](#senderratchettx),
-Note that this is a ratchet transaction for Recipient's _counterparty_.
+Note that this is a ratchet transaction for Recipient’s _counterparty_.
 
 The agent signs this ratchet transaction with the private key for
 [RecipientEscrowPubKey](#recipientescrowpubkey)
@@ -1554,7 +1566,7 @@ The implementation is also responsible for managing sequence numbers for transac
 If a transaction submitted from the
 [HostAccount](#hostaccount)
 is invalid
-(likely due to some inconsistency in how the agent tracks the account's balance or sequence numbers),
+(likely due to some inconsistency in how the agent tracks the account’s balance or sequence numbers),
 the solution is left to the implementation,
 though it could attempt to address the problem with
 [HostAccount](#hostaccount).
@@ -1582,10 +1594,10 @@ since the only way it can fail is if the account it is attempting to create alre
 If the Host agent sees this transaction succeed or fail,
 then the next step depends on the `TargetAccount` of the transaction.
 
-If the transaction's `TargetAccount` is not `EscrowAccount`,
+If the transaction’s `TargetAccount` is not `EscrowAccount`,
 the agent continues waiting.
 
-If the transaction's `TargetAccount` is `EscrowAccount`,
+If the transaction’s `TargetAccount` is `EscrowAccount`,
 meaning it is the last of the
 [SetupAccountTx](#setupaccounttx)s
 for that account,
@@ -1655,7 +1667,7 @@ it transitions the channel to an
 [Open](#open)
 state.
 
-If the agent's role in that channel is
+If the agent’s role in that channel is
 [Guest](#guest),
 it does a lookup on the ledger to confirm that the sequence number of
 [EscrowAccount](#escrowaccount)
@@ -1681,11 +1693,11 @@ state.
 This transaction is not expected to fail.
 
 If an agent is attempting to submit this transaction and it becomes invalid due to its mintime expiring,
-then the agent's
+then the agent’s
 [PrefundTimeout](#prefundtimeout)
 will cause it to clean up the channel.
 No other action is necessary with respect to that channel.
-(Depending on how the implementation manages the `HostAccount`'s sequence number,
+(Depending on how the implementation manages the `HostAccount`’s sequence number,
 the agent may need to take some other action to ensure that later transactions can still complete,
 but this is left to the implementation.)
 
@@ -1750,9 +1762,9 @@ of the channel were violated,
 which means the money in the channel may be locked up permanently.
 Dealing with this failure is left to the implementation.
 
-##### From Counterparty's RatchetAccount
+##### From counterparty’s RatchetAccount
 
-An agent watches for _any_ transaction of this form where `RatchetAccount` is its counterparty's ratchet account for channels that are in _any_ state,
+An agent watches for _any_ transaction of this form where `RatchetAccount` is its counterparty’s ratchet account for channels that are in _any_ state,
 other than a
 [setup state](#setup-states)
 or
@@ -1760,8 +1772,8 @@ or
 
 If it sees this transaction succeed,
 it checks the new sequence number of `EscrowAccount`.
-If it is lower than the sequence number to which the channel's `CurrentRatchetTx` would bump the `EscrowAccount`'s sequence number,
-the agent submits the channel's `CurrentRatchetTx` and transitions the channel to an
+If it is lower than the sequence number to which the channel’s `CurrentRatchetTx` would bump the `EscrowAccount`’s sequence number,
+the agent submits the channel’s `CurrentRatchetTx` and transitions the channel to an
 [AwaitingRatchet](#awaitingratchet)
 state.
 
@@ -1902,7 +1914,7 @@ the most likely reason is that the channel was closed
 before the transaction was successfully submitted.
 This does not require any action with respect to that channel.
 
-## User Commands
+## User commands
 
 This is a list of the RPC commands that the user can send to the agent.
 
@@ -1915,7 +1927,7 @@ with a specified counterparty.
 #### Fields
 
 1. `Counterparty`,
-   the counterparty's Stellar account or
+   the counterparty’s Stellar account or
    [Stellar federation address](https://www.stellar.org/developers/guides/concepts/federation.html#stellar-addresses)
 2. `MaxRoundDuration`
 3. `FinalityDelay`
@@ -1940,7 +1952,7 @@ state.
 
 ### ChannelPayCmd
 
-This initiates an off-ledger payment using one of the user's channels.
+This initiates an off-ledger payment using one of the user’s channels.
 
 #### Fields
 
@@ -1953,7 +1965,7 @@ This command fails if the channel does not exist,
 if that channel is not in an
 [Open](#open)
 state,
-or if `Amount` is higher than the party's balance in that channel.
+or if `Amount` is higher than the party’s balance in that channel.
 
 If valid,
 this command causes the agent to send a
@@ -1964,7 +1976,7 @@ state.
 
 ### TopUpCmd
 
-This initiates a top-up from the user's wallet to one of their channels in which they are the Host.
+This initiates a top-up from the user’s wallet to one of their channels in which they are the Host.
 
 #### Fields
 
@@ -1986,7 +1998,7 @@ state.
 
 ### CloseChannelCmd
 
-This initiates an attempted cooperative close of one of the user's channels.
+This initiates an attempted cooperative close of one of the user’s channels.
 
 #### Fields
 
@@ -2008,7 +2020,7 @@ state.
 
 ### ForceCloseCmd
 
-This initiates an attempted force close of one of the user's channels.
+This initiates an attempted force close of one of the user’s channels.
 
 #### Fields
 
@@ -2030,7 +2042,7 @@ state.
 
 ### CleanUpCmd
 
-This initiates an attempted cleanup of one of a user's channels in which they are the Host,
+This initiates an attempted cleanup of one of a user’s channels in which they are the Host,
 and which they have proposed to a counterparty,
 but for which the counterparty has not yet responded.
 
@@ -2174,7 +2186,7 @@ since in the worst case,
 it is possible for all three to occur from the same account
 (if a cooperative close transaction fails due to `HostAccount` or `GuestAccount` being deleted).
 
-## Timing Parameters
+## Timing parameters
 
 These are timing parameters that are set on a per-channel basis.
 There is a tradeoff to selecting these parameters—
@@ -2237,14 +2249,14 @@ For more information on how Stellar works, you can see the
 
 ### Stellar accounts
 
-The Stellar network tracks the state of individual "accounts,"
+The Stellar network tracks the state of individual “accounts,”
 each of which can store some balance of lumens,
-the Stellar network's native currency.
+the Stellar network’s native currency.
 (These accounts can also store balances of other issued assets on Stellar,
 though this capability is not used in this specification,
 which only covers payment channels that use lumens.)
 Each account starts out with a single public-key _signer_,
-known as a "master key,"
+known as a “master key,”
 and has a minimum balance of 1 lumen.
 This master key is also used as the account ID.
 
@@ -2257,7 +2269,7 @@ the minimum balance requirement on the account is increased by 0.5 lumens.
 
 Each signer
 (including the master key)
-has a "weight."
+has a “weight.”
 For a transaction or operation from an account
 (see below)
 to be authorized,
@@ -2279,7 +2291,7 @@ The sequence number is incremented by each transaction from that account.
 A Stellar transaction has a single _source account_.
 That account is the account responsible for paying the fees on the account.
 
-The transaction also increments the source account's sequence number.
+The transaction also increments the source account’s sequence number.
 Specifically, the transaction itself has a sequence number.
 Sequence numbers are used to prevent replaying transactions,
 and also play an important role in the Starlight protocol.
@@ -2297,7 +2309,7 @@ A transaction must be authorized by the source account of each of its operations
 as well as the source account of the transaction itself.
 
 The following Stellar operations are used in the Starlight payment channel protocol.
-("Source account" here refers to the source account of the operation,
+(“Source account” here refers to the source account of the operation,
 which is not necessarily the source account of the transaction.)
 
 - `CreateAccount`:
@@ -2332,7 +2344,7 @@ There are two ways that a transaction can fail.
 
 If a transaction is not signed by all necessary signers,
 the source account has insufficient balance to pay the fees,
-the source account's sequence number is incorrect,
+the source account’s sequence number is incorrect,
 or the current time is outside the mintime and maxtime bounds of the transaction,
 the transaction is _invalid_,
 and is not included on the ledger.
@@ -2341,10 +2353,10 @@ If one of the operations in a transaction fails,
 then the transaction _fails_,
 and none of the operations have any effect.
 However, the transaction is still included on the ledger,
-the source account's sequence number is still incremented,
+the source account’s sequence number is still incremented,
 and the source account still pays fees for that transaction.
 
-The word "fail" is exclusively used in this document to refer to the latter kind of failure.
+The word “fail” is exclusively used in this document to refer to the latter kind of failure.
 
 We assume that an agent is able to detect the invalidity or failure of transactions that it is attempting to submit.
 We do not assume that an agent is able to detect either failed or invalid transactions submitted by another party.
