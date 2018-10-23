@@ -33,14 +33,14 @@ const ChannelName = styled.div`
 
 interface Props {
   channel: ChannelState
-  AvailableBalance: number
+  availableBalance: number
   deposit: (id: string, amount: number) => void
   closeModal: () => void
 }
 
 interface State {
-  Amount: string
-  ChannelName: string
+  amount: string
+  channelName: string
   showError: boolean
   loading: boolean
 }
@@ -50,8 +50,8 @@ export class Deposit extends React.Component<Props, State> {
     super(props)
 
     this.state = {
-      Amount: '',
-      ChannelName: this.props.channel.CounterpartyAddress,
+      amount: '',
+      channelName: this.props.channel.CounterpartyAddress,
       showError: false,
       loading: false,
     }
@@ -67,25 +67,25 @@ export class Deposit extends React.Component<Props, State> {
         <Heading>Deposit to channel</Heading>
         <Form onSubmit={this.handleSubmit}>
           <Label htmlFor="Channel">Channel</Label>
-          <ChannelName>{this.state.ChannelName}</ChannelName>
+          <ChannelName>{this.state.channelName}</ChannelName>
 
           <div>
-            <Label htmlFor="Amount">Amount</Label>
+            <Label htmlFor="amount">Amount</Label>
             <Hint>
               <strong>{formatAmount(
-                stroopsToLumens(this.props.AvailableBalance)
+                stroopsToLumens(this.props.availableBalance)
               )}</strong>{' '}
               XLM available in account
             </Hint>
           </div>
           <UnitContainer>
             <Input
-              value={this.state.Amount}
+              value={this.state.amount}
               onChange={e => {
-                this.setState({ Amount: e.target.value })
+                this.setState({ amount: e.target.value })
               }}
               type="number"
-              name="Amount"
+              name="amount"
               autoComplete="off"
               autoFocus
             />
@@ -98,7 +98,7 @@ export class Deposit extends React.Component<Props, State> {
             }
           >
             You only have {formatAmount(
-              stroopsToLumens(this.props.AvailableBalance)
+              stroopsToLumens(this.props.availableBalance)
             )} XLM
             available in your wallet.
           </HelpBlock>
@@ -122,7 +122,7 @@ export class Deposit extends React.Component<Props, State> {
   }
 
   private amount() {
-    const lumensAmount = parseFloat(this.state.Amount)
+    const lumensAmount = parseFloat(this.state.amount)
     if (isNaN(lumensAmount)) {
       return undefined
     }
@@ -134,7 +134,7 @@ export class Deposit extends React.Component<Props, State> {
     if (amount === undefined) {
       return false
     }
-    return this.props.AvailableBalance >= amount
+    return this.props.availableBalance >= amount
   }
 
   private formatSubmitButton() {
@@ -185,7 +185,7 @@ export class Deposit extends React.Component<Props, State> {
 
 const mapStateToProps = (state: ApplicationState) => {
   return {
-    AvailableBalance: getWalletStroops(state),
+    availableBalance: getWalletStroops(state),
   }
 }
 
