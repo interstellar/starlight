@@ -53,6 +53,7 @@ func Handler(g *starlight.Agent) http.Handler {
 	mux.Handle("/api/logout", wt.auth(wt.logout))
 	mux.Handle("/api/do-create-channel", wt.auth(wt.doCreateChannel))
 	mux.Handle("/api/do-wallet-pay", wt.auth(wt.doWalletPay))
+	mux.Handle("/api/do-close-account", wt.auth(wt.doCloseAccount))
 	mux.Handle("/api/do-command", wt.auth(wt.doCommand))
 	mux.Handle("/api/find-account", wt.auth(wt.findAccount))
 	mux.HandleFunc("/api/login", wt.login)
@@ -178,6 +179,21 @@ func (wt *wallet) doWalletPay(w http.ResponseWriter, req *http.Request) {
 	err = wt.agent.DoWalletPay(v.Dest, xlmAmount)
 	if err != nil {
 		httperror(req, w, err.Error(), 500)
+	}
+}
+
+func (wt *wallet) doCloseAccount(w http.ResponseWriter, req *http.Request) {
+	var v struct {
+		Dest string
+	}
+	err := json.NewDecoder(req.Body).Decode(&v)
+	if err != nil {
+		http.Error(w, "bad request", 400)
+		return
+	}
+	err = wt.agent.DoCloseAccount(v.Dest)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
 	}
 }
 

@@ -24,6 +24,11 @@ type Agent struct {
 	Config  *Config
 	Updates []*update.Update
 
+	// Ready indicates whether or not the Agent is ready to accept
+	// and process new commands. The Agent is only in a not-ready
+	// state when it is closing.
+	Ready bool
+
 	// Channels holds the state of all open channels. Closed channels
 	// are deleted. (Their history is still available in Updates.)
 	Channels map[string]*fsm.Channel
