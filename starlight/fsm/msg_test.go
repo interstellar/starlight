@@ -17,8 +17,13 @@ func TestHandleChannelProposeMsg(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ch.Role = Guest
+	ch.KeyIndex = 0
 	h := createTestHost()
-	m := createChannelProposeMsg(ch, h)
+	m, err := createChannelProposeMsg([]byte(guestSeed), ch, h)
+	if err != nil {
+		t.Fatal(err)
+	}
 	u := &Updater{
 		C:          ch,
 		O:          ono{},
@@ -994,5 +999,41 @@ func TestHandleCloseMsg(t *testing.T) {
 				t.Errorf("got state %v, want %v", recipient.State, c.wantState)
 			}
 		})
+	}
+}
+
+func TestMessageAuthentication(t *testing.T) {
+	recipient, err := createTestChannel()
+	if err != nil {
+		t.Fatal(err)
+	}
+	recipient.KeyIndex = 0
+	recipient.Role = Guest
+	u := &Updater{
+		C:    recipient,
+		O:    ono{},
+		Seed: []byte(guestSeed),
+	}
+	sender, err := createTestChannel()
+	if err != nil {
+		t.Fatal(err)
+	}
+	sender.Role = Host
+	h := createTestHost()
+	m, err := createChannelProposeMsg([]byte(hostSeed), sender, h)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = u.verifyMsg(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err = createChannelProposeMsg([]byte(guestSeed), sender, h)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = u.verifyMsg(m)
+	if err != keypair.ErrInvalidSignature {
+		t.Fatalf("got %s, want %s", err, keypair.ErrInvalidSignature)
 	}
 }

@@ -71,7 +71,7 @@ func (u *Updater) transitionTo(newState State) error {
 		// timer gets set
 
 	case ChannelProposed:
-		sendChannelProposeMsg(u.C, u.O, u.H)
+		return sendChannelProposeMsg(u.Seed, u.C, u.O, u.H)
 
 	case Closed:
 		return nil // nothing to do

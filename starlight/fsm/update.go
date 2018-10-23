@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/stellar/go/keypair"
 	"github.com/stellar/go/xdr"
 
 	"github.com/interstellar/starlight/errors"
@@ -40,6 +41,9 @@ func (u *Updater) Tx(tx *Tx) error {
 
 func (u *Updater) Msg(m *Message) error {
 	log.Printf("received message: %+v", *m)
+	if err := u.verifyMsg(m); err != nil {
+		return err
+	}
 	switch {
 	case m.ChannelProposeMsg != nil:
 		return u.handleChannelProposeMsg(m)
@@ -122,4 +126,28 @@ func (u *Updater) Time() error {
 // Close transitions the channel in the given Updater to Closed.
 func Close(u *Updater) error {
 	return u.transitionTo(Closed)
+}
+
+func (u *Updater) verifyMsg(m *Message) error {
+	var (
+		err error
+		kp  keypair.KP
+	)
+	switch u.C.Role {
+	case Guest:
+		kp, err = keypair.Parse(u.C.EscrowAcct.Address())
+		if err != nil {
+			return err
+		}
+	case Host:
+		kp, err = keypair.Parse(u.C.GuestAcct.Address())
+		if err != nil {
+			return err
+		}
+	}
+	bytes, err := m.getMsgBytes()
+	if err != nil {
+		return err
+	}
+	return kp.Verify(bytes, m.Signature)
 }
