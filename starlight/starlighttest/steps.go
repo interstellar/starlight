@@ -16,8 +16,8 @@ import (
 	"github.com/interstellar/starlight/net"
 	"github.com/interstellar/starlight/starlight/fsm"
 	"github.com/interstellar/starlight/starlight/internal/update"
-	"github.com/interstellar/starlight/starlight/xlm"
 	"github.com/interstellar/starlight/worizon"
+	"github.com/interstellar/starlight/worizon/xlm"
 )
 
 const (

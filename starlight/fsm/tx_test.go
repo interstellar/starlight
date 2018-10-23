@@ -13,7 +13,7 @@ import (
 	"github.com/stellar/go/xdr"
 
 	"github.com/interstellar/starlight/starlight/key"
-	"github.com/interstellar/starlight/starlight/xlm"
+	"github.com/interstellar/starlight/worizon/xlm"
 )
 
 var seed = "SA26PHIKZM6CXDGR472SSGUQQRYXM6S437ZNHZGRM6QA4FOPLLLFRGDX"

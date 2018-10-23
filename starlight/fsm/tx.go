@@ -14,7 +14,7 @@ import (
 	"github.com/interstellar/starlight/errors"
 	"github.com/interstellar/starlight/math/checked"
 	"github.com/interstellar/starlight/starlight/key"
-	"github.com/interstellar/starlight/starlight/xlm"
+	"github.com/interstellar/starlight/worizon/xlm"
 )
 
 // Tx represents a Stellar transaction,

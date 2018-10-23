@@ -26,8 +26,8 @@ import (
 	"github.com/interstellar/starlight/starlight/internal/update"
 	"github.com/interstellar/starlight/starlight/key"
 	"github.com/interstellar/starlight/starlight/taskbasket"
-	"github.com/interstellar/starlight/starlight/xlm"
 	"github.com/interstellar/starlight/worizon"
+	"github.com/interstellar/starlight/worizon/xlm"
 )
 
 var (
