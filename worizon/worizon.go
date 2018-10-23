@@ -12,13 +12,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/stellar/go/clients/horizon"
 	"github.com/stellar/go/network"
+	"github.com/stellar/go/xdr"
 
 	"github.com/interstellar/starlight/errors"
 	"github.com/interstellar/starlight/net"
-
-	"github.com/stellar/go/clients/horizon"
-	"github.com/stellar/go/xdr"
 )
 
 var (

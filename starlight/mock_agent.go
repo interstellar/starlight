@@ -11,10 +11,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stellar/go/network"
-
 	bolt "github.com/coreos/bbolt"
-
+	"github.com/stellar/go/network"
 	"github.com/stellar/go/xdr"
 
 	"github.com/interstellar/starlight/worizon"

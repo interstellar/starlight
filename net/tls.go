@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/interstellar/starlight/env"
-
 	"golang.org/x/crypto/acme/autocert"
+
+	"github.com/interstellar/starlight/env"
 )
 
 // DefaultTLSConfig returns a tls.Config object with system default security restrictions

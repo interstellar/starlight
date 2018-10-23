@@ -12,14 +12,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/interstellar/starlight/starlight/internal/update"
-
 	bolt "github.com/coreos/bbolt"
 	"github.com/stellar/go/clients/horizon"
 	"github.com/stellar/go/xdr"
 
 	"github.com/interstellar/starlight/starlight/db"
 	"github.com/interstellar/starlight/starlight/fsm"
+	"github.com/interstellar/starlight/starlight/internal/update"
 	"github.com/interstellar/starlight/starlight/taskbasket"
 	"github.com/interstellar/starlight/starlight/xlm"
 	"github.com/interstellar/starlight/worizon"
