@@ -4,7 +4,6 @@ import { connect } from 'react-redux'
 
 import { ApplicationState } from 'types/schema'
 
-import { BarGraph } from 'pages/shared/graphs/BarGraph'
 import {
   ALTO,
   CORNFLOWER,
@@ -12,6 +11,8 @@ import {
   DUSTYGRAY,
   SEAFOAM_LIGHT,
 } from 'pages/shared/Colors'
+import { BarGraph } from 'pages/shared/graphs/BarGraph'
+import { Icon } from 'pages/shared/Icon'
 
 import { getWalletStroops } from 'state/wallet'
 import { formatAmount, lumensToStroops, stroopsToLumens } from 'helpers/lumens'
@@ -45,6 +46,9 @@ const Reserve = styled.div`
   font-size: 14px;
   font-weight: 700;
 `
+const LoadingIcon = styled(Icon)`
+  font-size: 24px;
+`
 
 interface Props {
   channelBalance: number
@@ -68,7 +72,10 @@ export class WalletBalance extends React.Component<Props, {}> {
       <AvailableWrapper>
         <BalanceContainer>
           <Balance>
-            {formatAmount(stroopsToLumens(this.total(), { short: true }))} XLM
+            {formatAmount(stroopsToLumens(this.total(), { short: true }))} XLM{' '}
+            {this.total() === 0 && (
+              <LoadingIcon className="fa-pulse" name="spinner" />
+            )}
           </Balance>
           {!!this.props.reserve && (
             <Reserve>
