@@ -204,16 +204,15 @@ export interface CreateChannelCommand {
   UserCommand: 'CreateChannel'
 }
 
-export type ChannelMsg = ChannelProposeMsg | ChannelAcceptMsg
+export type ChannelMsg = PaymentProposeMsg // only one needed for now
 
-export interface ChannelProposeMsg {
+export interface PaymentProposeMsg {
   ChannelID: string
-  ChannelProposeMsg: any
-}
-
-export interface ChannelAcceptMsg {
-  ChannelID: string
-  ChannelAcceptMsg: any
+  PaymentProposeMsg: {
+    PaymentAmount: number
+    PaymentTime: string
+    RoundNumber: number
+  }
 }
 
 export interface ChannelCmdEvent {
