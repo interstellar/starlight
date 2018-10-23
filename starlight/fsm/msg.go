@@ -1,6 +1,7 @@
 package fsm
 
 import (
+	"encoding/json"
 	"log"
 	"time"
 
@@ -28,6 +29,10 @@ type Message struct {
 	PaymentAcceptMsg   *PaymentAcceptMsg   `json:",omitempty"`
 	PaymentCompleteMsg *PaymentCompleteMsg `json:",omitempty"`
 	CloseMsg           *CloseMsg           `json:",omitempty"`
+
+	// Signature is signed by the sender's key on the non-nil
+	// Message field.
+	Signature []byte
 }
 
 // ChannelProposeMsg defines a JSON schema for proposal over a Channel.
@@ -454,4 +459,45 @@ func (u *Updater) handleCloseMsg(m *Message) error {
 	u.C.CounterpartyCoopCloseSig = m.CloseMsg.CooperativeCloseSig
 
 	return u.transitionTo(AwaitingClose)
+}
+
+// getMsgBytes returns a JSON marshaled byte slice of the non-nil field
+// in the message. If all fields are nil, this returns an error.
+// NOTE(vniu): currently we do not return an error if multiple fields are
+// set, as later fields are just ignored, but this should be revisited.
+func (m *Message) getMsgBytes() ([]byte, error) {
+	switch {
+	case m.ChannelProposeMsg != nil:
+		return json.Marshal(m.ChannelProposeMsg)
+
+	case m.ChannelAcceptMsg != nil:
+		return json.Marshal(m.ChannelAcceptMsg)
+
+	case m.PaymentProposeMsg != nil:
+		return json.Marshal(m.PaymentProposeMsg)
+
+	case m.PaymentAcceptMsg != nil:
+		return json.Marshal(m.PaymentAcceptMsg)
+
+	case m.PaymentCompleteMsg != nil:
+		return json.Marshal(m.PaymentCompleteMsg)
+
+	case m.CloseMsg != nil:
+		return json.Marshal(m.CloseMsg)
+	default:
+		return nil, errors.New("no message field set")
+	}
+}
+
+func (m *Message) signMsg(seed []byte, i uint32) (*Message, error) {
+	if seed == nil {
+		return nil, errNoSeed
+	}
+	bytes, err := m.getMsgBytes()
+	if err != nil {
+		return nil, err
+	}
+	kp := key.DeriveAccount(seed, i)
+	m.Signature, err = kp.Sign(bytes)
+	return m, err
 }

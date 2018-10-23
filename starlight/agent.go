@@ -962,6 +962,7 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	var guestSeqNum, hostSeqNum, baseSeqNum xdr.SequenceNumber
+	var escrowAcct xdr.AccountId
 	var starlightURL, hostAccount string
 	if m.ChannelProposeMsg != nil {
 		propose := m.ChannelProposeMsg
@@ -970,7 +971,6 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, "channel exists between parties", http.StatusResetContent)
 			return
 		}
-		var escrowAcct xdr.AccountId
 		err = escrowAcct.SetAddress(string(m.ChannelID))
 		if err != nil {
 			http.Error(w, "invalid channel ID", http.StatusBadRequest)
@@ -1001,6 +1001,8 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 	}
 	err = g.updateChannel(m.ChannelID, func(root *db.Root, updater *fsm.Updater, update *Update) error {
 		if m.ChannelProposeMsg != nil {
+			updater.C.Role = fsm.Guest
+			updater.C.EscrowAcct = fsm.AccountId(escrowAcct)
 			updater.C.GuestAcct = *root.Agent().PrimaryAcct()
 			updater.C.GuestRatchetAcctSeqNum = guestSeqNum
 			updater.C.HostRatchetAcctSeqNum = hostSeqNum

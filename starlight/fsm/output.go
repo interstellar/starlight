@@ -132,13 +132,14 @@ func createPaymentCompleteMsg(seed []byte, ch *Channel) (*Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Message{
+	m := &Message{
 		ChannelID: ch.ID,
 		PaymentCompleteMsg: &PaymentCompleteMsg{
 			RoundNumber:      ch.RoundNumber,
 			SenderRatchetSig: senderRatchetSig,
 		},
-	}, nil
+	}
+	return m.signMsg(seed, ch.KeyIndex)
 }
 
 func sendPaymentCompleteMsg(seed []byte, ch *Channel, o Outputter) error {
@@ -184,8 +185,8 @@ func publishSetupAccountTxes(seed []byte, ch *Channel, o Outputter, h *WalletAcc
 	return nil
 }
 
-func createChannelProposeMsg(ch *Channel, h *WalletAcct) *Message {
-	return &Message{
+func createChannelProposeMsg(seed []byte, ch *Channel, h *WalletAcct) (*Message, error) {
+	m := &Message{
 		ChannelID: ch.ID,
 		ChannelProposeMsg: &ChannelProposeMsg{
 			HostAcct:            ch.HostAcct, // TODO(bobg): spec wants the federation address, can it be derived from this?
@@ -201,11 +202,16 @@ func createChannelProposeMsg(ch *Channel, h *WalletAcct) *Message {
 			CounterpartyAddress: h.Address,
 		},
 	}
+	return m.signMsg(seed, ch.KeyIndex)
 }
 
-func sendChannelProposeMsg(ch *Channel, o Outputter, h *WalletAcct) {
-	m := createChannelProposeMsg(ch, h)
+func sendChannelProposeMsg(seed []byte, ch *Channel, o Outputter, h *WalletAcct) error {
+	m, err := createChannelProposeMsg(seed, ch, h)
+	if err != nil {
+		return err
+	}
 	o.OutputMsg(m)
+	return nil
 }
 
 func createPaymentProposeMsg(seed []byte, ch *Channel) (*Message, error) {
@@ -248,7 +254,7 @@ func createPaymentProposeMsg(seed []byte, ch *Channel) (*Message, error) {
 			return nil, err
 		}
 	}
-	return &Message{
+	m := &Message{
 		ChannelID: ch2.ID,
 		PaymentProposeMsg: &PaymentProposeMsg{
 			RoundNumber:              uint64(ch2.RoundNumber),
@@ -257,7 +263,8 @@ func createPaymentProposeMsg(seed []byte, ch *Channel) (*Message, error) {
 			SenderSettleWithGuestSig: settleWithGuestSig,
 			SenderSettleWithHostSig:  settleWithHostSig,
 		},
-	}, nil
+	}
+	return m.signMsg(seed, ch.KeyIndex)
 }
 
 func sendPaymentProposeMsg(seed []byte, ch *Channel, o Outputter) error {
@@ -311,7 +318,7 @@ func createPaymentAcceptMsg(seed []byte, ch *Channel) (*Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	msg := &Message{
+	m := &Message{
 		ChannelID: ch.ID,
 		PaymentAcceptMsg: &PaymentAcceptMsg{
 			RoundNumber:                 ch.RoundNumber,
@@ -320,7 +327,7 @@ func createPaymentAcceptMsg(seed []byte, ch *Channel) (*Message, error) {
 			RecipientSettleWithHostSig:  settleWithHostSig,
 		},
 	}
-	return msg, nil
+	return m.signMsg(seed, ch.KeyIndex)
 }
 
 func sendPaymentAcceptMsg(seed []byte, ch *Channel, o Outputter) error {
@@ -349,13 +356,14 @@ func createChannelAcceptMsg(seed []byte, ch *Channel, ledgerTime time.Time) (*Me
 	if err != nil {
 		return nil, err
 	}
-	return &Message{
+	m := &Message{
 		ChannelID: ch.ID,
 		ChannelAcceptMsg: &ChannelAcceptMsg{
 			GuestRatchetRound1Sig:      ratchetTxSig,
 			GuestSettleOnlyWithHostSig: settleOnlyWithHostSig,
 		},
-	}, nil
+	}
+	return m.signMsg(seed, ch.KeyIndex)
 }
 
 func sendChannelAcceptMsg(seed []byte, ch *Channel, o Outputter, ledgerTime time.Time) error {
@@ -376,12 +384,13 @@ func createCloseMsg(seed []byte, ch *Channel) (*Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Message{
+	m := &Message{
 		ChannelID: ch.ID,
 		CloseMsg: &CloseMsg{
 			CooperativeCloseSig: coopCloseSig,
 		},
-	}, nil
+	}
+	return m.signMsg(seed, ch.KeyIndex)
 }
 
 func sendCloseMsg(seed []byte, ch *Channel, o Outputter) error {
