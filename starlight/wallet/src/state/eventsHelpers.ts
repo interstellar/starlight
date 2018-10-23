@@ -168,8 +168,9 @@ export const getChannelOps = (event: ChannelEvent): ChannelOp[] => {
             return [
               {
                 type: 'incomingChannelPayment',
-                myDelta: event.Channel.PendingAmountReceived,
-                theirDelta: -1 * event.Channel.PendingAmountReceived,
+                myDelta: event.InputMessage.PaymentProposeMsg.PaymentAmount,
+                theirDelta:
+                  -1 * event.InputMessage.PaymentProposeMsg.PaymentAmount,
                 myBalance,
                 theirBalance,
                 isHost,
@@ -194,7 +195,7 @@ export const getChannelOps = (event: ChannelEvent): ChannelOp[] => {
               },
             ]
           }
-          case 'AwaitingMerge': {
+          case 'AwaitingPaymentMerge': {
             // we skip this because we already know about the payment
             return []
           }
@@ -202,13 +203,13 @@ export const getChannelOps = (event: ChannelEvent): ChannelOp[] => {
             return []
         }
       }
-      case 'AwaitingMerge': {
+      case 'AwaitingPaymentMerge': {
         // treat this as just an incoming payment proposal
         return [
           {
             type: 'incomingChannelPayment',
-            myDelta: event.Channel.PendingAmountReceived,
-            theirDelta: -1 * event.Channel.PendingAmountReceived,
+            myDelta: event.InputMessage.PaymentProposeMsg.PaymentAmount,
+            theirDelta: -1 * event.InputMessage.PaymentProposeMsg.PaymentAmount,
             myBalance,
             theirBalance,
             isHost,
