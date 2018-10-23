@@ -170,7 +170,7 @@ func TestPaymentMerge(t *testing.T) {
 		}
 		bob.server.Listener.Close()
 		bob.server.Listener = l
-		bob.server.StartTLS()
+		bob.server.Start()
 
 		steps = paymentMergeResolutionSteps(alice, bob, hostBalance, guestBalance)
 		for _, s := range steps {

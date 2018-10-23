@@ -3,7 +3,6 @@ package starlight
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -34,11 +33,6 @@ func StartTestnetAgent(ctx context.Context, t *testing.T, dbpath string) (*Agent
 	g, err := StartAgent(ctx, db)
 	if err != nil {
 		t.Fatal(err)
-	}
-	g.httpclient.Transport = &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
 	}
 	return g, &g.wclient
 }
