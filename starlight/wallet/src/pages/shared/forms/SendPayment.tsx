@@ -110,7 +110,8 @@ export class SendPayment extends React.Component<Props, State> {
                   <strong>
                     {formatAmount(
                       stroopsToLumens(this.channelBalance() as number)
-                    )} XLM
+                    )}{' '}
+                    XLM
                   </strong>{' '}
                   available in channel;{' '}
                 </span>
@@ -118,7 +119,8 @@ export class SendPayment extends React.Component<Props, State> {
               <strong>
                 {formatAmount(
                   stroopsToLumens(this.props.availableBalance).toString()
-                )} XLM
+                )}{' '}
+                XLM
               </strong>{' '}
               available in account
             </Hint>
@@ -148,9 +150,8 @@ export class SendPayment extends React.Component<Props, State> {
               this.walletHasSufficientBalance()
             }
           >
-            You only have {formatAmount(
-              stroopsToLumens(this.channelBalance() || 0)
-            )} XLM
+            You only have{' '}
+            {formatAmount(stroopsToLumens(this.channelBalance() || 0))} XLM
             available in this channel. The entire payment will occur on the
             Stellar network from your account instead.
           </HelpBlock>
@@ -164,12 +165,12 @@ export class SendPayment extends React.Component<Props, State> {
           >
             {channelBalance === undefined ||
             this.props.availableBalance > channelBalance
-              ? `You only have ${formatAmount(stroopsToLumens(
-                  this.props.availableBalance
-                ))} XLM available in your wallet.`
-              : `You only have ${formatAmount(stroopsToLumens(
-                  channelBalance
-                ))} XLM available in this channel.`}
+              ? `You only have ${formatAmount(
+                  stroopsToLumens(this.props.availableBalance)
+                )} XLM available in your wallet.`
+              : `You only have ${formatAmount(
+                  stroopsToLumens(channelBalance)
+                )} XLM available in this channel.`}
           </HelpBlock>
           <Label>Transaction Fee</Label>
           {(!validAmount && hasChannel) ||

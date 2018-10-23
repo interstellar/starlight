@@ -1,5 +1,4 @@
 import * as React from 'react'
-import * as moment from 'moment'
 
 import { validPublicKey } from 'helpers/account'
 import { formatAmount, stroopsToLumens } from 'helpers/lumens'
@@ -10,6 +9,7 @@ import { CopyableString } from 'pages/shared/CopyableString'
 import { TableData } from 'pages/shared/Table'
 import { Timestamp } from 'pages/shared/Timestamp'
 import { ValueChange } from 'pages/shared/ValueChange'
+import { fromNowPast } from 'helpers/moment'
 
 interface Props {
   activity: ChannelActivity
@@ -23,7 +23,7 @@ export class ChannelActivityRow extends React.Component<Props, {}> {
   public render() {
     const timestamp =
       this.props.activity.timestamp !== undefined
-        ? moment(this.props.activity.timestamp).fromNow()
+        ? fromNowPast(this.props.activity.timestamp)
         : ''
     const activity = this.props.activity
     const op = this.props.activity.op

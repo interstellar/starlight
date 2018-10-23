@@ -1,7 +1,7 @@
 import * as React from 'react'
-import * as moment from 'moment'
 
 import { validPublicKey } from 'helpers/account'
+import { fromNowPast } from 'helpers/moment'
 
 import { WalletOp } from 'types/types'
 
@@ -29,14 +29,12 @@ export class WalletActivityRow extends React.Component<Props, {}> {
           <tr>
             <TableData align="left">
               Receive{' '}
-              <Timestamp>{moment(this.props.op.timestamp).fromNow()}</Timestamp>
+              <Timestamp>{fromNowPast(this.props.op.timestamp)}</Timestamp>
             </TableData>
             <TableData align="left">
               <CopyableString
                 id={this.props.op.sourceAccount}
-                truncate={validPublicKey(
-                  this.props.op.sourceAccount
-                )}
+                truncate={validPublicKey(this.props.op.sourceAccount)}
               />
             </TableData>
             <TableData align="right">
@@ -55,14 +53,12 @@ export class WalletActivityRow extends React.Component<Props, {}> {
                 : this.props.op.failed
                   ? 'Send (failed)'
                   : 'Send'}{' '}
-              <Timestamp>{moment(this.props.op.timestamp).fromNow()}</Timestamp>
+              <Timestamp>{fromNowPast(this.props.op.timestamp)}</Timestamp>
             </TableData>
             <TableData align="left">
               <CopyableString
                 id={this.props.op.recipient}
-                truncate={validPublicKey(
-                  this.props.op.recipient
-                )}
+                truncate={validPublicKey(this.props.op.recipient)}
               />
             </TableData>
             <TableData align="right">
