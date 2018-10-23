@@ -66,7 +66,7 @@ it('renders Deposit', () => {
       <Deposit
         channel={{} as any}
         deposit={deposit}
-        AvailableBalance={500}
+        availableBalance={500}
         closeModal={closeModal}
       />
     )
