@@ -161,8 +161,7 @@ export class ChannelActions extends React.Component<Props, State> {
       <TooltipBtnWrapper>
         <Tooltip
           content="Only the party who opened<br>
-          the channel can deposit<br>
-          funds at this time."
+          the channel can deposit funds."
           hover={!isHost}
           direction="bottom"
         >
