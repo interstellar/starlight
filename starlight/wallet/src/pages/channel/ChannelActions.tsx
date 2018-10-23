@@ -7,6 +7,7 @@ import { ChannelState } from 'types/schema'
 
 import { ConnectedCreateChannel } from 'pages/shared/forms/CreateChannel'
 import { ConnectedDeposit } from 'pages/channel/Deposit'
+import { ConnectedForceClose } from 'pages/channel/ForceClose'
 import { ConnectedSendPayment } from 'pages/shared/forms/SendPayment'
 
 import { BtnHeading } from 'pages/shared/Button'
@@ -81,12 +82,27 @@ export class ChannelActions extends React.Component<Props, State> {
             prefill={{ counterparty: this.props.channel.CounterpartyAddress }}
           />
         </Modal>
+        <Modal
+          isOpen={this.hasOpenModal('forceClose')}
+          onClose={this.closeModal}
+        >
+          <ConnectedForceClose
+            closeModal={() => this.closeModal()}
+            channel={this.props.channel}
+          />
+        </Modal>
       </div>
     )
   }
 
   private buttonsForChannelState() {
     const channelState = this.props.channel.State
+    const forceCloseStates = [
+      'PaymentProposed',
+      'PaymentAccepted',
+      'AwaitingPaymentMerge',
+      'AwaitingClose',
+    ]
 
     if (channelState === 'Closed') {
       return <span>{this.openChannelBtn()}</span>
@@ -95,9 +111,10 @@ export class ChannelActions extends React.Component<Props, State> {
     } else {
       return (
         <span>
-          {this.closeChannelBtn()}
+          {forceCloseStates.includes(channelState)
+            ? this.forceCloseChannelBtn()
+            : this.closeChannelBtn()}
           {this.sendBtn()}
-
           {this.depositBtn()}
         </span>
       )
@@ -126,6 +143,17 @@ export class ChannelActions extends React.Component<Props, State> {
         color={RADICALRED}
       >
         Close
+      </BtnHeading>
+    )
+  }
+
+  private forceCloseChannelBtn() {
+    return (
+      <BtnHeading
+        onClick={() => this.openModal('forceClose')}
+        color={RADICALRED}
+      >
+        Force close
       </BtnHeading>
     )
   }
