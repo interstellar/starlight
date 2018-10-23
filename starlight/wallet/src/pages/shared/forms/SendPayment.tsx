@@ -77,8 +77,8 @@ export class SendPayment extends React.Component<Props, State> {
       (hasChannelWithSufficientBalance ||
         (this.recipientIsValid() && this.walletHasSufficientBalance()))
     const amount = this.amount()
-    let total = amount !== undefined ? amount : undefined
-    if (total !== undefined && !hasChannel) {
+    let total = amount
+    if (total !== undefined && !hasChannelWithSufficientBalance) {
       total += 100
     }
     const focusOnRecipient = this.props.initialRecipient === undefined
@@ -181,8 +181,8 @@ export class SendPayment extends React.Component<Props, State> {
           )}
           <HorizontalLine />
           <Label>Total</Label>
-          {total !== undefined ? (
-            <Total>{formatAmount(stroopsToLumens(total))} XLM</Total>
+          {total && stroopsToLumens(total) !== 'NaN' ? (
+            <Total>{stroopsToLumens(total)} XLM</Total>
           ) : (
             <Total>&mdash;</Total>
           )}

@@ -61,6 +61,8 @@ export class Deposit extends React.Component<Props, State> {
 
   public render() {
     const amount = this.amount()
+    const fees = 100
+    const total = amount && amount + fees
 
     return (
       <View>
@@ -108,8 +110,8 @@ export class Deposit extends React.Component<Props, State> {
           <HorizontalLine />
 
           <Label>Total Required</Label>
-          {amount !== undefined ? (
-            <Total>{formatAmount(stroopsToLumens(amount + 100))} XLM</Total>
+          {total && stroopsToLumens(total) !== 'NaN' ? (
+            <Total>{formatAmount(stroopsToLumens(total))} XLM</Total>
           ) : (
             <Total>&mdash;</Total>
           )}
