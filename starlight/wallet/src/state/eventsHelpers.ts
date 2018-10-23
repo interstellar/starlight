@@ -14,12 +14,17 @@ import {
 const StrKey = require('stellar-base').StrKey
 
 // helper for parsing wallet events
-export const getWalletOp = (event: AccountEvent): WalletOp => {
+export const getWalletOp = (
+  event: AccountEvent,
+  AccountAddresses: { [s: string]: string }
+): WalletOp => {
   if (isAccountReserveEvent(event)) {
     return {
       type: 'outgoingPayment',
       amount: event.InputCommand.Amount,
-      recipient: event.InputCommand.Recipient,
+      recipient:
+        AccountAddresses[event.InputCommand.Recipient] ||
+        event.InputCommand.Recipient,
       timestamp: event.InputCommand.Time,
       sequence: event.PendingSequence,
       pending: true,
@@ -32,9 +37,10 @@ export const getWalletOp = (event: AccountEvent): WalletOp => {
     const timestamp = event.InputTx.LedgerTime
     const op = tx.Operations[opIndex]
     const sourceAccountEd25519 = op.SourceAccount || tx.SourceAccount
-    const sourceAccount = StrKey.encodeEd25519PublicKey(
+    let sourceAccount = StrKey.encodeEd25519PublicKey(
       sourceAccountEd25519.Ed25519
     )
+    sourceAccount = AccountAddresses[sourceAccount] || sourceAccount
     const result = event.InputTx.Result.Result.Results[opIndex]
     const opBody = op.Body
     switch (opBody.Type) {

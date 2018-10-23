@@ -33,6 +33,7 @@ export interface WalletState {
   Balance: number
   Ops: WalletOp[]
   Pending: { [s: string]: number }
+  AccountAddresses: { [s: string]: string }
 }
 
 export interface ChannelsState {

@@ -4,8 +4,12 @@ export const validPublicKey = (account: string) => {
   return StrKey.isValidEd25519PublicKey(account)
 }
 
+export const validAddress = (address: string) => {
+  return address.includes('*')
+}
+
 export const validAccount = (account: string) => {
-  return (account.includes('*') || validPublicKey(account))
+  return validAddress(account) || validPublicKey(account)
 }
 
 export const usernameToAddress = (username: string) => {
