@@ -2,6 +2,7 @@ package starlight
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -158,13 +159,14 @@ func (g *Agent) keepAlive(ctx context.Context, channelID string) {
 			break // channel has been closed
 		}
 
-		// TODO(kr): maybe reset this timer after
-		// a real payment so we don't do quite so many
-		// keepalive payments.
-		time.Sleep(net.Jitter(ch.MaxRoundDuration / 2))
-
-		if ctx.Err() != nil {
+		timer := time.NewTimer(net.Jitter(ch.MaxRoundDuration / 2))
+		select {
+		case <-ctx.Done():
+			log.Printf("context canceled, keepAlive(%s) exiting", channelID)
 			return
+
+		case <-timer.C:
+			// ok
 		}
 
 		err := g.DoCommand(channelID, &fsm.Command{
@@ -188,7 +190,7 @@ func (g *Agent) putChannel(root *db.Root, chanID string, channel *fsm.Channel) {
 // Function startChannel schedules any timer,
 // and sets watchers for the channel.
 // Must be called from within an update transaction.
-func (g *Agent) startChannel(ctx context.Context, root *db.Root, chanID string) error {
+func (g *Agent) startChannel(root *db.Root, chanID string) error {
 	c := g.getChannel(root, chanID)
 	t, err := c.TimerTime()
 	if err != nil {
@@ -197,7 +199,7 @@ func (g *Agent) startChannel(ctx context.Context, root *db.Root, chanID string) 
 	if t != nil {
 		g.scheduleTimer(root.Tx(), *t, chanID)
 	}
-	g.watchChannel(ctx, root, chanID)
+	g.watchChannel(root, chanID)
 	return nil
 }
 
@@ -288,7 +290,7 @@ func (g *Agent) doUpdateChannel(root *db.Root, chanID string, f func(*db.Root, *
 		if err != nil {
 			return errors.Wrapf(err, "error looking up host account %s", c.HostAcct.Address())
 		}
-		g.watchChannel(g.ctx, root, chanID)
+		g.watchChannel(root, chanID)
 	}
 
 	// Process any state-transition actions accumulated in o.
@@ -320,15 +322,15 @@ func (g *Agent) doUpdateChannel(root *db.Root, chanID string, f func(*db.Root, *
 // and starts a goroutine to make 0-value payments as necessary
 // to keep the channel alive.
 // Must be called from within an update transaction.
-func (g *Agent) watchChannel(ctx context.Context, root *db.Root, chanID string) {
-	ctx, cancel := context.WithCancel(ctx)
+func (g *Agent) watchChannel(root *db.Root, chanID string) {
+	ctx, cancel := context.WithCancel(g.rootCtx)
 	g.cancelers[string(chanID)] = cancel
 	keepAlive := root.Agent().Config().KeepAlive()
 
 	root.Tx().OnCommit(func() {
-		g.allez(func() { g.watchEscrowAcct(ctx, chanID) })
+		g.allez(func() { g.watchEscrowAcct(ctx, chanID) }, fmt.Sprintf("watchEscrowAcct(%s)", chanID))
 		if keepAlive {
-			g.allez(func() { g.keepAlive(ctx, chanID) })
+			g.allez(func() { g.keepAlive(ctx, chanID) }, fmt.Sprintf("keepAlive(%s)", chanID))
 		}
 	})
 }

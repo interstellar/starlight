@@ -21,10 +21,9 @@ func TestAgentRequest(t *testing.T) {
 	defer os.RemoveAll(testdir)
 
 	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+
 	alice := start(t, ctx, testdir, "test")
-	defer alice.server.Close()
+	defer alice.Close()
 
 	steps := []step{
 		{

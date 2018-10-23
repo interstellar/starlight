@@ -27,14 +27,12 @@ func itest(t *testing.T, f func(ctx context.Context, alice, bob *Starlightd)) {
 	defer os.RemoveAll(testdir)
 
 	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 
 	alice := start(t, ctx, testdir, "alice")
-	defer alice.server.Close()
+	defer alice.Close()
 
 	bob := start(t, ctx, testdir, "bob")
-	defer bob.server.Close()
+	defer bob.Close()
 
 	f(ctx, alice, bob)
 }

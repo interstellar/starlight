@@ -52,6 +52,18 @@ type TB struct {
 // New creates a new taskbasket.
 // It launches goroutines for any tasks already existing in the db.
 func New(ctx context.Context, db *bolt.DB, bucket []byte, codec Codec) (*TB, error) {
+	var tb *TB
+	err := db.Update(func(tx *bolt.Tx) error {
+		var err error
+		tb, err = NewTx(ctx, tx, db, bucket, codec)
+		return err
+	})
+	return tb, err
+}
+
+// NewTx creates a new taskbasket in the context of an existing bolt Update transaction.
+// It launches goroutines for any tasks already exiting in the db.
+func NewTx(ctx context.Context, tx *bolt.Tx, db *bolt.DB, bucket []byte, codec Codec) (*TB, error) {
 	tb := &TB{
 		db:     db,
 		bucket: bucket,
@@ -59,20 +71,21 @@ func New(ctx context.Context, db *bolt.DB, bucket []byte, codec Codec) (*TB, err
 		ch:     make(chan pair),
 		wg:     new(sync.WaitGroup),
 	}
+
 	var tasks []pair
-	err := db.Update(func(tx *bolt.Tx) error {
-		bu, err := tx.CreateBucketIfNotExists(tb.bucket)
+
+	bu, err := tx.CreateBucketIfNotExists(tb.bucket)
+	if err != nil {
+		return nil, err
+	}
+
+	err = bu.ForEach(func(k, v []byte) error {
+		t, err := tb.codec.Decode(v)
 		if err != nil {
 			return err
 		}
-		return bu.ForEach(func(k, v []byte) error {
-			t, err := tb.codec.Decode(v)
-			if err != nil {
-				return err
-			}
-			tasks = append(tasks, pair{k: k, t: t})
-			return nil
-		})
+		tasks = append(tasks, pair{k: k, t: t})
+		return nil
 	})
 	if err != nil {
 		return nil, err

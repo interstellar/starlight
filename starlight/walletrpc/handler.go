@@ -132,7 +132,7 @@ func (wt *wallet) configInit(w http.ResponseWriter, req *http.Request) {
 		httperror(req, w, fmt.Sprintf("bad request: %s", err.Error()), 400)
 		return
 	}
-	err = wt.agent.ConfigInit(context.TODO(), &config)
+	err = wt.agent.ConfigInit(&config)
 	if err != nil {
 		// TODO(kr): distinguish 5xx/4xx.
 		// For now, just blame everything on the client.

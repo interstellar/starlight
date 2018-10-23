@@ -2,7 +2,6 @@ package starlight
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"testing"
 	"time"
@@ -20,30 +19,26 @@ import (
 var testHorizonURL = "https://horizon-testnet.stellar.org"
 
 func TestConfigInit(t *testing.T) {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	g := startTestAgent(ctx, t)
+	g := startTestAgent(t)
+	defer g.CloseWait()
 	config := Config{
 		Username:   "alice",
 		Password:   "password",
 		HorizonURL: testHorizonURL,
 	}
-	err := g.ConfigInit(ctx, &config)
+	err := g.ConfigInit(&config)
 	if err != nil {
-		t.Errorf("got = %v, want nil", err)
+		t.Fatal(err)
 	}
-	err = g.ConfigInit(ctx, &config)
+	err = g.ConfigInit(&config)
 	if err != errAlreadyConfigured {
 		t.Errorf("got %s, want %s", err, errAlreadyConfigured)
 	}
 }
 
 func TestConfigured(t *testing.T) {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	g := startTestAgent(ctx, t)
+	g := startTestAgent(t)
+	defer g.CloseWait()
 	config := Config{
 		Username:   "alice",
 		Password:   "password",
@@ -53,7 +48,7 @@ func TestConfigured(t *testing.T) {
 		t.Errorf("g.Configured() = true, want false")
 	}
 
-	err := g.ConfigInit(ctx, &config)
+	err := g.ConfigInit(&config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,10 +58,8 @@ func TestConfigured(t *testing.T) {
 }
 
 func TestUnconfiguredUpdates(t *testing.T) {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	g := startTestAgent(ctx, t)
+	g := startTestAgent(t)
+	defer g.CloseWait()
 	got, err := json.Marshal(g.Updates(100, 200))
 	if err != nil {
 		t.Fatal(err)
@@ -79,16 +72,14 @@ func TestUnconfiguredUpdates(t *testing.T) {
 }
 
 func TestUpdatesNull(t *testing.T) {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	g := startTestAgent(ctx, t)
+	g := startTestAgent(t)
+	defer g.CloseWait()
 	config := Config{
 		Username:   "alice",
 		Password:   "password",
 		HorizonURL: testHorizonURL,
 	}
-	err := g.ConfigInit(ctx, &config)
+	err := g.ConfigInit(&config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,16 +96,14 @@ func TestUpdatesNull(t *testing.T) {
 }
 
 func TestInitConfigUpdate(t *testing.T) {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	g := startTestAgent(ctx, t)
+	g := startTestAgent(t)
+	defer g.CloseWait()
 	config := Config{
 		Username:   "alice",
 		Password:   "password",
 		HorizonURL: testHorizonURL,
 	}
-	err := g.ConfigInit(ctx, &config)
+	err := g.ConfigInit(&config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,10 +148,8 @@ func TestInitConfigUpdate(t *testing.T) {
 }
 
 func TestConfigEdit(t *testing.T) {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	g := startTestAgent(ctx, t)
+	g := startTestAgent(t)
+	defer g.CloseWait()
 	config := Config{
 		Username:   "alice",
 		Password:   "password",
@@ -176,7 +163,7 @@ func TestConfigEdit(t *testing.T) {
 		t.Errorf("got %s, want %s", err, errNotConfigured)
 	}
 
-	err = g.ConfigInit(ctx, &config)
+	err = g.ConfigInit(&config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -274,17 +261,15 @@ func TestConfigEdit(t *testing.T) {
 }
 
 func TestAuthenticate(t *testing.T) {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	g := startTestAgent(ctx, t)
+	g := startTestAgent(t)
+	defer g.CloseWait()
 	config := Config{
 		Username:   "alice",
 		Password:   "password",
 		HorizonURL: testHorizonURL,
 	}
 
-	err := g.ConfigInit(ctx, &config)
+	err := g.ConfigInit(&config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -386,30 +371,30 @@ func TestAgentCreateChannel(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			ctx := context.Background()
-			ctx, cancel := context.WithCancel(ctx)
-			defer cancel()
-			g := startTestAgent(ctx, t)
+			g := startTestAgent(t)
+			defer g.CloseWait()
 			config := Config{
 				Username:   "alice",
 				Password:   "password",
 				HorizonURL: testHorizonURL,
 			}
 
-			err := g.ConfigInit(ctx, &config)
+			err := g.ConfigInit(&config)
 			if err != nil {
-				t.Error(err)
+				t.Fatal(err)
 			}
 
 			// Initialize Host wallet.
-			db.Update(g.db, func(root *db.Root) error {
+			err = db.Update(g.db, func(root *db.Root) error {
 				h := root.Agent().Wallet()
 				h.Seqnum = 1
-				h.Balance = xlm.Amount(50 * xlm.Lumen)
+				h.Balance = 50 * xlm.Lumen
 				root.Agent().PutWallet(h)
 				return nil
 			})
-
+			if err != nil {
+				t.Fatal(err)
+			}
 			if c.agentFunc != nil {
 				c.agentFunc(g)
 			}
@@ -422,15 +407,52 @@ func TestAgentCreateChannel(t *testing.T) {
 }
 
 func TestShutdown(t *testing.T) {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	g := startTestAgent(t)
+	defer g.CloseWait()
 
-	g := startTestAgent(ctx, t)
-	cancel()
-	timer := time.AfterFunc(10*time.Second, func() {
-		t.Fatal("timeout waiting for agent to exit")
+	config := Config{
+		Username:   "alice",
+		Password:   "password",
+		HorizonURL: testHorizonURL,
+	}
+
+	err := g.ConfigInit(&config)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Initialize Host wallet.
+	err = db.Update(g.db, func(root *db.Root) error {
+		h := root.Agent().Wallet()
+		h.Seqnum = 1
+		h.Balance = 50 * xlm.Lumen
+		root.Agent().PutWallet(h)
+		return nil
 	})
-	g.Wait()
-	timer.Stop()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = g.DoCreateChannel("alice*starlight.com", xlm.Lumen, "bob*starlight.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	timedOut := make(chan struct{})
+	finished := make(chan struct{})
+	timer := time.AfterFunc(10*time.Second, func() {
+		close(timedOut)
+	})
+
+	go func() {
+		g.CloseWait()
+		close(finished)
+	}()
+
+	select {
+	case <-finished:
+		timer.Stop()
+	case <-timedOut:
+		t.Error("timed out")
+	}
 }
