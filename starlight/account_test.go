@@ -1,7 +1,6 @@
 package starlight
 
 import (
-	"context"
 	"testing"
 
 	"github.com/interstellar/starlight/errors"
@@ -92,17 +91,15 @@ func TestFindAccount(t *testing.T) {
 	}}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			ctx := context.Background()
-			ctx, cancel := context.WithCancel(ctx)
-			defer cancel()
-			g := startTestAgent(ctx, t)
+			g := startTestAgent(t)
+			defer g.CloseWait()
 			config := Config{
 				Username:   "alice",
 				Password:   "password",
 				HorizonURL: testHorizonURL,
 			}
 
-			err := g.ConfigInit(ctx, &config)
+			err := g.ConfigInit(&config)
 			if err != nil {
 				t.Error(err)
 			}

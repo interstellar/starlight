@@ -23,6 +23,7 @@ var testDB = "./testdb"
 // StartTestnetAgent starts an agent for testing
 // purposes, but with requests made to a live
 // testnet Horizon.
+// TODO(bobg): The main starlight package should not export testing code.
 func StartTestnetAgent(ctx context.Context, t *testing.T, dbpath string) (*Agent, *worizon.Client) {
 	db, err := bolt.Open(filepath.Join(dbpath), 0600, nil)
 	if err != nil {
@@ -35,7 +36,7 @@ func StartTestnetAgent(ctx context.Context, t *testing.T, dbpath string) (*Agent
 	return g, &g.wclient
 }
 
-func startTestAgent(ctx context.Context, t *testing.T) *Agent {
+func startTestAgent(t *testing.T) *Agent {
 	err := os.RemoveAll(testDB)
 	if err != nil {
 		t.Fatal(err)
@@ -44,7 +45,7 @@ func startTestAgent(ctx context.Context, t *testing.T) *Agent {
 	if err != nil {
 		t.Fatal(err)
 	}
-	g, err := StartAgent(ctx, db)
+	g, err := StartAgent(context.Background(), db)
 	if err != nil {
 		t.Fatal(err)
 	}

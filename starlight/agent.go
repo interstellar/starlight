@@ -74,9 +74,13 @@ type Agent struct {
 
 	evcond sync.Cond
 
-	// This is the context object passed to Agent.start (whether via StartAgent or ConfigInit).
+	// This is the root context object,
+	// derived from the context passed to StartAgent.
 	// It is used to create child contexts when starting new channels.
-	ctx context.Context
+	rootCtx context.Context
+
+	// This is the cancel function corresponding to rootCtx.
+	rootCancel context.CancelFunc
 
 	// Secret-key entropy seed; can be nil, see Authenticate.
 	// Used to generate account keypairs.
@@ -137,36 +141,32 @@ const tbBucket = "tasks"
 // using the bucket "agent" in db for storage
 // and returns it.
 func StartAgent(ctx context.Context, boltDB *bolt.DB) (*Agent, error) {
+	ctx, cancel := context.WithCancel(ctx)
+
 	g := &Agent{
-		db:        boltDB,
-		cancelers: make(map[string]context.CancelFunc),
-		wg:        new(sync.WaitGroup),
+		db:         boltDB,
+		cancelers:  make(map[string]context.CancelFunc),
+		wg:         new(sync.WaitGroup),
+		rootCtx:    ctx,
+		rootCancel: cancel,
 	}
 
 	g.evcond.L = new(sync.Mutex)
 
-	err := db.Update(boltDB, func(root *db.Root) error { return g.start(ctx, root) })
+	err := db.Update(boltDB, func(root *db.Root) error { return g.start(root) })
 	if err != nil {
 		return nil, err
 	}
-
-	g.tb, err = taskbasket.New(ctx, boltDB, []byte(tbBucket), tbCodec{g: g})
-	if err != nil {
-		return nil, err
-	}
-
-	g.allez(func() { g.tb.Run(ctx) })
 
 	return g, nil
 }
 
 // Must be called from within an update transaction.
-func (g *Agent) start(ctx context.Context, root *db.Root) error {
+func (g *Agent) start(root *db.Root) error {
 	if !g.isReadyConfigured(root) {
 		return nil
 	}
 
-	g.ctx = ctx
 	// WARNING: this software is not compatible with Stellar mainnet.
 	g.wclient.SetURL(root.Agent().Config().HorizonURL())
 
@@ -182,7 +182,7 @@ func (g *Agent) start(ctx context.Context, root *db.Root) error {
 	}
 
 	for _, chanID := range chanIDs {
-		err := g.startChannel(ctx, root, chanID)
+		err := g.startChannel(root, chanID)
 		if err != nil {
 			return err
 		}
@@ -191,23 +191,37 @@ func (g *Agent) start(ctx context.Context, root *db.Root) error {
 	primaryAcct := root.Agent().PrimaryAcct().Address()
 	w := root.Agent().Wallet()
 
-	g.allez(func() { g.watchWalletAcct(ctx, primaryAcct, horizon.Cursor(w.Cursor)) })
+	g.allez(func() { g.watchWalletAcct(primaryAcct, horizon.Cursor(w.Cursor)) }, "watchWalletAcct")
+
+	tb, err := taskbasket.NewTx(g.rootCtx, root.Tx(), g.db, []byte(tbBucket), tbCodec{g: g})
+	if err != nil {
+		return err
+	}
+	g.tb = tb
+
+	g.allez(func() { g.tb.Run(g.rootCtx) }, "taskbasket")
 
 	return nil
 }
 
-// allez launches f as a goroutine, tracking it in the agent's WaitGroup.
-func (g *Agent) allez(f func()) {
-	g.wg.Add(1)
-	go func() {
-		f()
-		g.wg.Done()
-	}()
+func (g *Agent) Close() {
+	g.rootCancel()
 }
 
-// Wait waits for the agent's goroutines to exit (by waiting on the agent's WaitGroup).
-func (g *Agent) Wait() {
+func (g *Agent) CloseWait() {
+	g.Close()
 	g.wg.Wait()
+}
+
+// allez launches f as a goroutine, tracking it in the agent's WaitGroup.
+func (g *Agent) allez(f func(), desc string) {
+	g.wg.Add(1)
+	go func() {
+		log.Printf("%s starting", desc)
+		f()
+		log.Printf("%s finished", desc)
+		g.wg.Done()
+	}()
 }
 
 // ConfigInit sets g's configuration,
@@ -215,7 +229,7 @@ func (g *Agent) Wait() {
 // and performs any other necessary setup steps,
 // such as obtaining free testnet lumens.
 // It is an error if g has already been configured.
-func (g *Agent) ConfigInit(ctx context.Context, c *Config) error {
+func (g *Agent) ConfigInit(c *Config) error {
 	err := g.wclient.ValidateTestnetURL(c.HorizonURL)
 	if err != nil {
 		return err
@@ -295,9 +309,9 @@ func (g *Agent) ConfigInit(ctx context.Context, c *Config) error {
 			},
 		})
 
-		g.allez(func() { g.getTestnetFaucetFunds(primaryAcct) })
+		g.allez(func() { g.getTestnetFaucetFunds(primaryAcct) }, "getTestnetFaucetFunds")
 
-		return g.start(ctx, root)
+		return g.start(root)
 	})
 }
 
@@ -386,8 +400,8 @@ func (g *Agent) isReadyFunded(root *db.Root) bool {
 // and payments or merges into it.
 // When such transactions hit the ledger,
 // it reports an *Update back for the client to consume.
-func (g *Agent) watchWalletAcct(ctx context.Context, acctID string, cursor horizon.Cursor) {
-	err := g.wclient.StreamTxs(ctx, acctID, cursor, func(htx worizon.Tx) error {
+func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
+	err := g.wclient.StreamTxs(g.rootCtx, acctID, cursor, func(htx worizon.Tx) error {
 		InputTx, err := fsm.NewTx(&htx)
 		if err != nil {
 			return err

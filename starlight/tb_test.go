@@ -28,10 +28,8 @@ func testMsg() (*fsm.Message, error) {
 }
 
 func TestEncodeMsg(t *testing.T) {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	g := startTestAgent(ctx, t)
+	g := startTestAgent(t)
+	defer g.CloseWait()
 	codec := tbCodec{g: g}
 	msg, err := testMsg()
 	if err != nil {
@@ -56,10 +54,16 @@ func TestEncodeMsg(t *testing.T) {
 }
 
 func TestRunMsg(t *testing.T) {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	g := startTestAgent(ctx, t)
+	g := startTestAgent(t)
+	defer g.CloseWait()
+	err := g.ConfigInit(&Config{
+		Username:   "alice",
+		Password:   "passw0rd",
+		HorizonURL: testHorizonURL,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	msg, err := testMsg()
 	if err != nil {
 		t.Fatal(err)
@@ -85,10 +89,16 @@ func TestRunMsg(t *testing.T) {
 }
 
 func TestAddMsgs(t *testing.T) {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	g := startTestAgent(ctx, t)
+	g := startTestAgent(t)
+	defer g.CloseWait()
+	err := g.ConfigInit(&Config{
+		Username:   "alice",
+		Password:   "passw0rd",
+		HorizonURL: testHorizonURL,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	msg, err := testMsg()
 	if err != nil {
 		t.Fatal(err)

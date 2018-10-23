@@ -32,8 +32,13 @@ func StartServer(ctx context.Context, testdir, name string) *Starlightd {
 	return start(nil, ctx, testdir, name)
 }
 
-func (g *Starlightd) Address() string {
-	return g.address
+func (s *Starlightd) Address() string {
+	return s.address
+}
+
+func (s *Starlightd) Close() {
+	s.g.Close() // TODO(bobg): This should be CloseWait, but that's much slower. Figure out why!
+	s.server.Close()
 }
 
 func start(t *testing.T, ctx context.Context, testdir, name string) *Starlightd {
