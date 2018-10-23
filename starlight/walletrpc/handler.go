@@ -160,10 +160,6 @@ func (wt *wallet) doCreateChannel(w http.ResponseWriter, req *http.Request) {
 	case nil:
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(ch)
-	case starlight.ErrExists:
-		// StatusResetContent is used to designate non-retriable errors.
-		// TODO(debnil): Find a more suitable status code if possible.
-		httperror(req, w, err.Error(), http.StatusResetContent)
 	default:
 		httperror(req, w, err.Error(), 500)
 	}
