@@ -22,7 +22,11 @@ import { Heading, HeadingContainer } from 'pages/shared/Heading'
 import { Section, SectionHeading } from 'pages/shared/Section'
 import { Status } from 'pages/shared/Status'
 
-import { getMyBalance, getTheirBalance } from 'state/channels'
+import {
+  getMyBalance,
+  getTheirBalance,
+  getWithdrawalTime,
+} from 'state/channels'
 import { flash } from 'state/flash'
 
 const ChannelHeading = styled(Heading)`
@@ -67,6 +71,10 @@ export class Channel extends React.Component<Props, {}> {
     const receiveCapacity = getTheirBalance(channel)
     const status = channel.State.replace(/(.)([A-Z])/g, '$1 $2')
     const isOpen = channel.State !== 'Closed' && channel.State !== ''
+    const showWithdrawalTime = [
+      'AwaitingRatchet',
+      'AwaitingSettlementMintime',
+    ].includes(channel.State)
 
     return (
       <Container>
@@ -101,6 +109,12 @@ export class Channel extends React.Component<Props, {}> {
             <DetailLabel>Your Reserve</DetailLabel>
             <DetailValue>{isHost && isOpen ? '5.08 XLM' : '—'}</DetailValue>
           </Detail>
+          {showWithdrawalTime && (
+            <Detail>
+              <DetailLabel>Withdrawal Time</DetailLabel>
+              <DetailValue>{getWithdrawalTime(channel)}</DetailValue>
+            </Detail>
+          )}
         </Section>
 
         <Section>

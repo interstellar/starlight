@@ -32,6 +32,18 @@ export const getTheirAccount = (channel: ChannelState) => {
   return channel.Role === 'Guest' ? channel.HostAcct : channel.GuestAcct
 }
 
+export const getWithdrawalTime = (channel: ChannelState) => {
+  const durationInNanoseconds =
+    2 * channel.FinalityDelay + channel.MaxRoundDuration
+  const durationInSeconds = durationInNanoseconds / 1000000000
+
+  const withdrawalTime = moment(channel.PaymentTime)
+    .add(durationInSeconds, 'seconds')
+    .format('LLL')
+
+  return `${withdrawalTime} (${moment(withdrawalTime).fromNow()})`
+}
+
 // Reducer
 const initialState: ChannelsState = {}
 
