@@ -93,38 +93,35 @@ export const getChannelOps = (event: ChannelEvent): ChannelOp[] => {
   if (isChannelTxEvent(event)) {
     switch (event.Channel.State) {
       case 'Open': {
-        switch (event.Channel.PrevState) {
-          case 'AwaitingFunding':
-            return [
-              {
-                type: 'deposit',
-                tx: event.InputTx,
-                myDelta: isHost ? event.Channel.HostAmount : 0,
-                theirDelta: isHost ? 0 : event.Channel.HostAmount,
-                myBalance: 0,
-                theirBalance: 0,
-                isHost,
-              },
-            ]
-          case 'Open': {
-            const escrowAccountId = event.Channel.EscrowAcct
-            const topUpAmount = getTopUpAmount(event.InputTx, escrowAccountId)
-            const myDelta = isHost ? topUpAmount : 0
-            const theirDelta = isHost ? 0 : topUpAmount
-            return [
-              {
-                type: 'topUp',
-                tx: event.InputTx,
-                myDelta: isHost ? topUpAmount : 0,
-                theirDelta: isHost ? 0 : topUpAmount,
-                myBalance: myBalance - myDelta, // because we use the old balance
-                theirBalance: theirBalance - theirDelta, // same
-                isHost,
-              },
-            ]
-          }
-          default:
-            return []
+        // check if it's a funding transaction
+        if (event.Channel.RoundNumber === 1) {
+          return [
+            {
+              type: 'deposit',
+              tx: event.InputTx,
+              myDelta: isHost ? event.Channel.HostAmount : 0,
+              theirDelta: isHost ? 0 : event.Channel.HostAmount,
+              myBalance: 0,
+              theirBalance: 0,
+              isHost,
+            },
+          ]
+        } else {
+          const escrowAccountId = event.Channel.EscrowAcct
+          const topUpAmount = getTopUpAmount(event.InputTx, escrowAccountId)
+          const myDelta = isHost ? topUpAmount : 0
+          const theirDelta = isHost ? 0 : topUpAmount
+          return [
+            {
+              type: 'topUp',
+              tx: event.InputTx,
+              myDelta: isHost ? topUpAmount : 0,
+              theirDelta: isHost ? 0 : topUpAmount,
+              myBalance: myBalance - myDelta, // because we use the old balance
+              theirBalance: theirBalance - theirDelta, // same
+              isHost,
+            },
+          ]
         }
       }
       case 'Closed': {
