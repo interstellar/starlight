@@ -2,7 +2,7 @@ import * as React from 'react'
 import styled from 'styled-components'
 
 import { DUSTYGRAY, RADICALRED, SEAFOAM } from 'pages/shared/Colors'
-import { formatAmount, stroopsToLumens } from 'helpers/lumens'
+import { stroopsToLumens } from 'helpers/lumens'
 
 const Container = styled.span<{ color: string }>`
   color: ${props => props.color};
@@ -15,13 +15,13 @@ export class ValueChange extends React.Component<{ value: number }, {}> {
     } else if (this.props.value > 0) {
       return (
         <Container color={SEAFOAM}>
-          + {formatAmount(stroopsToLumens(this.props.value))} XLM
+          + {stroopsToLumens(this.props.value)} XLM
         </Container>
       )
     } else {
       return (
         <Container color={RADICALRED}>
-          - {formatAmount(stroopsToLumens(Math.abs(this.props.value)))} XLM
+          - {stroopsToLumens(Math.abs(this.props.value))} XLM
         </Container>
       )
     }
