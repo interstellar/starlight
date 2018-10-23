@@ -58,6 +58,14 @@ func TestFindAccount(t *testing.T) {
 			err:          nil,
 		},
 	}, {
+		name:   "localhost success",
+		target: "bob*localhost:7000",
+		want: want{
+			accountID:    "GAIPBPU6OC4JGYLQ4WI6LFYECMN43RVK3EI7N3TL3CVVM6MBIC2QART2",
+			starlightURL: "http://localhost:7000/",
+			err:          nil,
+		},
+	}, {
 		name:   "federation address does not exist",
 		target: "doesnotexist*starlight.com",
 		want: want{

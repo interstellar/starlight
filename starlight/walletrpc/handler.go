@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"net/http"
 	"time"
 
 	"github.com/kr/session"
 
 	"github.com/interstellar/starlight/errors"
+	"github.com/interstellar/starlight/net"
 	"github.com/interstellar/starlight/starlight"
 	"github.com/interstellar/starlight/starlight/fsm"
 	"github.com/interstellar/starlight/starlight/xlm"
@@ -30,7 +30,6 @@ type wallet struct {
 // to g's peer handler.
 func Handler(g *starlight.Agent) http.Handler {
 	wt := &wallet{agent: g}
-	wt.sess.Secure = true
 	wt.sess.HTTPOnly = true
 	wt.sess.MaxAge = 14 * 24 * time.Hour
 
@@ -139,7 +138,7 @@ func (wt *wallet) configInit(w http.ResponseWriter, req *http.Request) {
 		httperror(req, w, err.Error(), 400)
 		return
 	}
-	if isLoopback(req.Host) {
+	if net.IsLoopback(req.Host) {
 		wt.sess.Secure = false
 	}
 	session.Set(w, &struct{}{}, &wt.sess)
@@ -247,10 +246,7 @@ func (wt *wallet) login(w http.ResponseWriter, req *http.Request) {
 		httperror(req, w, "unauthorized", 401)
 		return
 	}
-
-	// TODO(vniu): evaluate if we want to disable secure cookies
-	// on localhost for launch.
-	if isLoopback(req.Host) {
+	if net.IsLoopback(req.Host) {
 		wt.sess.Secure = false
 	}
 	wt.sess.MaxAge = 14 * 24 * time.Hour
@@ -271,11 +267,6 @@ func (wt *wallet) auth(f http.HandlerFunc) http.Handler {
 		}
 		f(w, req)
 	})
-}
-
-func isLoopback(addr string) bool {
-	a, err := net.ResolveTCPAddr("tcp", addr)
-	return err == nil && a.IP.IsLoopback()
 }
 
 func genKey() *[32]byte {

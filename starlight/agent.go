@@ -962,7 +962,7 @@ func (g *Agent) handleFed(w http.ResponseWriter, req *http.Request) {
 func (g *Agent) handleTOML(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Content-Type", "text/plain")
-	v := struct{ Origin string }{req.Host}
+	v := struct{ Origin string }{protocol(req.Host) + req.Host}
 	tomlTemplate.Execute(w, v)
 }
 
@@ -988,6 +988,5 @@ func (g *Agent) getSequenceNumbers(chanID string, guestRatchetAcct, hostRatchetA
 }
 
 var tomlTemplate = template.Must(template.New("toml").Parse(`
-FEDERATION_SERVER="https://{{.Origin}}/federation"
-STARLIGHT_SERVER="https://{{.Origin}}/"
-`))
+FEDERATION_SERVER="{{.Origin}}/federation"
+STARLIGHT_SERVER="{{.Origin}}/"`))

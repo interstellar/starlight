@@ -65,7 +65,7 @@ type agentHTTP struct{}
 
 func (a agentHTTP) RoundTrip(req *http.Request) (*http.Response, error) {
 	switch req.Host {
-	case "starlight.com":
+	case "starlight.com", "localhost:7000":
 		if req.URL.Path == "/.well-known/stellar.toml" {
 			return mockToml(req)
 		}
@@ -94,7 +94,7 @@ func (a agentHTTP) RoundTrip(req *http.Request) (*http.Response, error) {
 
 func mockToml(req *http.Request) (*http.Response, error) {
 	var bytes bytes.Buffer
-	v := struct{ Origin string }{req.Host}
+	v := struct{ Origin string }{protocol(req.Host) + req.Host}
 	tomlTemplate.Execute(&bytes, v)
 	header := make(http.Header)
 	header.Add("Access-Control-Allow-Origin", "*")
@@ -132,6 +132,20 @@ func mockFederation(req *http.Request) (*http.Response, error) {
 	case "bob*starlight.com":
 		var acct xdr.AccountId
 		acct.SetAddress("GB7YAPZ43APNVOVF5RMDGFWMNUB6ACBMSVVBSZDFXBL6MIFKAMOOYP65")
+		buf, err := json.Marshal(map[string]string{
+			"stellar_address": q + "*" + req.Host,
+			"account_id":      acct.Address(),
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &http.Response{
+			StatusCode: 200,
+			Body:       ioutil.NopCloser(bytes.NewBuffer(buf)),
+		}, nil
+	case "bob*localhost:7000":
+		var acct xdr.AccountId
+		acct.SetAddress("GAIPBPU6OC4JGYLQ4WI6LFYECMN43RVK3EI7N3TL3CVVM6MBIC2QART2")
 		buf, err := json.Marshal(map[string]string{
 			"stellar_address": q + "*" + req.Host,
 			"account_id":      acct.Address(),
