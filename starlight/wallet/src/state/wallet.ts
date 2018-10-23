@@ -4,10 +4,12 @@ import { WalletState, ApplicationState } from 'types/schema'
 import { Starlightd } from 'lib/starlightd'
 import { TX_SUCCESS, TX_FAILED } from 'state/events'
 import { WalletActivity, OutgoingPaymentOp } from 'types/types'
+import { validAddress } from 'helpers/account'
 
 // Actions
 export const ADD_WALLET_ACTIVITY = 'wallet/ADD_WALLET_ACTIVITY'
 export const WALLET_UPDATE = 'wallet/WALLET_UPDATE'
+export const SAVE_ACCOUNT_ADDRESS = 'wallet/SAVE_ACCOUNT_ADDRESS'
 
 // Reducer
 const initialState: WalletState = {
@@ -15,6 +17,7 @@ const initialState: WalletState = {
   Balance: 0,
   Ops: [],
   Pending: {},
+  AccountAddresses: {},
 }
 
 const reducer: Reducer<WalletState> = (
@@ -94,6 +97,15 @@ const reducer: Reducer<WalletState> = (
         },
       }
     }
+    case SAVE_ACCOUNT_ADDRESS: {
+      return {
+        ...state,
+        AccountAddresses: {
+          ...state.AccountAddresses,
+          [action.account]: action.address,
+        },
+      }
+    }
     default: {
       return state
     }
@@ -133,6 +145,25 @@ export const send = async (
   recipient: string,
   amount: number
 ) => {
+  if (validAddress(recipient)) {
+    const address = recipient
+    // look up Stellar account for address
+    const lookupResponse = await Starlightd.post(
+      dispatch,
+      '/api/find-account',
+      { stellar_addr: address }
+    )
+    const account = lookupResponse.body.AcctID
+    // save the reverse mapping from account to address
+    // so it can be later displayed as the address
+    dispatch({
+      type: SAVE_ACCOUNT_ADDRESS,
+      address,
+      account,
+    })
+    recipient = account
+  }
+
   const response = await Starlightd.post(dispatch, '/api/do-wallet-pay', {
     Dest: recipient,
     Amount: amount,

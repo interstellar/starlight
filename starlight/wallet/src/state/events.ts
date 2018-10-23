@@ -59,8 +59,8 @@ const fetch = async (dispatch: any, From: number) => {
         case 'account': {
           // use a thunk to get the state
           return dispatch((_: any, getState: () => ApplicationState) => {
-            const op = getWalletOp(event)
             const state = getState()
+            const op = getWalletOp(event, state.wallet.AccountAddresses)
             if (event.InputTx) {
               const sourceAccountEd25519 =
                 event.InputTx.Env.Tx.SourceAccount.Ed25519

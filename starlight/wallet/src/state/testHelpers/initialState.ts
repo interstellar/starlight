@@ -18,6 +18,7 @@ export const initialState: ApplicationState = {
     Balance: 0,
     Ops: [],
     Pending: {},
+    AccountAddresses: {},
   },
   channels: {},
   flash: {
