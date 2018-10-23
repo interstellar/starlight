@@ -230,7 +230,7 @@ export class SendPayment extends React.Component<Props, State> {
 
   private amount() {
     const lumensAmount = parseFloat(this.state.amount)
-    if (isNaN(lumensAmount)) {
+    if (isNaN(lumensAmount) || lumensAmount < 0) {
       return undefined
     }
     return lumensToStroops(lumensAmount)

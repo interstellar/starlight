@@ -77,10 +77,12 @@ export class WalletBalance extends React.Component<Props, {}> {
                   this.props.walletBalance + this.props.channelBalance,
                   { short: true }
                 )
-              )} XLM Available +{' '}
+              )}{' '}
+              XLM Available +{' '}
               {formatAmount(
                 stroopsToLumens(this.props.reserve, { short: true })
-              )} XLM Reserve
+              )}{' '}
+              XLM Reserve
             </Reserve>
           )}
         </BalanceContainer>
@@ -113,7 +115,8 @@ const mapStateToProps = (state: ApplicationState) => {
 
   return {
     reserve:
-      getNumberOfOpenHostChannels(state) * lumensToStroops(5) + walletReserve,
+      getNumberOfOpenHostChannels(state) * lumensToStroops(5.08) +
+      walletReserve,
     walletBalance: getWalletStroops(state) - walletReserve,
     channelBalance: getTotalChannelBalance(state),
   }

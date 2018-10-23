@@ -99,7 +99,7 @@ export class Channel extends React.Component<Props, {}> {
           </Detail>
           <Detail>
             <DetailLabel>Your Reserve</DetailLabel>
-            <DetailValue>{isHost && isOpen ? '5.0 XLM' : '—'}</DetailValue>
+            <DetailValue>{isHost && isOpen ? '5.08 XLM' : '—'}</DetailValue>
           </Detail>
         </Section>
 
