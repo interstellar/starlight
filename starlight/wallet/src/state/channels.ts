@@ -77,14 +77,17 @@ export const createChannel = async (
     HostAmount,
   })
 
-  if (response.ok) {
+  if (response.ok && response.body !== '') {
     await dispatch({
       type: CHANNEL_UPDATE,
       channel: response.body,
       Ops: [],
     })
+    return true
+  } else {
+    console.log('error', response)
+    return false
   }
-  return response.ok
 }
 
 export const cancel = async (dispatch: Dispatch, id: string) => {

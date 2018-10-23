@@ -10,7 +10,7 @@ import { BtnSubmit } from 'pages/shared/Button'
 import { CORNFLOWER, RADICALRED } from 'pages/shared/Colors'
 import { Heading } from 'pages/shared/Heading'
 import { Icon } from 'pages/shared/Icon'
-import { Hint, Input, Label } from 'pages/shared/Input'
+import { Hint, Input, Label, HelpBlock } from 'pages/shared/Input'
 import { HorizontalLine } from 'pages/shared/HorizontalLine'
 import { Tooltip } from 'pages/shared/Tooltip'
 import { Total } from 'pages/shared/Total'
@@ -87,6 +87,11 @@ export class CreateChannel extends React.Component<Props, State> {
   }
 
   public render() {
+    const initialDeposit = this.amount()
+    const reserve = 50800000
+    const fee = 700
+    const total = initialDeposit && initialDeposit + reserve + fee
+
     return (
       <View>
         <Heading>Create channel</Heading>
@@ -169,9 +174,17 @@ export class CreateChannel extends React.Component<Props, State> {
             <Unit>XLM</Unit>
           </UnitContainer>
 
+          <HelpBlock
+            isShowing={!!this.amount() && !this.walletHasSufficientBalance()}
+          >
+            You only have{' '}
+            {formatAmount(stroopsToLumens(this.props.availableBalance))} XLM
+            available in your wallet.
+          </HelpBlock>
+
           <HalfWidth>
             <Label>Transaction Fee</Label>
-            <Amount>0.00001 XLM</Amount>
+            <Amount>0.00007 XLM</Amount>
           </HalfWidth>
 
           <HalfWidth>
@@ -181,24 +194,37 @@ export class CreateChannel extends React.Component<Props, State> {
                 content="This a required minimum balance for a<br>
                 Starlight payment channel. It cannot be<br>
                 spent while the channel is open, but will<br>
-                be returned when the channel is closed."
+                be returned when the channel is closed,<br>
+                after subtracting fees for the closing<br>
+                transactions."
                 hover
               >
                 <InfoIcon name="info-circle" />
               </Tooltip>
             </Label>
-            <Amount>5 XLM</Amount>
+            <Amount>{stroopsToLumens(reserve)} XLM</Amount>
           </HalfWidth>
 
           <HorizontalLine />
 
           <Label>Total Required</Label>
-          <Total>&mdash;</Total>
-
+          <Total>
+            {!total || !this.walletHasSufficientBalance()
+              ? '—'
+              : stroopsToLumens(total) + ' XLM'}
+          </Total>
           {this.formatSubmitButton()}
         </Form>
       </View>
     )
+  }
+
+  private amount() {
+    const amountFloat = parseFloat(this.state.initialDeposit)
+    if (isNaN(amountFloat) || amountFloat < 0) {
+      return undefined
+    }
+    return lumensToStroops(amountFloat)
   }
 
   private formatSubmitButton() {
@@ -223,10 +249,11 @@ export class CreateChannel extends React.Component<Props, State> {
     e.preventDefault()
     this.setState({ loading: true })
 
-    const ok = await this.props.createChannel(
-      this.state.counterparty,
-      lumensToStroops(parseInt(this.state.initialDeposit, 10))
-    )
+    const amount = this.amount()
+    if (amount === undefined) {
+      return
+    }
+    const ok = await this.props.createChannel(this.state.counterparty, amount)
 
     if (ok) {
       this.props.closeModal()
@@ -240,17 +267,18 @@ export class CreateChannel extends React.Component<Props, State> {
   }
 
   private formIsValid() {
+    const amount = this.amount()
     return (
+      amount &&
+      amount > 0 &&
       validRecipientAccount(this.props.username, this.state.counterparty) &&
       this.walletHasSufficientBalance()
     )
   }
 
   private walletHasSufficientBalance() {
-    return (
-      this.props.availableBalance >=
-      lumensToStroops(parseFloat(this.state.initialDeposit))
-    )
+    const amount = this.amount()
+    return amount && this.props.availableBalance >= amount
   }
 }
 
