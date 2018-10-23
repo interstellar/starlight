@@ -122,6 +122,16 @@ export const close = async (dispatch: Dispatch, id: string) => {
   return response.ok
 }
 
+export const forceClose = async (dispatch: Dispatch, id: string) => {
+  const response = await Starlightd.post(dispatch, '/api/do-command', {
+    ChannelID: id,
+    Command: {
+      UserCommand: 'ForceClose',
+    },
+  })
+  return response.ok
+}
+
 export const channelPay = async (
   dispatch: Dispatch,
   id: string,
