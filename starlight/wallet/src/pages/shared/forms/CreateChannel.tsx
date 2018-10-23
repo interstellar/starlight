@@ -100,27 +100,17 @@ export class CreateChannel extends React.Component<Props, State> {
           <Input
             value={this.state.counterparty}
             onBlur={() => {
-              if (
-                this.state.counterparty &&
-                !validRecipientAccount(
-                  this.props.username,
-                  this.state.counterparty
-                )
-              ) {
-                this.setState({
-                  formErrors: {
-                    deposit: this.state.formErrors.deposit,
-                    counterparty: true,
+              this.setState({
+                formErrors: {
+                  deposit: this.state.formErrors.deposit,
+                  counterparty: !!this.state.counterparty &&
+                    !validRecipientAccount(
+                      this.props.username,
+                      this.state.counterparty,
+                    ),
                   },
-                })
-              } else {
-                this.setState({
-                  formErrors: {
-                    deposit: this.state.formErrors.deposit,
-                    counterparty: false,
-                  },
-                })
-              }
+                }
+              )
             }}
             onChange={e => {
               this.setState({ counterparty: e.target.value })
@@ -143,24 +133,14 @@ export class CreateChannel extends React.Component<Props, State> {
             <Input
               value={this.state.initialDeposit}
               onBlur={() => {
-                if (
-                  this.state.initialDeposit &&
-                  !this.walletHasSufficientBalance()
-                ) {
-                  this.setState({
-                    formErrors: {
-                      deposit: true,
-                      counterparty: this.state.formErrors.counterparty,
-                    },
-                  })
-                } else {
-                  this.setState({
-                    formErrors: {
-                      deposit: false,
-                      counterparty: this.state.formErrors.counterparty,
-                    },
-                  })
-                }
+                this.setState({
+                  formErrors: {
+                    deposit: !!this.state.initialDeposit && (
+                      !parseFloat(this.state.initialDeposit) ||
+                      !this.walletHasSufficientBalance()),
+                    counterparty: this.state.formErrors.counterparty,
+                  },
+                })
               }}
               onChange={e => {
                 this.setState({ initialDeposit: e.target.value })
