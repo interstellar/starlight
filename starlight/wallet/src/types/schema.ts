@@ -58,6 +58,7 @@ export interface ChannelState {
   PendingAmountSent: number
   PrevState: string
   Role: string
+  RoundNumber: number
   State: string
 }
 
