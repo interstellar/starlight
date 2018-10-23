@@ -19,6 +19,7 @@ import (
 	"github.com/kr/secureheader"
 	"golang.org/x/crypto/acme/autocert"
 
+	i10rnet "github.com/interstellar/starlight/net"
 	"github.com/interstellar/starlight/starlight"
 	"github.com/interstellar/starlight/starlight/walletrpc"
 )
@@ -50,7 +51,7 @@ func main() {
 	}
 
 	handler := walletrpc.Handler(g)
-	if !isLoopback(*listen) {
+	if !i10rnet.IsLoopback(*listen) {
 		handler = secureheader.Handler(handler)
 	}
 
@@ -95,7 +96,7 @@ func main() {
 		IdleTimeout: 120 * time.Second,
 		Handler:     handler,
 	}
-	if isLoopback(*listen) {
+	if i10rnet.IsLoopback(*listen) {
 		srv.Serve(serveLn)
 	}
 
@@ -239,9 +240,4 @@ func (ln *keepAliveListener) Accept() (net.Conn, error) {
 	tcpConn.SetKeepAlivePeriod(3 * time.Minute)
 
 	return tcpConn, nil
-}
-
-func isLoopback(addr string) bool {
-	a, err := net.ResolveTCPAddr("tcp", addr)
-	return err == nil && a.IP.IsLoopback()
 }

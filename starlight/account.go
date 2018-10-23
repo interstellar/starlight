@@ -11,6 +11,7 @@ import (
 	"github.com/BurntSushi/toml"
 
 	"github.com/interstellar/starlight/errors"
+	"github.com/interstellar/starlight/net"
 )
 
 var (
@@ -42,7 +43,7 @@ func (g *Agent) FindAccount(target string) (accountID, starlightURL string, err 
 
 	// Get URLs from Stellar TOML configuration.
 	// See https://www.stellar.org/developers/guides/concepts/stellar-toml.html.
-	resp, err := g.httpclient.Get("https://" + host + "/.well-known/stellar.toml")
+	resp, err := g.httpclient.Get(protocol(host) + host + "/.well-known/stellar.toml")
 	if err != nil {
 		return "", "", err
 	}
@@ -83,6 +84,16 @@ func (g *Agent) FindAccount(target string) (accountID, starlightURL string, err 
 		return "", "", errors.Wrapf(err, "decoding account ID from %s", stellarTOML.FedURL)
 	}
 	return acct.ID, stellarTOML.StarlightURL, nil
+}
+
+// protocol returns the protocol identifier to be used for the
+// given host. If it is a loopback, or localhost, address, then
+// we use HTTP. Otherwise, we use HTTPS.
+func protocol(host string) string {
+	if net.IsLoopback(host) {
+		return "http://"
+	}
+	return "https://"
 }
 
 // validateUsername returns whether the username matches the Stellar
