@@ -143,6 +143,32 @@ func (o *Agent) Channels() *MapOfFsmChannel {
 	return &MapOfFsmChannel{bucket(o.db, keyChannels)}
 }
 
+// Ready reads the record stored under key "Ready".
+//
+// Ready indicates whether or not the Agent is ready to accept
+// and process new commands. The Agent is only in a not-ready
+// state when it is closing.
+//
+// If no record has been stored, Ready returns
+// the zero value.
+func (o *Agent) Ready() bool {
+	rec := get(o.db, keyReady)
+	return len(rec) > 0 && rec[0] != 0
+}
+
+// PutReady stores v as a record under the key "Ready".
+//
+// Ready indicates whether or not the Agent is ready to accept
+// and process new commands. The Agent is only in a not-ready
+// state when it is closing.
+func (o *Agent) PutReady(v bool) {
+	rec := make([]byte, 1)
+	if v {
+		rec[0] = 1
+	}
+	put(o.db, keyReady, rec)
+}
+
 // EncryptedSeed reads the record stored under key "EncryptedSeed".
 // If no record has been stored, EncryptedSeed returns
 // the zero value.
@@ -514,6 +540,7 @@ var (
 	keyPrimaryAcct      = []byte("PrimaryAcct")
 	keyPwHash           = []byte("PwHash")
 	keyPwType           = []byte("PwType")
+	keyReady            = []byte("Ready")
 	keyUpdates          = []byte("Updates")
 	keyUsername         = []byte("Username")
 	keyWallet           = []byte("Wallet")

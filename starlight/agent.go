@@ -248,6 +248,7 @@ func (g *Agent) ConfigInit(ctx context.Context, c *Config) error {
 		root.Agent().Config().PutPwType("bcrypt")
 		root.Agent().Config().PutPwHash(digest[:])
 		root.Agent().Config().PutHorizonURL(c.HorizonURL)
+		root.Agent().PutReady(true)
 		root.Agent().PutEncryptedSeed(sealBox(g.seed, []byte(c.Password)))
 		root.Agent().PutNextKeypathIndex(1)
 		root.Agent().PutPrimaryAcct(&primaryAcct)
@@ -458,31 +459,53 @@ func (g *Agent) watchWalletAcct(ctx context.Context, acctID string, cursor horiz
 					})
 
 				case xdr.OperationTypeAccountMerge:
-					if op.Body.Destination.Address() != acctID {
-						continue
+					if InputTx.Env.Tx.SourceAccount.Address() == acctID {
+						// Wipe the database
+						root.DeleteAgent()
+						// Publish update that the Agent has been reset
+						g.putUpdate(root, &Update{
+							Type: update.AccountType,
+							Account: &update.Account{
+								ID:      acctID,
+								Balance: 0,
+							},
+							InputTx: InputTx,
+							OpIndex: index,
+						})
+						// To open the Agent to being reconfigured, indicate
+						// that the shutdown is complete and Agent is now
+						// Ready to accept new commands again.
+						root.Agent().PutReady(true)
 					}
+					if op.Body.Destination.Address() == acctID {
+						var txr xdr.TransactionResult
+						err := xdr.SafeUnmarshalBase64(htx.ResultXdr, &txr)
+						if err != nil {
+							return err
+						}
 
-					// Note: account merge amounts are always in lumens.
-					// See https://www.stellar.org/developers/guides/concepts/list-of-operations.html#account-merge.
+						// Note: account merge amounts are always in lumens.
+						// See https://www.stellar.org/developers/guides/concepts/list-of-operations.html#account-merge.
 
-					// If the tx is successful and InputTx.Env.Tx.Operations[index] is an account merge,
-					// we can depend on (*InputTx.Result.Result.Results)[index].Tr being present and having an AccountMergeResult.
-					mergeAmount := *(*InputTx.Result.Result.Results)[index].Tr.AccountMergeResult.SourceAccountBalance
+						// If the tx is successful and InputTx.Env.Tx.Operations[index] is an account merge,
+						// we can depend on (*InputTx.Result.Result.Results)[index].Tr being present and having an AccountMergeResult.
+						mergeAmount := *(*InputTx.Result.Result.Results)[index].Tr.AccountMergeResult.SourceAccountBalance
 
-					w := root.Agent().Wallet()
-					w.Balance += xlm.Amount(mergeAmount)
-					w.Cursor = htx.PT
-					root.Agent().PutWallet(w)
+						w := root.Agent().Wallet()
+						w.Balance += xlm.Amount(mergeAmount)
+						w.Cursor = htx.PT
+						root.Agent().PutWallet(w)
 
-					g.putUpdate(root, &Update{
-						Type: update.AccountType,
-						Account: &update.Account{
-							ID:      acctID,
-							Balance: uint64(w.Balance),
-						},
-						InputTx: InputTx,
-						OpIndex: index,
-					})
+						g.putUpdate(root, &Update{
+							Type: update.AccountType,
+							Account: &update.Account{
+								ID:      acctID,
+								Balance: uint64(w.Balance),
+							},
+							InputTx: InputTx,
+							OpIndex: index,
+						})
+					}
 				}
 			}
 			return nil
@@ -639,6 +662,9 @@ func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount, host
 
 	var ch *fsm.Channel
 	err = db.Update(g.db, func(root *db.Root) error {
+		if !root.Agent().Ready() {
+			return errors.New("agent in closing state: cannot process new commands")
+		}
 		if !g.isReadyFunded(root) {
 			return errNotFunded
 		}
@@ -739,6 +765,9 @@ func (g *Agent) DoWalletPay(dest string, amount xlm.Amount) error {
 		return errEmptyAmount
 	}
 	return db.Update(g.db, func(root *db.Root) error {
+		if !root.Agent().Ready() {
+			return errors.New("agent in closing state: cannot process new commands")
+		}
 		w := root.Agent().Wallet()
 		if w.Balance <= amount+xlm.Amount(root.Agent().Config().HostFeerate()) {
 			return errors.New("insufficient funds")
@@ -805,6 +834,50 @@ func (g *Agent) addMsgTask(tx *bolt.Tx, remoteURL string, msg *fsm.Message) erro
 	return g.tb.AddTx(tx, m)
 }
 
+// DoCloseAccount will merge the agent's wallet account into the
+// specified destination account. If the agent has any channels
+// that are not closed, it will fail. While the agent is shutting
+// down, it will not accept any other commands. If the transaction
+// fails, the agent will alert the user and return to an Active
+// state. Otherwise, the agent transitions to an empty initial
+// state on merge success.
+func (g *Agent) DoCloseAccount(dest string) error {
+	return db.Update(g.db, func(root *db.Root) error {
+		if !root.Agent().Ready() {
+			return errors.New("agent in closing state: cannot process new commands")
+		}
+		var chanIDs []string
+		chans := root.Agent().Channels()
+		err := chans.Bucket().ForEach(func(chanID, _ []byte) error {
+			chanIDs = append(chanIDs, string(chanID))
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		for _, chanID := range chanIDs {
+			ch := chans.Get([]byte(chanID))
+			if ch.State != fsm.Closed {
+				return errors.New(fmt.Sprintf("channel %s in non-closed state %s", string(chanID), ch.State))
+			}
+		}
+		// Agent is closing, and not able to accept new requests.
+		root.Agent().PutReady(false)
+		hostAcct := root.Agent().PrimaryAcct()
+		closeAccountBuilder, err := b.Transaction(
+			b.Network{Passphrase: network.TestNetworkPassphrase},
+			b.SourceAccount{AddressOrSeed: hostAcct.Address()},
+			b.AccountMerge(
+				b.SourceAccount{AddressOrSeed: hostAcct.Address()},
+				b.Destination{AddressOrSeed: dest},
+			))
+		k := key.DeriveAccountPrimary(g.seed)
+		env, err := closeAccountBuilder.Sign(k.Seed())
+		g.addTxTask(root.Tx(), walletBucket, *env.E)
+		return nil
+	})
+}
+
 // nextChannelKeyIndex reads the next unused key path index from bu
 // and returns after bumping the stored key path index.
 func nextChannelKeyIndex(agent *db.Agent, bump uint32) uint32 {
@@ -821,7 +894,10 @@ func (g *Agent) DoCommand(channelID string, c *fsm.Command) error {
 	if c.UserCommand == "" {
 		return errors.New("no command specified")
 	}
-	return g.updateChannel(channelID, func(_ *db.Root, updater *fsm.Updater, update *Update) error {
+	return g.updateChannel(channelID, func(root *db.Root, updater *fsm.Updater, update *Update) error {
+		if !root.Agent().Ready() {
+			return errors.New("agent in closing state: cannot process new commands")
+		}
 		update.InputCommand = c
 		return updater.Cmd(c)
 	})
