@@ -4,12 +4,13 @@ import { RouteComponentProps } from 'react-router-dom'
 import { connect } from 'react-redux'
 import { Redirect } from 'react-router'
 import { Dispatch } from 'redux'
-import * as moment from 'moment'
 
 import { usernameToAddress } from 'helpers/account'
 
 import { ApplicationState } from 'types/schema'
 import { ChannelState } from 'types/schema'
+
+import { fromNowPast } from 'helpers/moment'
 
 import { ConnectedChannelActions } from 'pages/channel/ChannelActions'
 import { ChannelActivityTable } from 'pages/channel/ChannelActivityTable'
@@ -86,7 +87,7 @@ export class Channel extends React.Component<Props, {}> {
           </Detail>
           <Detail>
             <DetailLabel>Opened</DetailLabel>
-            <DetailValue>{moment(channel.FundingTime).fromNow()}</DetailValue>
+            <DetailValue>{fromNowPast(channel.FundingTime)}</DetailValue>
           </Detail>
           <Detail>
             <DetailLabel>Opened by</DetailLabel>

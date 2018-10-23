@@ -72,9 +72,9 @@ export class Deposit extends React.Component<Props, State> {
           <div>
             <Label htmlFor="amount">Amount</Label>
             <Hint>
-              <strong>{formatAmount(
-                stroopsToLumens(this.props.availableBalance)
-              )}</strong>{' '}
+              <strong>
+                {formatAmount(stroopsToLumens(this.props.availableBalance))}
+              </strong>{' '}
               XLM available in account
             </Hint>
           </div>
@@ -97,9 +97,8 @@ export class Deposit extends React.Component<Props, State> {
               amount !== undefined && !this.walletHasSufficientBalance()
             }
           >
-            You only have {formatAmount(
-              stroopsToLumens(this.props.availableBalance)
-            )} XLM
+            You only have{' '}
+            {formatAmount(stroopsToLumens(this.props.availableBalance))} XLM
             available in your wallet.
           </HelpBlock>
 

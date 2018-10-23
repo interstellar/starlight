@@ -1,5 +1,4 @@
 import * as React from 'react'
-import * as moment from 'moment'
 import styled from 'styled-components'
 
 import { DUSTYGRAY } from 'pages/shared/Colors'
@@ -9,9 +8,10 @@ import { ValueChange } from 'pages/shared/ValueChange'
 import { ChannelOp } from 'types/types'
 import { ChannelState } from 'types/schema'
 import { formatAmount, stroopsToLumens } from 'helpers/lumens'
+import { fromNowPast } from 'helpers/moment'
 
 const Row = styled.tr<{ pending: boolean }>`
-  ${props => (props.pending && 'opacity: 0.5; font-style: italic;') }
+  ${props => props.pending && 'opacity: 0.5; font-style: italic;'};
 `
 
 const activityTitle = (op: ChannelOp): string => {
@@ -49,9 +49,9 @@ export class ActivityRow extends React.Component<Props, {}> {
     }
     const time =
       op.type === 'deposit'
-        ? moment(op.tx.LedgerTime).fromNow()
+        ? fromNowPast(op.tx.LedgerTime)
         : this.props.timestamp
-          ? moment(this.props.timestamp).fromNow()
+          ? fromNowPast(this.props.timestamp)
           : ''
     const pendingPayment =
       this.props.pending &&

@@ -62,7 +62,7 @@ interface State {
   showTooltip: boolean
   loading: boolean
   formErrors: {
-    deposit: boolean,
+    deposit: boolean
     counterparty: boolean
   }
 }
@@ -102,17 +102,21 @@ export class CreateChannel extends React.Component<Props, State> {
                   this.state.counterparty
                 )
               ) {
-                this.setState({ formErrors: {
-                  deposit: this.state.formErrors.deposit,
-                  counterparty: true,
-                }})
+                this.setState({
+                  formErrors: {
+                    deposit: this.state.formErrors.deposit,
+                    counterparty: true,
+                  },
+                })
               } else {
-                this.setState({ formErrors: {
-                  deposit: this.state.formErrors.deposit,
-                  counterparty: false,
-                },
-              })
-            }}}
+                this.setState({
+                  formErrors: {
+                    deposit: this.state.formErrors.deposit,
+                    counterparty: false,
+                  },
+                })
+              }
+            }}
             onChange={e => {
               this.setState({ counterparty: e.target.value })
             }}
@@ -125,27 +129,34 @@ export class CreateChannel extends React.Component<Props, State> {
 
           <Label htmlFor="initialDeposit">Initial Deposit</Label>
           <Hint>
-            <strong>{formatAmount(
-              stroopsToLumens(this.props.availableBalance)
-            )} XLM</strong>{' '}
+            <strong>
+              {formatAmount(stroopsToLumens(this.props.availableBalance))} XLM
+            </strong>{' '}
             available in account
           </Hint>
           <UnitContainer>
             <Input
               value={this.state.initialDeposit}
               onBlur={() => {
-                if (this.state.initialDeposit && !this.walletHasSufficientBalance()) {
-                  this.setState({ formErrors: {
-                    deposit: true,
-                    counterparty: this.state.formErrors.counterparty,
-                  }})
+                if (
+                  this.state.initialDeposit &&
+                  !this.walletHasSufficientBalance()
+                ) {
+                  this.setState({
+                    formErrors: {
+                      deposit: true,
+                      counterparty: this.state.formErrors.counterparty,
+                    },
+                  })
                 } else {
-                  this.setState({ formErrors: {
-                    deposit: false,
-                    counterparty: this.state.formErrors.counterparty,
-                  },
-                })
-              }}}
+                  this.setState({
+                    formErrors: {
+                      deposit: false,
+                      counterparty: this.state.formErrors.counterparty,
+                    },
+                  })
+                }
+              }}
               onChange={e => {
                 this.setState({ initialDeposit: e.target.value })
               }}
@@ -236,8 +247,10 @@ export class CreateChannel extends React.Component<Props, State> {
   }
 
   private walletHasSufficientBalance() {
-    return this.props.availableBalance >=
+    return (
+      this.props.availableBalance >=
       lumensToStroops(parseFloat(this.state.initialDeposit))
+    )
   }
 }
 
