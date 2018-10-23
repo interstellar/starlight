@@ -44,7 +44,7 @@ func start(t *testing.T, ctx context.Context, testdir, name string) *Starlightd 
 		nextUpdateNum: 1,
 	}
 	s.handler = logWrapper(walletrpc.Handler(s.g), name)
-	s.server = httptest.NewTLSServer(s.handler)
-	s.address = strings.TrimPrefix(s.server.URL, "https://")
+	s.server = httptest.NewServer(s.handler)
+	s.address = strings.TrimPrefix(s.server.URL, "http://")
 	return s
 }
