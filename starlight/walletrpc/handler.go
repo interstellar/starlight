@@ -200,17 +200,23 @@ func (wt *wallet) doCommand(w http.ResponseWriter, req *http.Request) {
 func (wt *wallet) findAccount(w http.ResponseWriter, req *http.Request) {
 	// TODO(debnil): Add unit test and needed framework for this and other wallet RPCs.
 	var v struct {
-		Addr string `json:"starlight_addr"`
+		Addr string `json:"stellar_addr"`
 	}
 	err := json.NewDecoder(req.Body).Decode(&v)
 	if err != nil {
 		httperror(req, w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	_, _, err = wt.agent.FindAccount(v.Addr)
+	var result struct {
+		AcctID       string
+		StarlightURL string
+	}
+	result.AcctID, result.StarlightURL, err = wt.agent.FindAccount(v.Addr)
 	if err != nil {
 		httperror(req, w, err.Error(), http.StatusInternalServerError)
 	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
 }
 
 func httperror(req *http.Request, w http.ResponseWriter, err string, code int) {
