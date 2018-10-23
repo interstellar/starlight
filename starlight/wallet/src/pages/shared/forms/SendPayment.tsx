@@ -34,10 +34,10 @@ const Form = styled.form`
 `
 
 interface State {
-  recipient: string
   amount: string
-  showError: boolean
   loading: boolean
+  recipient: string
+  showError: boolean
 }
 
 interface Props {
@@ -56,10 +56,10 @@ export class SendPayment extends React.Component<Props, State> {
     super(props)
 
     this.state = {
-      recipient: props.initialRecipient || '',
       amount: '',
-      showError: false,
       loading: false,
+      recipient: props.initialRecipient || '',
+      showError: false,
     }
 
     this.handleSubmit = this.handleSubmit.bind(this)
@@ -68,10 +68,8 @@ export class SendPayment extends React.Component<Props, State> {
   public render() {
     const validAmount = this.amount() !== undefined
     const hasChannel = this.destinationChannel() !== undefined
-    const hasChannelWithInsufficientBalance =
-      validAmount && hasChannel && !this.channelHasSufficientBalance()
     const hasChannelWithSufficientBalance =
-      validAmount && hasChannel && !hasChannelWithInsufficientBalance
+      validAmount && hasChannel && !this.channelHasSufficientBalance()
     const submittable =
       validAmount &&
       (hasChannelWithSufficientBalance ||
@@ -146,7 +144,7 @@ export class SendPayment extends React.Component<Props, State> {
           </HelpBlock>
           <HelpBlock
             isShowing={
-              hasChannelWithInsufficientBalance &&
+              !hasChannelWithSufficientBalance &&
               this.walletHasSufficientBalance()
             }
           >
