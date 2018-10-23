@@ -56,7 +56,7 @@ const reducer: Reducer<ChannelsState> = (
       const channel = action.channel as ChannelState
       const channelID = channel.CounterpartyAddress
       const oldChan = state[channelID]
-      if (oldChan === undefined) {
+      if (oldChan === undefined || oldChan.State === 'Closed') {
         return {
           ...state,
           [channelID]: {

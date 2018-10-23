@@ -69,7 +69,11 @@ const fetch = async (dispatch: any, From: number) => {
               )
               const escrowAccounts = getEscrowAccounts(state)
               const channelID = escrowAccounts[sourceAccount]
-              if (channelID !== undefined) {
+              if (
+                channelID !== undefined &&
+                // must be a CURRENT escrow account
+                state.channels[channelID].EscrowAcct === sourceAccount
+              ) {
                 // it's from a channel
                 // handled elsewhere
                 return
