@@ -61,10 +61,6 @@ var config = getConfig({
 
   // Proxy API requests to local starlightd server
   devServer: {
-    https: {
-      key: fs.readFileSync('./starlight/localhost-key.pem'),
-      cert: fs.readFileSync('./starlight/localhost.pem'),
-    },
     proxy: [
       {
         context: [
