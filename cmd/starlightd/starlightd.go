@@ -26,7 +26,7 @@ import (
 
 func main() {
 	listen := flag.String("listen", "localhost:7000", "listen `address` (if no LISTEN_FDS)")
-	dir := flag.String("data", "./starlight", "data directory")
+	dir := flag.String("data", "./starlight-data", "data directory")
 	flag.Parse()
 
 	err := os.MkdirAll(*dir, 0700)
