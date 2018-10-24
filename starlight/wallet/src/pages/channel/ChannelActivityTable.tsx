@@ -32,7 +32,7 @@ export class ChannelActivityTable extends React.Component<Props, {}> {
           {getChannelActivity(this.props.channel).map((activity, i) => (
             <ActivityRow
               op={activity.op}
-              channelState={this.props.channel.State}
+              state={this.props.channel}
               key={i}
               pending={activity.pending}
               timestamp={activity.timestamp}

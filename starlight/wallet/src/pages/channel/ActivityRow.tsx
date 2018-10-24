@@ -6,6 +6,7 @@ import { TableData } from 'pages/shared/Table'
 import { Timestamp } from 'pages/shared/Timestamp'
 import { ValueChange } from 'pages/shared/ValueChange'
 import { ChannelOp } from 'types/types'
+import { ChannelState } from 'types/schema'
 import { formatAmount, stroopsToLumens } from 'helpers/lumens'
 import { fromNowPast } from 'helpers/moment'
 
@@ -30,7 +31,7 @@ const activityTitle = (op: ChannelOp): string => {
 }
 
 interface Props {
-  channelState: string
+  state: ChannelState
   op: ChannelOp
   pending: boolean
   timestamp?: string
@@ -42,10 +43,6 @@ export class ActivityRow extends React.Component<Props, {}> {
   }
 
   public render() {
-    if (this.props.pending && this.channelClosedOrClosing()) {
-      return null
-    }
-
     const op = this.props.op
     if (op.type === 'paymentCompleted') {
       throw new Error(`ActivityRow should not be passed ${op.type} op`)
@@ -80,15 +77,5 @@ export class ActivityRow extends React.Component<Props, {}> {
         </TableData>
       </Row>
     )
-  }
-
-  private channelClosedOrClosing() {
-    const openStates = [
-      'Open',
-      'PaymentProposed',
-      'PaymentAccepted',
-      'AwaitingPaymentMerge',
-    ]
-    return !openStates.includes(this.props.channelState)
   }
 }
