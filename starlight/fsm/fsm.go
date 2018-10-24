@@ -248,8 +248,7 @@ func (ch *Channel) SetupAndFundingReserveAmount() xlm.Amount {
 	var result xlm.Amount
 	result += setupMinBalanceAmount()
 	result += ch.setupFeeAmount()
-	result += ch.fundingBalanceAmount()
-	result += ch.fundingFeeAmount()
+	result += ch.totalFundingTxAmount()
 	return result
 }
 
@@ -263,6 +262,15 @@ func (ch *Channel) setupFeeAmount() xlm.Amount {
 	return 3 * ch.HostFeerate
 }
 
+func (ch *Channel) totalFundingTxAmount() xlm.Amount {
+	// Combine funding tx balance, funding tx fees, and fee-amts for funded channel accts.
+	var result xlm.Amount
+	result += ch.fundingBalanceAmount()
+	result += ch.fundingFeeAmount()
+	result += ch.fundedAcctsTxFeeAmount()
+	return result
+}
+
 func (ch *Channel) fundingBalanceAmount() xlm.Amount {
 	// Guest ratchet has 2 additional signers, escrow and host ratchet 1 each.
 	// Each additional signer adds .5 Lumen to the minimum reserve balance.
@@ -270,6 +278,11 @@ func (ch *Channel) fundingBalanceAmount() xlm.Amount {
 }
 
 func (ch *Channel) fundingFeeAmount() xlm.Amount {
+	// Funding tx has 7 ops, from Host account.
+	return 7 * ch.HostFeerate
+}
+
+func (ch *Channel) fundedAcctsTxFeeAmount() xlm.Amount {
 	// Escrow fees are 8 * feerate XLM and ratchet accounts are 1 * feerate XLM each.
 	return 10 * ch.ChannelFeerate
 }

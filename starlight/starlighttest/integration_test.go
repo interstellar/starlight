@@ -140,6 +140,34 @@ func TestLogoutLogin(t *testing.T) {
 	})
 }
 
+func TestCleanup(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
+	log.Printf("running %s", t.Name())
+	testdir, err := ioutil.TempDir("", t.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(testdir)
+
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	alice := TestServer("alice")
+	defer alice.Close()
+
+	bob := start(ctx, t, testdir, "bob")
+	defer bob.server.Close()
+
+	steps := cleanupSteps(alice, bob, 0, 0)
+	var channelID string
+	for _, s := range steps {
+		testStep(ctx, t, s, &channelID)
+	}
+}
+
 func TestPaymentMerge(t *testing.T) {
 	itest(t, func(ctx context.Context, alice, bob *Starlightd) {
 		steps := append(channelCreationSteps(alice, bob, 0, 0), bobChannelPayAliceSteps(alice, bob)...)

@@ -895,6 +895,157 @@ func loginSteps(alice, bob *Starlightd) []step {
 	}
 }
 
+func cleanupSteps(alice *httptest.Server, bob *Starlightd, maxRoundDurMin, finalityDelayMin int) []step {
+	return []step{
+		{
+			name:  "bob config init",
+			agent: bob,
+			path:  "/api/config-init",
+			// WARNING: this software is not compatible with Stellar mainnet.
+			body: fmt.Sprintf(`
+			{
+				"Username":"bob",
+				"Password":"password",
+				"DemoServer":true,
+				"HorizonURL":"https://horizon-testnet.stellar.org/",
+				"KeepAlive":false,
+				"MaxRoundDurMin": %d,
+				"FinalityDelayMin": %d,
+				"HostFeerate": %d,
+				"ChannelFeerate":%d
+			}`, maxRoundDurMin, finalityDelayMin, hostFeerate, channelFeerate),
+		}, {
+			name:  "bob config init update",
+			agent: bob,
+			update: &update.Update{
+				Type:      update.InitType,
+				UpdateNum: 1,
+			},
+		},
+		{
+			name:  "bob wallet funding update",
+			agent: bob,
+			path:  "/api/updates",
+			body:  `{"From": 2}`,
+			update: &update.Update{
+				Type:      update.AccountType,
+				UpdateNum: 2,
+			},
+			delta:       10000 * xlm.Lumen,
+			checkLedger: true,
+		}, {
+			name:  "bob create channel with alice",
+			agent: bob,
+			path:  "/api/do-create-channel",
+			body: fmt.Sprintf(`{
+				"GuestAddr": "alice*%s",
+				"HostAmount": 10000000000
+			}`, strings.TrimPrefix(alice.URL, "http://")),
+		}, {
+			name:  "bob channel creation setting up update",
+			agent: bob,
+			update: &update.Update{
+				Type: update.ChannelType,
+				Channel: &fsm.Channel{
+					State:       fsm.SettingUp,
+					HostAmount:  hostAmount,
+					GuestAmount: 0,
+				},
+			},
+			// Host balance should decrease by:
+			// 1000 Lumen for channel funding amount
+			// 3 * Lumen + 3 * hostFee to create the three accounts
+			// 7 * hostFee in funding tx fees for 7 operations
+			// 0.5*Lumen + 8 * channelFee in initial funding for the escrow account
+			// 1 * Lumen + 1 * channelFee in initial funding for the guest ratchet
+			// 0.5*Lumen + 1 * channelFee in initial funding for the host ratchet account
+			delta: -(1000*xlm.Lumen + 5*xlm.Lumen + 10*hostFeerate + 10*channelFeerate),
+		},
+		{
+			name:  "bob channel creation channel proposed update",
+			agent: bob,
+			update: &update.Update{
+				Type: update.ChannelType,
+				Channel: &fsm.Channel{
+					State:       fsm.ChannelProposed,
+					HostAmount:  hostAmount,
+					GuestAmount: 0,
+				},
+			},
+		},
+		{
+			name:  "bob cleanup command",
+			agent: bob,
+			path:  "/api/do-command",
+			body: `{
+				"ChannelID": "%s",
+				"Command": {
+					"Name": "CleanUp"
+				}
+			}`,
+			injectChanID: true,
+		},
+		{
+			name:  "bob cleanup awaiting cleanup update",
+			agent: bob,
+			update: &update.Update{
+				Type: update.ChannelType,
+				Channel: &fsm.Channel{
+					State:       fsm.AwaitingCleanup,
+					HostAmount:  hostAmount,
+					GuestAmount: 0,
+				},
+			},
+			// Balance should increase by
+			// 1000 Lumen for channel funding amount
+			// 4 * hostFee in (7 ops in returned funding tx - 3 ops in cleanup tx)
+			// 0.5*Lumen + 8 * channelFee in initial funding for the escrow account
+			// 1 * Lumen + 1 * channelFee in initial funding for the guest ratchet
+			// 0.5*Lumen + 1 * channelFee in initial funding for the host ratchet account
+			delta: 1000*xlm.Lumen + 2*xlm.Lumen + 4*hostFeerate + 10*channelFeerate,
+		}, {
+			name:  "bob cleanup channel closed update",
+			agent: bob,
+			update: &update.Update{
+				Type: update.ChannelType,
+				Channel: &fsm.Channel{
+					State:       fsm.Closed,
+					HostAmount:  hostAmount,
+					GuestAmount: 0,
+				},
+			},
+			outOfOrder: true,
+		},
+		{
+			name:  "bob cleanup escrow merge tx update",
+			agent: bob,
+			update: &update.Update{
+				Type:    update.AccountType,
+				InputTx: &fsm.Tx{},
+			},
+			delta: 1 * xlm.Lumen,
+		},
+		{
+			name:  "bob cleanup host ratchet merge tx update",
+			agent: bob,
+			update: &update.Update{
+				Type: update.AccountType,
+			},
+			delta: 1 * xlm.Lumen,
+		},
+		{
+			name:  "bob cleanup guest ratchet merge tx update",
+			agent: bob,
+			update: &update.Update{
+				Type: update.AccountType,
+			},
+			delta: 1 * xlm.Lumen,
+			// Account should be up to date with ledger at this point
+			checkLedger: true,
+		},
+	}
+}
+
 func checkUpdate(ctx context.Context, s step, channelID *string) error {
 	backoff := net.Backoff{Base: 10 * time.Second}
 	found := false

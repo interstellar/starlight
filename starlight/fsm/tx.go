@@ -60,6 +60,7 @@ func NewTx(htx *horizon.Transaction) (*Tx, error) {
 
 var txHandlerFuncs = []func(*Updater, *Tx, bool) (bool, error){
 	handleCoopCloseTx,
+	handleSettleCleanupTx,
 	handleFundingTx,
 	handleRatchetTx,
 	handleSettleWithGuestTx,
@@ -202,9 +203,8 @@ func handleFundingTx(u *Updater, tx *Tx, success bool) (bool, error) {
 	}
 	if !success {
 		if u.C.Role == Host {
-			// Host gets back funding tx-related amounts, charged fees for cleanup tx.
-			u.H.Balance += u.C.fundingBalanceAmount() + u.C.fundingFeeAmount()
-			u.H.Balance -= 3 * u.C.HostFeerate
+			// Host gets back total funding tx-related amount.
+			u.H.Balance += u.C.totalFundingTxAmount()
 			u.H.Seqnum++
 			err := u.transitionTo(AwaitingCleanup)
 			return true, err
@@ -341,12 +341,24 @@ func handleSettleWithGuestTx(u *Updater, ptx *Tx, _ bool) (bool, error) {
 	return true, nil
 }
 
-// also handles SettleCleanupTx and SettleRound1Tx
+// also handles SettleRound1Tx
 func handleSettleWithHostTx(u *Updater, tx *Tx, _ bool) (bool, error) {
 	if !txMatches(tx, u.C.EscrowAcct,
 		mergeOp(u.C.EscrowAcct, u.C.HostAcct),
 		mergeOp(u.C.GuestRatchetAcct, u.C.HostAcct),
 		mergeOp(u.C.HostRatchetAcct, u.C.HostAcct),
+	) {
+		return false, nil
+	}
+	err := u.transitionTo(Closed)
+	return true, err
+}
+
+func handleSettleCleanupTx(u *Updater, tx *Tx, _ bool) (bool, error) {
+	if !txMatches(tx, u.C.HostAcct,
+		mergeOp(u.C.EscrowAcct, u.C.HostAcct),
+		mergeOp(u.C.HostRatchetAcct, u.C.HostAcct),
+		mergeOp(u.C.GuestRatchetAcct, u.C.HostAcct),
 	) {
 		return false, nil
 	}

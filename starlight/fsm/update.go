@@ -108,7 +108,7 @@ func (u *Updater) Time() error {
 		// ChannelProposedTimeout
 		log.Printf("ChannelProposedTimeout...")
 		if u.C.Role == Host {
-			u.H.Balance += u.C.fundingBalanceAmount() + u.C.fundingFeeAmount()
+			u.H.Balance += u.C.fundingBalanceAmount() + u.C.fundingFeeAmount() + u.C.fundedAcctsTxFeeAmount()
 			u.H.Seqnum++
 			return u.transitionTo(AwaitingCleanup)
 		}

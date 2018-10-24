@@ -52,10 +52,8 @@ func cleanUpFn(_ *Command, u *Updater) error {
 		return errors.Wrapf(errUnexpectedState, "got %s, want %s", u.C.State, ChannelProposed)
 	}
 	// Get back funds associated with funding tx.
-	// Charged 3 * feerate for the three ops in cleanup tx.
 	// Setup balances are added back in processing MergeOps.
-	u.H.Balance += u.C.fundingBalanceAmount() + u.C.fundingFeeAmount()
-	u.H.Balance -= 3 * u.C.HostFeerate
+	u.H.Balance += u.C.totalFundingTxAmount()
 	u.H.Seqnum++
 	return u.transitionTo(AwaitingCleanup)
 }

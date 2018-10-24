@@ -33,6 +33,8 @@ func (u *Updater) transitionTo(newState State) error {
 
 	switch newState {
 	case AwaitingCleanup:
+		// Charge cleanup tx fees.
+		u.H.Balance -= 3 * u.C.HostFeerate
 		return publishCleanupTx(u.Seed, u.C, u.O, u.H)
 
 	case AwaitingClose:

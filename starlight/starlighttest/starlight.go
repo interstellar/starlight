@@ -3,13 +3,16 @@ package starlighttest
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"html/template"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/interstellar/starlight/starlight"
+	"github.com/interstellar/starlight/starlight/fsm"
 	"github.com/interstellar/starlight/starlight/walletrpc"
 	"github.com/interstellar/starlight/worizon"
 	"github.com/interstellar/starlight/worizon/xlm"
@@ -55,4 +58,45 @@ func start(ctx context.Context, t *testing.T, testdir, name string) *Starlightd 
 	s.server = httptest.NewServer(s.handler)
 	s.address = strings.TrimPrefix(s.server.URL, "http://")
 	return s
+}
+
+func TestServer(name string) *httptest.Server {
+	mux := new(http.ServeMux)
+	mux.HandleFunc("/starlight/message", testHandleMsg)
+	mux.HandleFunc("/federation", testHandleFed)
+	mux.HandleFunc("/.well-known/stellar.toml", testHandleTOML)
+	handler := logWrapper(mux, name)
+	server := httptest.NewServer(handler)
+	return server
+}
+
+func testHandleMsg(w http.ResponseWriter, req *http.Request) {
+	m := new(fsm.Message)
+	err := json.NewDecoder(req.Body).Decode(m)
+	if err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	if len(m.ChannelID) == 0 {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+}
+
+func testHandleFed(w http.ResponseWriter, req *http.Request) {
+	json.NewEncoder(w).Encode(map[string]string{
+		"stellar_address": "alice*" + req.Host,
+		"account_id":      "GBOJVRYHEQRGBQDUT6B5C6HJYHVSY2LP65DRYJRXZWR2QZHTXFS3W4KL",
+	})
+}
+
+func testHandleTOML(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "text/plain")
+	v := struct{ Origin string }{req.Host}
+	tomlTemplate := template.Must(template.New("toml").Parse(`
+	FEDERATION_SERVER="http://{{.Origin}}/federation"
+	STARLIGHT_SERVER="http://{{.Origin}}/"
+	`))
+	tomlTemplate.Execute(w, v)
 }

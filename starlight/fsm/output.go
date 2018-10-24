@@ -49,7 +49,7 @@ func publishCleanupTx(seed []byte, ch *Channel, o Outputter, h *WalletAcct) erro
 		b.Network{Passphrase: ch.Passphrase},
 		b.SourceAccount{AddressOrSeed: ch.HostAcct.Address()},
 		b.Sequence{Sequence: uint64(seqnum)},
-		b.BaseFee{Amount: uint64(3 * ch.HostFeerate)},
+		b.BaseFee{Amount: uint64(ch.HostFeerate)},
 		b.AccountMerge(
 			b.SourceAccount{AddressOrSeed: ch.EscrowAcct.Address()},
 			b.Destination{AddressOrSeed: ch.HostAcct.Address()},
@@ -66,7 +66,7 @@ func publishCleanupTx(seed []byte, ch *Channel, o Outputter, h *WalletAcct) erro
 	if err != nil {
 		return err
 	}
-	env, err := txSig(tx, seed, key.PrimaryAccountIndex)
+	env, err := txSig(tx, seed, key.PrimaryAccountIndex, ch.KeyIndex, ch.KeyIndex+1, ch.KeyIndex+2)
 	if err != nil {
 		return err
 	}
