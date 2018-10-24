@@ -46,7 +46,7 @@ class App extends React.Component<Props, {}> {
 
               <Route path="/channels" exact={true} component={Navigation} />
 
-              <Route path="/channel/*" exact={true} component={Navigation} />
+              <Route path="/channel/:address+" exact={true} component={Navigation} />
 
               <Route path="/settings" exact={true} component={Navigation} />
 
