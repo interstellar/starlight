@@ -205,7 +205,7 @@ func TestHandlePaymentProposeMessage(t *testing.T) {
 		},
 		{
 			name:      "guest handle insufficient payment amount",
-			msgFunc:   func(m *PaymentProposeMsg) { m.PaymentAmount = 0 },
+			msgFunc:   func(m *PaymentProposeMsg) { m.PaymentAmount = -1 },
 			wantErr:   nil,
 			wantState: Open,
 			handler:   Guest,
@@ -238,7 +238,7 @@ func TestHandlePaymentProposeMessage(t *testing.T) {
 		},
 		{
 			name:      "host handle insufficient payment",
-			msgFunc:   func(m *PaymentProposeMsg) { m.PaymentAmount = 0 },
+			msgFunc:   func(m *PaymentProposeMsg) { m.PaymentAmount = -1 },
 			wantErr:   nil,
 			wantState: Open,
 			handler:   Host,
