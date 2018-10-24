@@ -1,0 +1,36 @@
+Setup Starlight on AWS
+
+AWS Console
+
+1. Setup an AWS account
+    You'll need to create a new AWS account. The basic, free account will do.
+    https://aws.amazon.com/
+
+2. Register a domain name (optional)
+    https://console.aws.amazon.com/route53/home?#DomainRegistration:
+
+3. Generate AWS Access Keys
+    https://console.aws.amazon.com/iam/home?region=us-east-2#/security_credential
+    Click "Create New Access Key"
+    Keep the values handy for the Development Machine setup
+
+Development Machine
+
+1. Configure AWS CLI
+    https://docs.aws.amazon.com/cli/latest/userguide/installing.html
+    On Mac: $ brew install awscli
+
+2. Create an SSH key
+    ssh-keygen -t ed25519 -f ~/.ssh/starlight-terraform
+    ssh-add -K ~/.ssh/starlight-terraform
+
+    Update ssh_public_key in vars.tf with your newly created public key
+    $ cat ~/.ssh/starlight-terraform.pub | pbcopy
+
+3. Install Terraform
+    https://www.terraform.io/intro/getting-started/install.html
+    On Mac: brew install terraform
+
+4. Use Terraform to create AWS resources
+
+    $ terraform apply
