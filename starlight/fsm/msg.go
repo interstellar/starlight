@@ -303,7 +303,7 @@ func (u *Updater) handlePaymentProposeMsg(m *Message) error {
 	default:
 		return errors.Wrap(ErrUnexpectedState, u.C.State)
 	}
-	if payment.PaymentAmount <= 0 {
+	if payment.PaymentAmount < 0 {
 		log.Printf("dropped message: invalid payment amount %s", payment.PaymentAmount)
 		return nil
 	}
