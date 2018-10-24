@@ -74,7 +74,7 @@ export class Deposit extends React.Component<Props, State> {
       <View>
         <Heading>Deposit to channel</Heading>
         <Form onSubmit={this.handleSubmit}>
-          <Label htmlFor="Channel">Channel</Label>
+          <Label htmlFor="Channel">Channel with</Label>
           <ChannelName>{this.state.channelName}</ChannelName>
 
           <div>
@@ -119,6 +119,15 @@ export class Deposit extends React.Component<Props, State> {
             You only have{' '}
             {formatAmount(stroopsToLumens(this.props.availableBalance))} XLM
             available in your wallet.
+          </HelpBlock>
+
+          <HelpBlock isShowing={!!total && this.walletHasSufficientBalance()}>
+            Once this is deposited, your new balance in this channel will{' '}
+            be {
+              formatAmount(
+                stroopsToLumens((this.props.availableBalance + (total || 0)))
+              )
+            } XLM.
           </HelpBlock>
 
           <Label>Transaction Fee</Label>
