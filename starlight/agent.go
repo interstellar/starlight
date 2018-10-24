@@ -473,7 +473,7 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 					})
 
 				case xdr.OperationTypeAccountMerge:
-					if InputTx.Env.Tx.SourceAccount.Address() == acctID {
+					if op.SourceAccount.Address() == acctID {
 						// Wipe the database
 						root.DeleteAgent()
 						// Publish update that the Agent has been reset
