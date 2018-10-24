@@ -1,11 +1,18 @@
 import * as numeral from 'numeral'
+import Big from 'big.js'
 
 export const stroopsToLumens = (stroops: number, options: any = {}) => {
-  const lumens = numeral(stroops * 0.0000001)
+  const singleStroop = 0.0000001
+  const lumens = stroops * singleStroop
+
+  if (lumens <= singleStroop) {
+    return Big(lumens).toFixed().toString()
+  }
+
   if (options.short) {
-    return lumens.format('0[.]00')
+    return numeral(lumens).format('0[.]00')
   } else {
-    return lumens.format('0[.]00[00000]')
+    return numeral(lumens).format('0[.]00[00000]')
   }
 }
 
