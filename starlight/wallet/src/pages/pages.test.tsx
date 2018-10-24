@@ -15,11 +15,9 @@ import { Login } from 'pages/login/Login'
 import { Settings } from 'pages/settings/Settings'
 import { Wallet } from 'pages/wallet/Wallet'
 
-const configFunc = (params: {
-  Username: string
-  Password: string
-  HorizonURL: string
-}) => params
+import { InitConfigParams } from 'state/config'
+
+const configFunc = (params: InitConfigParams) => params
 
 const loginFunc = (params: Credentials) => params
 

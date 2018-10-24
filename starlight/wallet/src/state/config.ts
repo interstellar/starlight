@@ -11,7 +11,7 @@ export const CONFIG_EDIT = 'settings/CONFIG_EDIT'
 // Reducer
 const initialState: ConfigState = {
   Username: '',
-  HorizonURL: 'https://horizon-testnet.stellar.org',
+  HorizonURL: '',
 }
 
 const reducer: Reducer<ConfigState> = (state = initialState, action) => {
@@ -19,8 +19,8 @@ const reducer: Reducer<ConfigState> = (state = initialState, action) => {
     case CONFIG_INIT: {
       return {
         ...state,
-        Username: action.Username || '',
-        HorizonURL: action.HorizonURL || 'https://horizon-testnet.stellar.org',
+        Username: action.Username,
+        HorizonURL: action.HorizonURL,
       }
     }
     case CONFIG_EDIT: {
@@ -35,12 +35,32 @@ const reducer: Reducer<ConfigState> = (state = initialState, action) => {
   }
 }
 
+export interface InitConfigParams {
+  DemoServer: boolean
+  HorizonURL: string
+  Password: string
+  Username: string
+}
+
 // Side effects
-const init = async (dispatch: Dispatch, params: ConfigState) => {
-  const response = await Starlightd.post(dispatch, '/api/config-init', params)
+const init = async (dispatch: Dispatch, params: InitConfigParams) => {
+  if (params.DemoServer) {
+    Object.assign(params, { HorizonURL: 'https://horizon-testnet.stellar.org' })
+  }
+
+  const response = await Starlightd.post(dispatch, '/api/config-init', {
+    Username: params.Username,
+    Password: params.Password,
+    HorizonURL: params.HorizonURL,
+  })
+
+  const reducerParams = {
+    Username: params.Username,
+    HorizonURL: params.HorizonURL,
+  }
 
   if (response.ok) {
-    dispatch({ type: CONFIG_INIT, ...params })
+    dispatch({ type: CONFIG_INIT, ...reducerParams })
     dispatch({
       type: STATUS_UPDATE,
       IsConfigured: true,

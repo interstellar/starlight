@@ -9,9 +9,8 @@ import { Hint, Input, Label } from 'pages/shared/Input'
 import { Icon } from 'pages/shared/Icon'
 import { RadioButton } from 'pages/shared/RadioButton'
 import { BtnSubmit } from 'pages/shared/Button'
-import { ConfigState } from 'types/schema'
 import { RADICALRED, WHITE } from 'pages/shared/Colors'
-import { config } from 'state/config'
+import { config, InitConfigParams } from 'state/config'
 
 const View = styled.div`
   background: ${WHITE};
@@ -27,17 +26,15 @@ const RadioGroup = styled.div`
 `
 
 interface Props {
-  configure: (params: ConfigState) => any
+  configure: (params: InitConfigParams) => any
 }
 
-interface State {
-  Password: string
-  DemoServer: boolean
+interface State extends InitConfigParams {
   showError: boolean
   loading: boolean
 }
 
-export class InitConfig extends React.Component<Props, ConfigState & State> {
+export class InitConfig extends React.Component<Props, State> {
   public constructor(props: any) {
     super(props)
 
@@ -45,7 +42,7 @@ export class InitConfig extends React.Component<Props, ConfigState & State> {
       Username: '',
       Password: '',
       DemoServer: true,
-      HorizonURL: 'https://horizon-testnet.stellar.org',
+      HorizonURL: '',
       showError: false,
       loading: false,
     }
@@ -74,6 +71,7 @@ export class InitConfig extends React.Component<Props, ConfigState & State> {
             name="Username"
             autoComplete="off"
             autoFocus
+            required
           />
 
           <Label htmlFor="Password">Password</Label>
@@ -84,6 +82,7 @@ export class InitConfig extends React.Component<Props, ConfigState & State> {
             }}
             type="password"
             name="Password"
+            required
           />
 
           <RadioGroup>
@@ -105,7 +104,7 @@ export class InitConfig extends React.Component<Props, ConfigState & State> {
                 onClick={() => {
                   this.setState({
                     DemoServer: true,
-                    HorizonURL: 'https://horizon-testnet.stellar.org',
+                    HorizonURL: '',
                   })
                 }}
               />
@@ -116,7 +115,6 @@ export class InitConfig extends React.Component<Props, ConfigState & State> {
                 onClick={() => {
                   this.setState({
                     DemoServer: false,
-                    HorizonURL: 'https://horizon-testnet.stellar.org',
                   })
                 }}
               />
@@ -182,7 +180,7 @@ export class InitConfig extends React.Component<Props, ConfigState & State> {
 
 const mapDispatchToProps = (dispatch: Dispatch) => {
   return {
-    configure: (params: ConfigState) => {
+    configure: (params: InitConfigParams) => {
       return config.init(dispatch, params)
     },
   }
