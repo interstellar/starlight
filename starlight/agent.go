@@ -1006,6 +1006,14 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 	}
 	err = g.updateChannel(m.ChannelID, func(root *db.Root, updater *fsm.Updater, update *Update) error {
 		if m.ChannelProposeMsg != nil {
+			maxRoundDur := time.Minute * time.Duration(root.Agent().Config().MaxRoundDurMin())
+			finalityDelay := time.Minute * time.Duration(root.Agent().Config().FinalityDelayMin())
+			if m.ChannelProposeMsg.MaxRoundDuration != maxRoundDur {
+				return fmt.Errorf("channel proposed with max round dur %s, want %s", m.ChannelProposeMsg.MaxRoundDuration, maxRoundDur)
+			}
+			if m.ChannelProposeMsg.FinalityDelay != finalityDelay {
+				return fmt.Errorf("channel proposed with finality delay %s, want %s", m.ChannelProposeMsg.FinalityDelay, finalityDelay)
+			}
 			updater.C.Role = fsm.Guest
 			updater.C.EscrowAcct = fsm.AccountID(escrowAcct)
 			updater.C.GuestAcct = *root.Agent().PrimaryAcct()
