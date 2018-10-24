@@ -41,8 +41,11 @@ interface Props {
 interface State {
   amount: string
   channelName: string
-  showError: boolean
+  formErrors: {
+    amount: boolean
+  }
   loading: boolean
+  showError: boolean
 }
 
 export class Deposit extends React.Component<Props, State> {
@@ -52,8 +55,11 @@ export class Deposit extends React.Component<Props, State> {
     this.state = {
       amount: '',
       channelName: this.props.channel.CounterpartyAddress,
-      showError: false,
+      formErrors: {
+        amount: false,
+      },
       loading: false,
+      showError: false,
     }
 
     this.handleSubmit = this.handleSubmit.bind(this)
@@ -83,6 +89,16 @@ export class Deposit extends React.Component<Props, State> {
           <UnitContainer>
             <Input
               value={this.state.amount}
+              onBlur={() => {
+                this.setState({
+                  formErrors: {
+                    amount: !!this.state.amount && (
+                      parseFloat(this.state.amount) <= 0 ||
+                      !this.walletHasSufficientBalance()
+                    ),
+                  },
+                })
+              }}
               onChange={e => {
                 this.setState({ amount: e.target.value })
               }}
@@ -90,6 +106,7 @@ export class Deposit extends React.Component<Props, State> {
               name="amount"
               autoComplete="off"
               autoFocus
+              error={this.state.formErrors.amount}
             />
             <Unit>XLM</Unit>
           </UnitContainer>
