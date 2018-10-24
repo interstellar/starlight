@@ -19,7 +19,7 @@ func (ch *Channel) buildEscrowTx(seqnum xdr.SequenceNumber, m ...b.TransactionMu
 	return ch.buildTx(ch.EscrowAcct, seqnum, ch.ChannelFeerate, m...)
 }
 
-func (ch *Channel) buildTx(acct AccountId, seqnum xdr.SequenceNumber, basefee xlm.Amount, m ...b.TransactionMutator) (*b.TransactionBuilder, error) {
+func (ch *Channel) buildTx(acct AccountID, seqnum xdr.SequenceNumber, basefee xlm.Amount, m ...b.TransactionMutator) (*b.TransactionBuilder, error) {
 	args := []b.TransactionMutator{
 		b.Network{Passphrase: ch.Passphrase},
 		b.SourceAccount{AddressOrSeed: acct.Address()},
@@ -32,7 +32,7 @@ func (ch *Channel) buildTx(acct AccountId, seqnum xdr.SequenceNumber, basefee xl
 
 /* *** */
 
-func buildSetupAccountTx(ch *Channel, account AccountId, seqnum xdr.SequenceNumber) (*b.TransactionBuilder, error) {
+func buildSetupAccountTx(ch *Channel, account AccountID, seqnum xdr.SequenceNumber) (*b.TransactionBuilder, error) {
 	tb, err := ch.buildWalletTx(
 		seqnum,
 		b.CreateAccount(
@@ -66,7 +66,7 @@ func buildSettleOnlyWithHostTx(ch *Channel) (*b.TransactionBuilder, error) {
 	)
 }
 
-func buildRatchetTx(ch *Channel, ledgerTime time.Time, acct AccountId, seqnum xdr.SequenceNumber) (*b.TransactionBuilder, error) {
+func buildRatchetTx(ch *Channel, ledgerTime time.Time, acct AccountID, seqnum xdr.SequenceNumber) (*b.TransactionBuilder, error) {
 	maxTime := uint64(ledgerTime.Add(ch.FinalityDelay).Add(ch.MaxRoundDuration).Unix())
 	if maxTime > math.MaxInt64 {
 		return nil, checked.ErrOverflow

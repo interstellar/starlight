@@ -28,10 +28,10 @@ func itest(t *testing.T, f func(ctx context.Context, alice, bob *Starlightd)) {
 
 	ctx := context.Background()
 
-	alice := start(t, ctx, testdir, "alice")
+	alice := start(ctx, t, testdir, "alice")
 	defer alice.Close()
 
-	bob := start(t, ctx, testdir, "bob")
+	bob := start(ctx, t, testdir, "bob")
 	defer bob.Close()
 
 	f(ctx, alice, bob)
@@ -41,7 +41,7 @@ func TestChannelCreation(t *testing.T) {
 	itest(t, func(ctx context.Context, alice, bob *Starlightd) {
 		steps := channelCreationSteps(alice, bob, 0, 0)
 		for _, s := range steps {
-			testStep(t, ctx, s, nil)
+			testStep(ctx, t, s, nil)
 		}
 	})
 }
@@ -51,7 +51,7 @@ func TestChannelOpenCloseNoPayment(t *testing.T) {
 		steps := append(channelCreationSteps(alice, bob, 0, 0), aliceCoopCloseSteps(alice, bob, 0)...)
 		var channelID string
 		for _, step := range steps {
-			testStep(t, ctx, step, &channelID)
+			testStep(ctx, t, step, &channelID)
 		}
 	})
 }
@@ -61,7 +61,7 @@ func TestChannelPayment(t *testing.T) {
 		steps := append(channelCreationSteps(alice, bob, 0, 0), bobChannelPayAliceSteps(alice, bob)...)
 		var channelID string
 		for _, step := range steps {
-			testStep(t, ctx, step, &channelID)
+			testStep(ctx, t, step, &channelID)
 		}
 	})
 }
@@ -72,7 +72,7 @@ func TestChannelSettleWithGuestCoopClose(t *testing.T) {
 		steps = append(steps, aliceCoopCloseSteps(alice, bob, 1000*xlm.Stroop)...)
 		var channelID string
 		for _, step := range steps {
-			testStep(t, ctx, step, &channelID)
+			testStep(ctx, t, step, &channelID)
 		}
 	})
 }
@@ -91,7 +91,7 @@ func TestDuplicateChannelCreation(t *testing.T) {
 		})
 		var channelID string
 		for _, step := range steps {
-			testStep(t, ctx, step, &channelID)
+			testStep(ctx, t, step, &channelID)
 		}
 	})
 }
@@ -101,7 +101,7 @@ func TestChannelNoPaymentForceClose(t *testing.T) {
 		steps := append(channelCreationSteps(alice, bob, 1, 1), bobForceCloseStepsNoGuestBalance(alice, bob)...)
 		var channelID string
 		for _, step := range steps {
-			testStep(t, ctx, step, &channelID)
+			testStep(ctx, t, step, &channelID)
 		}
 	})
 }
@@ -112,7 +112,7 @@ func TestSettleWithGuestForceClose(t *testing.T) {
 		steps = append(steps, bobForceCloseStepsSettleWithGuest(alice, bob, 1000*xlm.Stroop)...)
 		var channelID string
 		for _, step := range steps {
-			testStep(t, ctx, step, &channelID)
+			testStep(ctx, t, step, &channelID)
 		}
 	})
 }
@@ -123,7 +123,7 @@ func TestHostTopUp(t *testing.T) {
 
 		var channelID string
 		for _, s := range steps {
-			testStep(t, ctx, s, &channelID)
+			testStep(ctx, t, s, &channelID)
 		}
 	})
 }
@@ -135,7 +135,7 @@ func TestLogoutLogin(t *testing.T) {
 
 		var channelID string
 		for _, s := range steps {
-			testStep(t, ctx, s, &channelID)
+			testStep(ctx, t, s, &channelID)
 		}
 	})
 }
@@ -147,7 +147,7 @@ func TestPaymentMerge(t *testing.T) {
 		// Create channel and do one payment
 		var channelID string
 		for _, s := range steps {
-			testStep(t, ctx, s, &channelID)
+			testStep(ctx, t, s, &channelID)
 		}
 
 		address := bob.address
@@ -158,7 +158,7 @@ func TestPaymentMerge(t *testing.T) {
 
 		steps = mergingPaymentSteps(alice, bob, hostBalance, guestBalance)
 		for _, s := range steps {
-			testStep(t, ctx, s, &channelID)
+			testStep(ctx, t, s, &channelID)
 		}
 
 		bob.server = httptest.NewUnstartedServer(bob.handler)
@@ -172,7 +172,7 @@ func TestPaymentMerge(t *testing.T) {
 
 		steps = paymentMergeResolutionSteps(alice, bob, hostBalance, guestBalance)
 		for _, s := range steps {
-			testStep(t, ctx, s, &channelID)
+			testStep(ctx, t, s, &channelID)
 		}
 	})
 

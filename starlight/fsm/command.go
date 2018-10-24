@@ -7,30 +7,31 @@ import (
 	"github.com/interstellar/starlight/worizon/xlm"
 )
 
-type UserCommand string
+// CommandName is the type of a user-command constant.
+type CommandName string
 
+// User commands.
 const (
-	CreateChannel UserCommand = "CreateChannel"
-	CleanUp       UserCommand = "CleanUp"
-	CloseChannel  UserCommand = "CloseChannel"
-	TopUp         UserCommand = "TopUp"
-	ChannelPay    UserCommand = "ChannelPay"
-	ForceClose    UserCommand = "ForceClose"
-	Pay           UserCommand = "Pay"
+	CreateChannel CommandName = "CreateChannel"
+	CleanUp       CommandName = "CleanUp"
+	CloseChannel  CommandName = "CloseChannel"
+	TopUp         CommandName = "TopUp"
+	ChannelPay    CommandName = "ChannelPay"
+	ForceClose    CommandName = "ForceClose"
+	Pay           CommandName = "Pay"
 )
 
-var ErrInsufficientFunds = errors.New("insufficient funds")
+var errInsufficientFunds = errors.New("insufficient funds")
 
-// Command represents a user request,
-// such as "force close" or "send payment".
+// Command contains a command name and its required arguments.
 type Command struct {
-	UserCommand UserCommand
-	Amount      xlm.Amount // for TopUp, ChannelPay, or Pay
-	Time        time.Time
-	Recipient   string // for Pay
+	Name      CommandName
+	Amount    xlm.Amount // for TopUp, ChannelPay, or Pay
+	Time      time.Time
+	Recipient string // for Pay
 }
 
-var commandFuncs = map[UserCommand]func(*Command, *Updater) error{
+var commandFuncs = map[CommandName]func(*Command, *Updater) error{
 	CreateChannel: createChannelFn,
 	CleanUp:       cleanUpFn,
 	CloseChannel:  closeChannelFn,
@@ -41,14 +42,14 @@ var commandFuncs = map[UserCommand]func(*Command, *Updater) error{
 
 func createChannelFn(_ *Command, u *Updater) error {
 	if u.C.State != Start {
-		return errors.Wrapf(ErrUnexpectedState, "got %s, want %s", u.C.State, Start)
+		return errors.Wrapf(errUnexpectedState, "got %s, want %s", u.C.State, Start)
 	}
 	return u.transitionTo(SettingUp)
 }
 
 func cleanUpFn(_ *Command, u *Updater) error {
 	if u.C.State != ChannelProposed {
-		return errors.Wrapf(ErrUnexpectedState, "got %s, want %s", u.C.State, ChannelProposed)
+		return errors.Wrapf(errUnexpectedState, "got %s, want %s", u.C.State, ChannelProposed)
 	}
 	// Get back funds associated with funding tx.
 	// Charged 3 * feerate for the three ops in cleanup tx.
@@ -61,14 +62,14 @@ func cleanUpFn(_ *Command, u *Updater) error {
 
 func closeChannelFn(_ *Command, u *Updater) error {
 	if u.C.State != Open {
-		return errors.Wrapf(ErrUnexpectedState, "got %s, want %s", u.C.State, Open)
+		return errors.Wrapf(errUnexpectedState, "got %s, want %s", u.C.State, Open)
 	}
 	return u.transitionTo(AwaitingClose)
 }
 
 func topUpFn(c *Command, u *Updater) error {
 	if u.C.State != Open {
-		return errors.Wrapf(ErrUnexpectedState, "got %s, want %s", u.C.State, Open)
+		return errors.Wrapf(errUnexpectedState, "got %s, want %s", u.C.State, Open)
 	}
 	if u.C.Role != Host {
 		return errors.New("only host can top up")
@@ -77,7 +78,7 @@ func topUpFn(c *Command, u *Updater) error {
 		return errors.New("top-up currently being submitted")
 	}
 	if c.Amount > u.H.Balance {
-		return errors.Wrapf(ErrInsufficientFunds, "balance %d", u.C.HostAmount)
+		return errors.Wrapf(errInsufficientFunds, "balance %d", u.C.HostAmount)
 	}
 	u.C.TopUpAmount = c.Amount
 
@@ -90,7 +91,7 @@ func topUpFn(c *Command, u *Updater) error {
 
 func channelPayFn(c *Command, u *Updater) error {
 	if u.C.State != Open {
-		return errors.Wrapf(ErrUnexpectedState, "got %s, want %s", u.C.State, Open)
+		return errors.Wrapf(errUnexpectedState, "got %s, want %s", u.C.State, Open)
 	}
 	u.C.PendingAmountSent = c.Amount
 	if u.C.PaymentTime.After(c.Time) {
@@ -101,11 +102,11 @@ func channelPayFn(c *Command, u *Updater) error {
 	switch u.C.Role {
 	case Guest:
 		if u.C.GuestAmount < c.Amount {
-			return errors.Wrapf(ErrInsufficientFunds, "balance %d", u.C.GuestAmount)
+			return errors.Wrapf(errInsufficientFunds, "balance %d", u.C.GuestAmount)
 		}
 	case Host:
 		if u.C.HostAmount < c.Amount {
-			return errors.Wrapf(ErrInsufficientFunds, "balance %d", u.C.HostAmount)
+			return errors.Wrapf(errInsufficientFunds, "balance %d", u.C.HostAmount)
 		}
 	}
 	u.C.RoundNumber++
@@ -114,7 +115,7 @@ func channelPayFn(c *Command, u *Updater) error {
 
 func forceCloseFn(_ *Command, u *Updater) error {
 	if isSetupState(u.C.State) || isForceCloseState(u.C.State) {
-		return errors.Wrapf(ErrUnexpectedState, "got %s, want non-starting, non-force close state", u.C.State)
+		return errors.Wrapf(errUnexpectedState, "got %s, want non-starting, non-force close state", u.C.State)
 	}
 	return u.setForceCloseState()
 }

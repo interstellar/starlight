@@ -101,8 +101,8 @@ func TestHandleChannelAcceptMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = u.handleChannelAcceptMsg(m)
-	if errors.Root(err) != ErrUnexpectedState {
-		t.Fatalf("got error %s, want %s", err, ErrUnexpectedState)
+	if errors.Root(err) != errUnexpectedState {
+		t.Fatalf("got error %s, want %s", err, errUnexpectedState)
 	}
 	u.transitionTo(ChannelProposed)
 	err = u.handleChannelAcceptMsg(m)
@@ -148,7 +148,7 @@ func TestHandlePaymentProposeMessage(t *testing.T) {
 			name:         "incorrect state",
 			handlerUFunc: func(u *Updater) { u.transitionTo(Closed) },
 			wantState:    Closed,
-			wantErr:      ErrUnexpectedState,
+			wantErr:      errUnexpectedState,
 			handler:      Guest,
 		},
 		{
@@ -330,9 +330,9 @@ func TestHandlePaymentProposeMessage(t *testing.T) {
 				recipient, recipientSeed = guestChannel, []byte(guestSeed)
 			}
 			command := &Command{
-				UserCommand: ChannelPay,
-				Amount:      sender.PendingAmountSent,
-				Time:        sender.PendingPaymentTime,
+				Name:   ChannelPay,
+				Amount: sender.PendingAmountSent,
+				Time:   sender.PendingPaymentTime,
 			}
 			h := createTestHost()
 
@@ -566,9 +566,9 @@ func TestHandlePaymentAcceptMessage(t *testing.T) {
 				recipient, recipientSeed = guestChannel, []byte(guestSeed)
 			}
 			payCmd := &Command{
-				UserCommand: ChannelPay,
-				Amount:      sender.PendingAmountSent,
-				Time:        sender.PendingPaymentTime,
+				Name:   ChannelPay,
+				Amount: sender.PendingAmountSent,
+				Time:   sender.PendingPaymentTime,
 			}
 			h := createTestHost()
 
@@ -634,7 +634,7 @@ func TestHandlePaymentCompleteMessage(t *testing.T) {
 		{
 			name:      "incorrect starting state",
 			chFunc:    func(ch *Channel) { ch.State = Closed },
-			wantErr:   ErrUnexpectedState,
+			wantErr:   errUnexpectedState,
 			wantState: Closed,
 			recipient: Guest,
 		},
@@ -763,9 +763,9 @@ func TestHandlePaymentCompleteMessage(t *testing.T) {
 				recipient, recipientSeed = guestChannel, []byte(guestSeed)
 			}
 			payCmd := &Command{
-				UserCommand: ChannelPay,
-				Amount:      sender.PendingAmountSent,
-				Time:        sender.PendingPaymentTime,
+				Name:   ChannelPay,
+				Amount: sender.PendingAmountSent,
+				Time:   sender.PendingPaymentTime,
 			}
 			h := createTestHost()
 			u = &Updater{
@@ -837,7 +837,7 @@ func TestHandleCloseMsg(t *testing.T) {
 		{
 			name:      "incorrect starting state",
 			chFunc:    func(ch *Channel) { ch.State = Closed },
-			wantErr:   ErrUnexpectedState,
+			wantErr:   errUnexpectedState,
 			wantState: Closed,
 			handler:   Host,
 		},
@@ -930,9 +930,9 @@ func TestHandleCloseMsg(t *testing.T) {
 
 			h := createTestHost()
 			payCmd := &Command{
-				UserCommand: ChannelPay,
-				Amount:      sender.PendingAmountSent,
-				Time:        sender.PendingPaymentTime,
+				Name:   ChannelPay,
+				Amount: sender.PendingAmountSent,
+				Time:   sender.PendingPaymentTime,
 			}
 			u = &Updater{
 				C:          sender,

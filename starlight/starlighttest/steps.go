@@ -40,6 +40,7 @@ type step struct {
 	delta          xlm.Amount
 }
 
+// WalletPaySelf executes a do-wallet-pay API action.
 func WalletPaySelf(ctx context.Context, self *Starlightd) error {
 	steps := []step{
 		{
@@ -63,6 +64,7 @@ func WalletPaySelf(ctx context.Context, self *Starlightd) error {
 	return nil
 }
 
+// CreateChannel executes the API steps for creating a channel.
 func CreateChannel(ctx context.Context, alice, bob *Starlightd) (string, error) {
 	steps := channelCreationSteps(alice, bob, 0, 0)
 	var channelID string
@@ -75,6 +77,7 @@ func CreateChannel(ctx context.Context, alice, bob *Starlightd) (string, error) 
 	return channelID, nil
 }
 
+// BobChannelPayAlice executes the API steps for a host-to-guest channel payment.
 func BobChannelPayAlice(ctx context.Context, alice, bob *Starlightd, channelID string) error {
 	steps := bobChannelPayAliceSteps(alice, bob)
 	for _, s := range steps {
@@ -86,6 +89,7 @@ func BobChannelPayAlice(ctx context.Context, alice, bob *Starlightd, channelID s
 	return nil
 }
 
+// BobTopUp executes the API steps for a host top-up.
 func BobTopUp(ctx context.Context, alice, bob *Starlightd, channelID string) error {
 	steps := hostTopUpSteps(alice, bob)
 	for _, s := range steps {
@@ -272,7 +276,7 @@ func bobChannelPayAliceSteps(alice, bob *Starlightd) []step {
 			{
 				"ChannelID": "%s",
 				"Command": {
-					"UserCommand": "ChannelPay",
+					"Name": "ChannelPay",
 					"Amount": 1000,
 					"Time": "2018-10-02T10:26:43.511Z"
 				}
@@ -342,7 +346,7 @@ func aliceCoopCloseSteps(alice, bob *Starlightd, payment xlm.Amount) []step {
 				{
 					"ChannelID": "%s",
 					"Command": {
-						"UserCommand": "CloseChannel",
+						"Name": "CloseChannel",
 						"Time": "2018-10-02T10:26:43.511Z"
 					}
 				}`,
@@ -454,7 +458,7 @@ func bobForceCloseStepsNoGuestBalance(alice, bob *Starlightd) []step {
 			body: `{
 				"ChannelID": "%s",
 				"Command": {
-					"UserCommand": "ForceClose"
+					"Name": "ForceClose"
 				}
 			}`,
 			injectChanID: true,
@@ -571,7 +575,7 @@ func bobForceCloseStepsSettleWithGuest(alice, bob *Starlightd, payment xlm.Amoun
 			body: `{
 				"ChannelID": "%s",
 				"Command": {
-					"UserCommand": "ForceClose"
+					"Name": "ForceClose"
 				}
 			}`,
 			injectChanID: true,
@@ -702,7 +706,7 @@ func hostTopUpSteps(alice, bob *Starlightd) []step {
 			body: `{
 				"ChannelID": "%s",
 				"Command": {
-					"UserCommand": "TopUp",
+					"Name": "TopUp",
 					"Amount":500
 				}
 			}`,
@@ -750,7 +754,7 @@ func mergingPaymentSteps(alice, bob *Starlightd, hostBalance, guestBalance xlm.A
 			{
 				"ChannelID": "%s",
 				"Command": {
-					"UserCommand": "ChannelPay",
+					"Name": "ChannelPay",
 					"Amount": 1000,
 					"Time": "2018-10-02T10:26:43.511Z"
 				}
@@ -764,7 +768,7 @@ func mergingPaymentSteps(alice, bob *Starlightd, hostBalance, guestBalance xlm.A
 			{
 				"ChannelID": "%s",
 				"Command": {
-					"UserCommand": "ChannelPay",
+					"Name": "ChannelPay",
 					"Amount": 1500,
 					"Time": "2018-10-02T10:26:43.511Z"
 				}
@@ -1003,7 +1007,7 @@ func updateMatches(got, want update.Update) bool {
 	return true
 }
 
-func testStep(t *testing.T, ctx context.Context, s step, channelID *string) {
+func testStep(ctx context.Context, t *testing.T, s step, channelID *string) {
 	t.Helper()
 	err := handleStep(ctx, s, channelID)
 	if err != nil {

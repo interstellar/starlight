@@ -15,11 +15,13 @@ import (
 )
 
 var (
-	ErrChannelExists            = errors.New("received channel propose message for channel that already exists")
+	// ErrChannelExists means a channel propose message was received for a channel that already exists.
+	ErrChannelExists = errors.New("received channel propose message for channel that already exists")
+
 	errUnusedSettleWithGuestSig = errors.New("unused settle with guest sig")
 )
 
-// Message defines a JSON schema for starlight messages.
+// Message defines a JSON schema for Starlight messages.
 type Message struct {
 	ChannelID string
 
@@ -37,10 +39,10 @@ type Message struct {
 
 // ChannelProposeMsg defines a JSON schema for proposal over a Channel.
 type ChannelProposeMsg struct {
-	HostAcct            AccountId
-	GuestAcct           AccountId
-	HostRatchetAcct     AccountId
-	GuestRatchetAcct    AccountId
+	HostAcct            AccountID
+	GuestAcct           AccountID
+	HostRatchetAcct     AccountID
+	GuestRatchetAcct    AccountID
 	MaxRoundDuration    time.Duration
 	FinalityDelay       time.Duration
 	BaseSequenceNumber  xdr.SequenceNumber
@@ -56,6 +58,7 @@ type ChannelAcceptMsg struct {
 	GuestSettleOnlyWithHostSig xdr.DecoratedSignature
 }
 
+// PaymentProposeMsg is the protocol message proposing a channel payment.
 type PaymentProposeMsg struct {
 	RoundNumber              uint64
 	PaymentTime              time.Time
@@ -64,6 +67,7 @@ type PaymentProposeMsg struct {
 	SenderSettleWithHostSig  xdr.DecoratedSignature
 }
 
+// PaymentAcceptMsg is the protocol message accepting a proposed channel payment.
 type PaymentAcceptMsg struct {
 	RoundNumber                 uint64
 	RecipientRatchetSig         xdr.DecoratedSignature
@@ -71,21 +75,23 @@ type PaymentAcceptMsg struct {
 	RecipientSettleWithHostSig  xdr.DecoratedSignature
 }
 
+// PaymentCompleteMsg is the protocol message acknowledging a PaymentAcceptMsg.
 type PaymentCompleteMsg struct {
 	RoundNumber      uint64
 	SenderRatchetSig xdr.DecoratedSignature
 }
 
+// CloseMsg is the protocol message proposing a cooperative closure of the channel.
 type CloseMsg struct {
 	CooperativeCloseSig xdr.DecoratedSignature
 }
 
 func (u *Updater) handlePaymentCompleteMsg(m *Message) error {
 	if u.C.State != PaymentAccepted {
-		return errors.Wrap(ErrUnexpectedState, u.C.State)
+		return errors.Wrap(errUnexpectedState, u.C.State)
 	}
 	var (
-		senderRatchetAccount AccountId
+		senderRatchetAccount AccountID
 		senderRatchetSeqNum  xdr.SequenceNumber
 		senderKey            keypair.KP
 		err                  error
@@ -136,7 +142,7 @@ func (u *Updater) handlePaymentAcceptMsg(m *Message) error {
 
 	var (
 		err              error
-		recipientAccount AccountId
+		recipientAccount AccountID
 		recipientSeqNum  xdr.SequenceNumber
 		recipientKey     keypair.KP
 	)
@@ -219,7 +225,7 @@ func (u *Updater) handleChannelProposeMsg(m *Message) error {
 		return nil
 	}
 
-	var EscrowAcct AccountId
+	var EscrowAcct AccountID
 	err := EscrowAcct.SetAddress(string(m.ChannelID))
 	if err != nil {
 		return err
@@ -254,7 +260,7 @@ func (u *Updater) handleChannelProposeMsg(m *Message) error {
 func (u *Updater) handleChannelAcceptMsg(m *Message) error {
 	accept := m.ChannelAcceptMsg
 	if u.C.State != ChannelProposed {
-		return errors.Wrap(ErrUnexpectedState, u.C.State)
+		return errors.Wrap(errUnexpectedState, u.C.State)
 	}
 	if u.C.Role != Host {
 		log.Printf("dropped message: host cannot accept channel")
@@ -301,7 +307,7 @@ func (u *Updater) handlePaymentProposeMsg(m *Message) error {
 	case Open, PaymentProposed, AwaitingPaymentMerge:
 		// Accepted states
 	default:
-		return errors.Wrap(ErrUnexpectedState, u.C.State)
+		return errors.Wrap(errUnexpectedState, u.C.State)
 	}
 	if payment.PaymentAmount < 0 {
 		log.Printf("dropped message: invalid payment amount %s", payment.PaymentAmount)
@@ -429,7 +435,7 @@ func (u *Updater) handleCloseMsg(m *Message) error {
 	switch u.C.State {
 	case Open, PaymentProposed, AwaitingClose: // Accepted states.
 	default:
-		return errors.Wrap(ErrUnexpectedState, u.C.State)
+		return errors.Wrap(errUnexpectedState, u.C.State)
 	}
 
 	var verifyKey keypair.KP

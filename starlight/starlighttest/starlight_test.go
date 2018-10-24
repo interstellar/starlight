@@ -22,7 +22,7 @@ func TestAgentRequest(t *testing.T) {
 
 	ctx := context.Background()
 
-	alice := start(t, ctx, testdir, "test")
+	alice := start(ctx, t, testdir, "test")
 	defer alice.Close()
 
 	steps := []step{
@@ -87,6 +87,6 @@ func TestAgentRequest(t *testing.T) {
 		},
 	}
 	for _, s := range steps {
-		testStep(t, ctx, s, nil)
+		testStep(ctx, t, s, nil)
 	}
 }

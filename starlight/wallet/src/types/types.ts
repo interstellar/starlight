@@ -184,7 +184,7 @@ export interface AccountReserveEvent {
     Amount: number
     Recipient: string
     Time: string
-    UserCommand: string
+    Name: string
   }
   InputTx: null
   UpdateNum: number
@@ -201,7 +201,7 @@ export type ChannelEvent =
 export type ChannelCommand = CreateChannelCommand
 
 export interface CreateChannelCommand {
-  UserCommand: 'CreateChannel'
+  Name: 'CreateChannel'
 }
 
 export type ChannelMsg = PaymentProposeMsg // only one needed for now

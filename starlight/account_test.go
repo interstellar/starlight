@@ -70,7 +70,7 @@ func TestFindAccount(t *testing.T) {
 		want: want{
 			accountID:    "",
 			starlightURL: "",
-			err:          errBadHttpStatus,
+			err:          errBadHTTPStatus,
 		},
 	}, {
 		name:   "federation address ill-formed ",

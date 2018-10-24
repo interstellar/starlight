@@ -7,8 +7,10 @@ import (
 	"github.com/interstellar/starlight/starlight/fsm"
 )
 
+// Type is the type of an update-type constant.
 type Type string
 
+// Update-type constants.
 const (
 	InitType      Type = "init"
 	ConfigType    Type = "config"
@@ -19,6 +21,7 @@ const (
 	TxFailureType Type = "tx_failed"
 )
 
+// Update is a record of some state change in a Starlight agent that should be reflected to the user.
 type Update struct {
 	// Type denotes what kind of state change this value represents.
 	// If Type is Init or Config, field Config will be set.
@@ -71,6 +74,7 @@ type Update struct {
 	PendingSequence string
 }
 
+// Account is the identity and balance of a Stellar account, for use in updates.
 type Account struct {
 	Balance uint64
 	ID      string
@@ -84,13 +88,13 @@ type Config struct {
 	HorizonURL string `json:",omitempty"`
 }
 
-// Satisfy json.Marshaler. Required for genbolt.
+// MarshalJSON implements json.Marshaler. Required for genbolt.
 func (u *Update) MarshalJSON() ([]byte, error) {
 	type t Update
 	return json.Marshal((*t)(u))
 }
 
-// Satisfy json.Unmarshaler. Required for genbolt.
+// UnmarshalJSON implements json.Unmarshaler. Required for genbolt.
 func (u *Update) UnmarshalJSON(b []byte) error {
 	type t Update
 	return json.Unmarshal(b, (*t)(u))

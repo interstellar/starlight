@@ -13,13 +13,15 @@ var (
 	_ json.Marshaler = (*fsm.WalletAcct)(nil)
 	_ json.Marshaler = (*update.Update)(nil)
 
-	_ encoding.BinaryMarshaler = (*fsm.AccountId)(nil)
+	_ encoding.BinaryMarshaler = (*fsm.AccountID)(nil)
 )
 
+// Root is the type of the root bucket, as required by genbolt.
 type Root struct {
 	Agent *Agent
 }
 
+// Agent is the db layout for a Starlight agent.
 type Agent struct {
 	Config  *Config
 	Updates []*update.Update
@@ -35,10 +37,11 @@ type Agent struct {
 
 	EncryptedSeed    []byte
 	NextKeypathIndex uint32
-	PrimaryAcct      *fsm.AccountId
+	PrimaryAcct      *fsm.AccountID
 	Wallet           *fsm.WalletAcct
 }
 
+// Config is the db layout for Starlight agent-level configuration.
 type Config struct {
 	HorizonURL string
 	Username   string

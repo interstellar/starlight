@@ -18,13 +18,13 @@ type WalletAcct struct {
 	Cursor  string
 }
 
-// Satisfy json.Marshaler. Required for genbolt.
+// MarshalJSON implements json.Marshaler. Required for genbolt.
 func (w *WalletAcct) MarshalJSON() ([]byte, error) {
 	type t WalletAcct
 	return json.Marshal((*t)(w))
 }
 
-// Satisfy json.Unmarshaler. Required for genbolt.
+// UnmarshalJSON implements json.Unmarshaler. Required for genbolt.
 func (w *WalletAcct) UnmarshalJSON(b []byte) error {
 	type t WalletAcct
 	return json.Unmarshal(b, (*t)(w))
