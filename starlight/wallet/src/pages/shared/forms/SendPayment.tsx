@@ -35,6 +35,10 @@ const Form = styled.form`
 
 interface State {
   amount: string
+  formErrors: {
+    amount: boolean,
+    recipient: boolean
+  },
   loading: boolean
   recipient: string
   showError: boolean
@@ -57,6 +61,10 @@ export class SendPayment extends React.Component<Props, State> {
 
     this.state = {
       amount: '',
+      formErrors: {
+        amount: false,
+        recipient: false,
+      },
       loading: false,
       recipient: props.initialRecipient || '',
       showError: false,
@@ -91,6 +99,14 @@ export class SendPayment extends React.Component<Props, State> {
           <Label htmlFor="recipient">Recipient</Label>
           <Input
             value={this.state.recipient}
+            onBlur={() => {
+              this.setState({
+                formErrors: {
+                  amount: this.state.formErrors.amount,
+                  recipient: !!this.state.recipient && !this.recipientIsValid(),
+                },
+              })
+            }}
             onChange={e => {
               this.setState({ recipient: e.target.value })
             }}
@@ -98,6 +114,7 @@ export class SendPayment extends React.Component<Props, State> {
             name="recipient"
             autoComplete="off"
             autoFocus={focusOnRecipient}
+            error={this.state.formErrors.recipient}
           />
           {/* TODO: validate this is a Stellar account ID */}
           <div>
@@ -126,6 +143,18 @@ export class SendPayment extends React.Component<Props, State> {
           <UnitContainer>
             <Input
               value={this.state.amount}
+              onBlur={() => {
+                this.setState({
+                  formErrors: {
+                    amount: !!this.state.amount && (
+                      parseFloat(this.state.amount) <= 0 ||
+                      !validAmount ||
+                      !this.walletHasSufficientBalance()
+                    ),
+                    recipient: this.state.formErrors.recipient,
+                  },
+                })
+              }}
               onChange={e => {
                 this.setState({ amount: e.target.value })
               }}
@@ -133,6 +162,7 @@ export class SendPayment extends React.Component<Props, State> {
               name="amount"
               autoComplete="off"
               autoFocus={!focusOnRecipient}
+              error={this.state.formErrors.amount}
             />
             {/* TODO: validate this is a number, and not more than the wallet balance */}
             <Unit>XLM</Unit>
