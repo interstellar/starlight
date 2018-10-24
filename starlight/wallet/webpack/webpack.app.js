@@ -9,7 +9,7 @@ var fs = require('fs')
 // If you want to make changes to the client and deploy them,
 // change this URL to point to where you've deployed your changes.
 // See ./sync-frontend.sh for how we're hosting the client.
-let publicPath = 'https://starlight-client.s3.amazonaws.com/'
+let publicPath = 'https://starlight-client.s3.amazonaws.com/v1/'
 if (process.env.NODE_ENV !== 'production') {
   publicPath = '/'
 }
