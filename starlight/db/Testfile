@@ -1,7 +1,0 @@
-setup: go install github.com/kr/genbolt
-
-# We set GOPATH here to run genbolt in GOPATH mode.
-# See https://github.com/golang/go/issues/24661 and
-# https://github.com/golang/go/issues/14120 for more info.
-# TODO(kr): remove the GOPATH setting here
-gen: GOPATH=$I10R/../.. go generate && git diff --exit-code
