@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -233,7 +234,7 @@ func (g *Agent) allez(f func(), desc string) {
 // and performs any other necessary setup steps,
 // such as obtaining free testnet lumens.
 // It is an error if g has already been configured.
-func (g *Agent) ConfigInit(c *Config) error {
+func (g *Agent) ConfigInit(c *Config, hostURL string) error {
 	err := g.wclient.ValidateTestnetURL(c.HorizonURL)
 	if err != nil {
 		return err
@@ -292,10 +293,12 @@ func (g *Agent) ConfigInit(c *Config) error {
 		root.Agent().Config().PutHostFeerate(int64(c.HostFeerate))
 		root.Agent().Config().PutKeepAlive(*c.KeepAlive)
 
+		// TODO(vniu): add tests for setting wallet address
 		w := &fsm.WalletAcct{
 			Balance: xlm.Amount(0),
 			Seqnum:  0,
 			Cursor:  "",
+			Address: c.Username + "*" + hostURL,
 		}
 		root.Agent().PutWallet(w)
 		// WARNING: this software is not compatible with Stellar mainnet.
@@ -437,11 +440,10 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 					// it's the ledger number of the transaction that created it, shifted left 32 bits
 					seqnum := xdr.SequenceNumber(uint64(htx.Ledger) << 32)
 
-					w := &fsm.WalletAcct{
-						Balance: xlm.Amount(createAccount.StartingBalance),
-						Seqnum:  seqnum,
-						Cursor:  htx.PT,
-					}
+					w := root.Agent().Wallet()
+					w.Balance = xlm.Amount(createAccount.StartingBalance) - xlm.Amount(root.Agent().Config().HostFeerate())
+					w.Seqnum = seqnum + 1
+					w.Cursor = htx.PT
 					root.Agent().PutWallet(w)
 					g.putUpdate(root, &Update{
 						Type: update.AccountType,
@@ -452,6 +454,29 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 						InputTx: InputTx,
 						OpIndex: index,
 					})
+					// TODO(vniu): don't publish funding update until home-domain
+					// account has been set.
+					domain := w.Address[strings.Index(w.Address, "*")+1:]
+					tx, err := b.Transaction(
+						b.Network{Passphrase: g.passphrase(root)},
+						b.BaseFee{Amount: uint64(root.Agent().Config().HostFeerate())},
+						b.SourceAccount{AddressOrSeed: acctID},
+						b.Sequence{Sequence: uint64(w.Seqnum)},
+						b.SetOptions(
+							b.SourceAccount{AddressOrSeed: acctID},
+							b.HomeDomain(domain),
+						),
+					)
+					if err != nil {
+						return errors.Wrap(err, "building home domain tx")
+					}
+					k := key.DeriveAccountPrimary(g.seed)
+					env, err := tx.Sign(k.Seed())
+					if err != nil {
+						return err
+					}
+					// create transaction to set options
+					g.addTxTask(root.Tx(), walletBucket, *env.E)
 
 				case xdr.OperationTypePayment:
 					payment := op.Body.PaymentOp
@@ -652,7 +677,7 @@ func (g *Agent) checkChannelUnique(a, b string) error {
 
 // DoCreateChannel creates a channel between the agent host and the guest
 // specified at guestFedAddr, funding the channel with hostAmount
-func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount, hostURL string) (*fsm.Channel, error) {
+func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount) (*fsm.Channel, error) {
 	if guestFedAddr == "" {
 		return nil, errEmptyAddress
 	}
@@ -689,7 +714,6 @@ func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount, host
 
 		w := root.Agent().Wallet()
 		w.Seqnum += 3
-		w.Address = root.Agent().Config().Username() + "*" + hostURL
 
 		// Local node is the host.
 		// Remote node is the guest.

@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/BurntSushi/toml"
+	"github.com/stellar/go/xdr"
 
 	"github.com/interstellar/starlight/errors"
 	"github.com/interstellar/starlight/net"
@@ -30,16 +31,28 @@ var (
 // and the Stellar federation server protocol
 // to look up the additional info.
 func (g *Agent) FindAccount(target string) (accountID, starlightURL string, err error) {
+	var host string
+	federation := true
+
 	i := strings.Index(target, "*")
 	if i < 0 {
-		// TODO(kr): check if target is a valid account pubkey and if so,
-		// look up the "home domain" from the account's metadata on the
-		// ledger.
-		// See https://www.stellar.org/developers/guides/concepts/accounts.html#home-domain.
-		return "", "", errors.Wrap(errBadAddress, target)
+		var guest xdr.AccountId
+		err := guest.SetAddress(target)
+		if err != nil {
+			return "", "", errors.Wrap(errBadAddress, err, target)
+		}
+		acct, err := g.wclient.LoadAccount(target)
+		if err != nil {
+			return "", "", errors.Wrap(errBadAddress, err, target)
+		}
+		if acct.HomeDomain == "" {
+			return "", "", errors.Wrap(errBadAddress, "no home domain set")
+		}
+		host = acct.HomeDomain
+		federation = false
+	} else {
+		host = target[i+1:]
 	}
-
-	host := target[i+1:]
 
 	// Get URLs from Stellar TOML configuration.
 	// See https://www.stellar.org/developers/guides/concepts/stellar-toml.html.
@@ -61,6 +74,9 @@ func (g *Agent) FindAccount(target string) (accountID, starlightURL string, err 
 	err = toml.Unmarshal(body, &stellarTOML)
 	if err != nil {
 		return "", "", errors.Wrap(err, "unmarshaling TOML")
+	}
+	if !federation {
+		return target, stellarTOML.StarlightURL, nil
 	}
 
 	// Get account ID from federation server.

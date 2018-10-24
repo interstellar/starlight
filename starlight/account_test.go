@@ -99,7 +99,7 @@ func TestFindAccount(t *testing.T) {
 				HorizonURL: testHorizonURL,
 			}
 
-			err := g.ConfigInit(&config)
+			err := g.ConfigInit(&config, "")
 			if err != nil {
 				t.Error(err)
 			}

@@ -60,7 +60,7 @@ func TestRunMsg(t *testing.T) {
 		Username:   "alice",
 		Password:   "passw0rd",
 		HorizonURL: testHorizonURL,
-	})
+	}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +95,7 @@ func TestAddMsgs(t *testing.T) {
 		Username:   "alice",
 		Password:   "passw0rd",
 		HorizonURL: testHorizonURL,
-	})
+	}, "")
 	if err != nil {
 		t.Fatal(err)
 	}

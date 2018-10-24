@@ -132,7 +132,7 @@ func (wt *wallet) configInit(w http.ResponseWriter, req *http.Request) {
 		httperror(req, w, fmt.Sprintf("bad request: %s", err.Error()), 400)
 		return
 	}
-	err = wt.agent.ConfigInit(&config)
+	err = wt.agent.ConfigInit(&config, req.Host)
 	if err != nil {
 		// TODO(kr): distinguish 5xx/4xx.
 		// For now, just blame everything on the client.
@@ -155,7 +155,7 @@ func (wt *wallet) doCreateChannel(w http.ResponseWriter, req *http.Request) {
 		httperror(req, w, fmt.Sprintf("bad request: %s", err.Error()), 400)
 		return
 	}
-	ch, err := wt.agent.DoCreateChannel(v.GuestAddr, v.HostAmount, req.Host)
+	ch, err := wt.agent.DoCreateChannel(v.GuestAddr, v.HostAmount)
 	switch errors.Root(err) {
 	case nil:
 		w.Header().Set("Content-Type", "application/json")

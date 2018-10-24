@@ -26,11 +26,11 @@ func TestConfigInit(t *testing.T) {
 		Password:   "password",
 		HorizonURL: testHorizonURL,
 	}
-	err := g.ConfigInit(&config)
+	err := g.ConfigInit(&config, "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = g.ConfigInit(&config)
+	err = g.ConfigInit(&config, "")
 	if err != errAlreadyConfigured {
 		t.Errorf("got %s, want %s", err, errAlreadyConfigured)
 	}
@@ -48,7 +48,7 @@ func TestConfigured(t *testing.T) {
 		t.Errorf("g.Configured() = true, want false")
 	}
 
-	err := g.ConfigInit(&config)
+	err := g.ConfigInit(&config, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +79,7 @@ func TestUpdatesNull(t *testing.T) {
 		Password:   "password",
 		HorizonURL: testHorizonURL,
 	}
-	err := g.ConfigInit(&config)
+	err := g.ConfigInit(&config, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -103,7 +103,7 @@ func TestInitConfigUpdate(t *testing.T) {
 		Password:   "password",
 		HorizonURL: testHorizonURL,
 	}
-	err := g.ConfigInit(&config)
+	err := g.ConfigInit(&config, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +163,7 @@ func TestConfigEdit(t *testing.T) {
 		t.Errorf("got %s, want %s", err, errNotConfigured)
 	}
 
-	err = g.ConfigInit(&config)
+	err = g.ConfigInit(&config, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -269,7 +269,7 @@ func TestAuthenticate(t *testing.T) {
 		HorizonURL: testHorizonURL,
 	}
 
-	err := g.ConfigInit(&config)
+	err := g.ConfigInit(&config, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -379,7 +379,7 @@ func TestAgentCreateChannel(t *testing.T) {
 				HorizonURL: testHorizonURL,
 			}
 
-			err := g.ConfigInit(&config)
+			err := g.ConfigInit(&config, c.host)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -398,9 +398,9 @@ func TestAgentCreateChannel(t *testing.T) {
 			if c.agentFunc != nil {
 				c.agentFunc(g)
 			}
-			_, got := g.DoCreateChannel(c.guestAddr, c.hostAmount, c.host)
+			_, got := g.DoCreateChannel(c.guestAddr, c.hostAmount)
 			if errors.Root(got) != c.want {
-				t.Errorf("g.DoCreateChannel(%s, %s, %s) = %s, want %s", c.guestAddr, c.hostAmount, c.host, got, c.want)
+				t.Errorf("g.DoCreateChannel(%s, %s) = %s, want %s", c.guestAddr, c.hostAmount, got, c.want)
 			}
 		})
 	}
@@ -416,7 +416,7 @@ func TestShutdown(t *testing.T) {
 		HorizonURL: testHorizonURL,
 	}
 
-	err := g.ConfigInit(&config)
+	err := g.ConfigInit(&config, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -433,7 +433,7 @@ func TestShutdown(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = g.DoCreateChannel("alice*starlight.com", xlm.Lumen, "bob*starlight.com")
+	_, err = g.DoCreateChannel("alice*starlight.com", xlm.Lumen)
 	if err != nil {
 		t.Fatal(err)
 	}
