@@ -40,7 +40,12 @@ const set = async (dispatch: Dispatch, message: string, color?: string) => {
   }, 3000)
 }
 
+const clear = async (dispatch: Dispatch) => {
+  dispatch({ type: CLEAR_FLASH })
+}
+
 export const flash = {
   set,
+  clear,
   reducer,
 }

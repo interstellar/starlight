@@ -29,9 +29,19 @@ interface Props {
   location: any
   status: () => any
   setFlash: (message: string, color: string) => void
+  clearFlash: () => void
 }
 
 class App extends React.Component<Props, {}> {
+  public constructor(props: any) {
+    super(props)
+
+    // on page reload
+    if (performance && performance.navigation.type === 1) {
+      this.props.clearFlash()
+    }
+  }
+
   public async componentDidMount() {
     this.props.status()
   }
@@ -46,7 +56,11 @@ class App extends React.Component<Props, {}> {
 
               <Route path="/channels" exact={true} component={Navigation} />
 
-              <Route path="/channel/:address+" exact={true} component={Navigation} />
+              <Route
+                path="/channel/:address+"
+                exact={true}
+                component={Navigation}
+              />
 
               <Route path="/settings" exact={true} component={Navigation} />
 
@@ -124,6 +138,9 @@ const mapDispatchToProps = (dispatch: Dispatch) => {
     status: () => lifecycle.status(dispatch),
     setFlash: (message: string, color: string) => {
       return flash.set(dispatch, message, color)
+    },
+    clearFlash: () => {
+      return flash.clear(dispatch)
     },
   }
 }

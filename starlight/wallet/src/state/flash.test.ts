@@ -57,3 +57,16 @@ describe('set', () => {
     })
   })
 })
+
+describe('clear', () => {
+  it('dispatch CLEAR_FLASH', async () => {
+    jest.useFakeTimers()
+    const store = mockStore()
+
+    await flash.clear(store.dispatch)
+
+    expect(store.getActions()[0]).toEqual({
+      type: CLEAR_FLASH,
+    })
+  })
+})
