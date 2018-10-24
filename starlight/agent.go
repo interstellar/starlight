@@ -47,6 +47,7 @@ var (
 	errEmptyAddress        = errors.New("destination address not set")
 	errEmptyAmount         = errors.New("amount not set")
 	errNoChannelSpecified  = errors.New("channel not specified")
+	errEmptyConfigEdit     = errors.New("config edit fields not set")
 )
 
 // An Agent acts on behalf of the user to open, close,
@@ -335,7 +336,7 @@ func (g *Agent) ConfigEdit(c *Config) error {
 		return errors.Wrap(errInvalidPassword, "too long (max 72 chars)") // bcrypt limit
 	}
 	if c.Password == "" && c.HorizonURL == "" {
-		return nil // nothing to do
+		return errEmptyConfigEdit
 	}
 	if c.HorizonURL != "" {
 		err := g.wclient.ValidateTestnetURL(c.HorizonURL)

@@ -163,6 +163,13 @@ func TestConfigEdit(t *testing.T) {
 		t.Errorf("got %s, want %s", err, errNotConfigured)
 	}
 
+	err = g.ConfigEdit(&Config{
+		Password:    "",
+		OldPassword: "new password",
+	})
+	if err != errEmptyConfigEdit {
+		t.Errorf("got %s, want %s", err, errEmptyConfigEdit)
+	}
 	err = g.ConfigInit(&config, "")
 	if err != nil {
 		t.Fatal(err)
