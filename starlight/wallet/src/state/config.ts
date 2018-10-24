@@ -36,7 +36,6 @@ const reducer: Reducer<ConfigState> = (state = initialState, action) => {
 }
 
 export interface InitConfigParams {
-  DemoServer: boolean
   HorizonURL: string
   Password: string
   Username: string
@@ -44,15 +43,7 @@ export interface InitConfigParams {
 
 // Side effects
 const init = async (dispatch: Dispatch, params: InitConfigParams) => {
-  if (params.DemoServer) {
-    Object.assign(params, { HorizonURL: 'https://horizon-testnet.stellar.org' })
-  }
-
-  const response = await Starlightd.post(dispatch, '/api/config-init', {
-    Username: params.Username,
-    Password: params.Password,
-    HorizonURL: params.HorizonURL,
-  })
+  const response = await Starlightd.post(dispatch, '/api/config-init', params)
 
   const reducerParams = {
     Username: params.Username,

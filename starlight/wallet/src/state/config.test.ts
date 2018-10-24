@@ -30,66 +30,28 @@ describe('reducer', () => {
 })
 
 describe('init', () => {
-  it('when ok (with custom url), dispatch CONFIG_INIT, STATUS_UPDATE', async () => {
+  it('when ok, dispatch CONFIG_INIT, STATUS_UPDATE', async () => {
+    const params = {
+      Username: 'croaky',
+      HorizonURL: 'slanket.com',
+      Password: 'secret!',
+    }
     const store = mockStore()
     Starlightd.post = jest
       .fn()
       .mockImplementation(() => Promise.resolve({ ok: true }))
 
-    await config.init(store.dispatch, {
-      Username: 'croaky',
-      HorizonURL: 'something.custom.com',
-      Password: 'secret!',
-      DemoServer: false,
-    })
+    await config.init(store.dispatch, params)
 
     expect(Starlightd.post).toHaveBeenCalledWith(
       store.dispatch,
       '/api/config-init',
-      {
-        Username: 'croaky',
-        HorizonURL: 'something.custom.com',
-        Password: 'secret!',
-      }
+      params
     )
     expect(store.getActions()[0]).toEqual({
       type: CONFIG_INIT,
       Username: 'croaky',
-      HorizonURL: 'something.custom.com',
-    })
-    expect(store.getActions()[1]).toEqual({
-      type: STATUS_UPDATE,
-      IsConfigured: true,
-      IsLoggedIn: true,
-    })
-  })
-
-  it('when ok (using demo server), dispatch CONFIG_INIT, STATUS_UPDATE', async () => {
-    const store = mockStore()
-    Starlightd.post = jest
-      .fn()
-      .mockImplementation(() => Promise.resolve({ ok: true }))
-
-    await config.init(store.dispatch, {
-      Username: 'croaky',
-      HorizonURL: '',
-      Password: 'secret!',
-      DemoServer: true,
-    })
-
-    expect(Starlightd.post).toHaveBeenCalledWith(
-      store.dispatch,
-      '/api/config-init',
-      {
-        Username: 'croaky',
-        HorizonURL: 'https://horizon-testnet.stellar.org',
-        Password: 'secret!',
-      }
-    )
-    expect(store.getActions()[0]).toEqual({
-      type: CONFIG_INIT,
-      Username: 'croaky',
-      HorizonURL: 'https://horizon-testnet.stellar.org',
+      HorizonURL: 'slanket.com',
     })
     expect(store.getActions()[1]).toEqual({
       type: STATUS_UPDATE,
@@ -99,26 +61,22 @@ describe('init', () => {
   })
 
   it('when not ok, dispatch STATUS_UPDATE', async () => {
+    const params = {
+      Username: 'croaky',
+      HorizonURL: '',
+      Password: 'secret!',
+    }
     const store = mockStore()
     Starlightd.post = jest
       .fn()
       .mockImplementation(() => Promise.resolve({ ok: false }))
 
-    await config.init(store.dispatch, {
-      Username: 'croaky',
-      HorizonURL: '',
-      Password: 'secret!',
-      DemoServer: true,
-    })
+    await config.init(store.dispatch, params)
 
     expect(Starlightd.post).toHaveBeenCalledWith(
       store.dispatch,
       '/api/config-init',
-      {
-        Username: 'croaky',
-        HorizonURL: 'https://horizon-testnet.stellar.org',
-        Password: 'secret!',
-      }
+      params
     )
     expect(store.getActions()[0]).toEqual({
       type: STATUS_UPDATE,

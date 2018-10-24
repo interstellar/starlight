@@ -30,6 +30,7 @@ interface Props {
 }
 
 interface State extends InitConfigParams {
+  demoServer: boolean
   showError: boolean
   loading: boolean
 }
@@ -41,8 +42,8 @@ export class InitConfig extends React.Component<Props, State> {
     this.state = {
       Username: '',
       Password: '',
-      DemoServer: true,
-      HorizonURL: '',
+      demoServer: true,
+      HorizonURL: 'https://horizon-testnet.stellar.org',
       showError: false,
       loading: false,
     }
@@ -100,26 +101,31 @@ export class InitConfig extends React.Component<Props, State> {
               <RadioButton
                 name="HorizonURLChooser"
                 text="Use demo server"
-                checked={this.state.DemoServer}
+                checked={this.state.demoServer}
                 onClick={() => {
-                  this.setState({
-                    DemoServer: true,
-                    HorizonURL: '',
-                  })
+                  if (!this.state.demoServer) {
+                    this.setState({
+                      demoServer: true,
+                      HorizonURL: 'https://horizon-testnet.stellar.org',
+                    })
+                  }
                 }}
               />
               <RadioButton
                 name="HorizonURLChooser"
                 text="Provide server URL"
-                checked={!this.state.DemoServer}
+                checked={!this.state.demoServer}
                 onClick={() => {
-                  this.setState({
-                    DemoServer: false,
-                  })
+                  if (this.state.demoServer) {
+                    this.setState({
+                      demoServer: false,
+                      HorizonURL: '',
+                    })
+                  }
                 }}
               />
             </RadioGroup>
-            {!this.state.DemoServer && (
+            {!this.state.demoServer && (
               <div>
                 <Label htmlFor="HorizonURL">Server URL</Label>
                 <Input
