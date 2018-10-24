@@ -114,7 +114,7 @@ func publishTopUpTx(seed []byte, ch *Channel, o Outputter, h *WalletAcct) error 
 }
 
 func createPaymentCompleteMsg(seed []byte, ch *Channel) (*Message, error) {
-	var ratchetAccount AccountId
+	var ratchetAccount AccountID
 	var ratchetSeqNum xdr.SequenceNumber
 	switch ch.Role {
 	case Guest:
@@ -277,7 +277,7 @@ func sendPaymentProposeMsg(seed []byte, ch *Channel, o Outputter) error {
 }
 
 func createPaymentAcceptMsg(seed []byte, ch *Channel) (*Message, error) {
-	var ratchetAccount AccountId
+	var ratchetAccount AccountID
 	var ratchetSeqNum xdr.SequenceNumber
 	switch ch.Role {
 	case Guest:

@@ -16,6 +16,9 @@ const _ = bolt.MaxKeySize
 const _ = bytes.MinRead
 
 // Root is a bucket with a static set of elements.
+//
+// Root is the type of the root bucket, as required by genbolt.
+//
 // Accessor methods read and write records
 // and open child buckets.
 // See functions View and
@@ -25,6 +28,8 @@ type Root struct {
 }
 
 // NewRoot returns a new Root for tx.
+//
+// Root is the type of the root bucket, as required by genbolt.
 func NewRoot(tx *bolt.Tx) *Root {
 	return &Root{tx}
 }
@@ -57,6 +62,9 @@ func (o *Root) Tx() *bolt.Tx {
 }
 
 // Agent is a bucket with a static set of elements.
+//
+// Agent is the db layout for a Starlight agent.
+//
 // Accessor methods read and write records
 // and open child buckets.
 type Agent struct {
@@ -75,6 +83,9 @@ func (o *Agent) Bucket() *bolt.Bucket {
 }
 
 // Config is a bucket with a static set of elements.
+//
+// Config is the db layout for Starlight agent-level configuration.
+//
 // Accessor methods read and write records
 // and open child buckets.
 type Config struct {
@@ -207,9 +218,9 @@ func (o *Agent) PutNextKeypathIndex(v uint32) {
 // If no record has been stored, PrimaryAcct returns
 // a pointer to
 // the zero value.
-func (o *Agent) PrimaryAcct() *fsm.AccountId {
+func (o *Agent) PrimaryAcct() *fsm.AccountID {
 	rec := get(o.db, keyPrimaryAcct)
-	v := new(fsm.AccountId)
+	v := new(fsm.AccountID)
 	if rec == nil {
 		return v
 	}
@@ -221,7 +232,7 @@ func (o *Agent) PrimaryAcct() *fsm.AccountId {
 }
 
 // PutPrimaryAcct stores v as a record under the key "PrimaryAcct".
-func (o *Agent) PutPrimaryAcct(v *fsm.AccountId) {
+func (o *Agent) PutPrimaryAcct(v *fsm.AccountID) {
 	rec, err := encoding.BinaryMarshaler(v).MarshalBinary()
 	if err != nil {
 		panic(err)

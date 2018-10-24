@@ -106,7 +106,7 @@ export const cancel = async (dispatch: Dispatch, id: string) => {
   const response = await Starlightd.post(dispatch, '/api/do-command', {
     ChannelID: id,
     Command: {
-      UserCommand: 'CleanUp',
+      Name: 'CleanUp',
     },
   })
   return response.ok
@@ -116,7 +116,7 @@ export const close = async (dispatch: Dispatch, id: string) => {
   const response = await Starlightd.post(dispatch, '/api/do-command', {
     ChannelID: id,
     Command: {
-      UserCommand: 'CloseChannel',
+      Name: 'CloseChannel',
     },
   })
   return response.ok
@@ -126,7 +126,7 @@ export const forceClose = async (dispatch: Dispatch, id: string) => {
   const response = await Starlightd.post(dispatch, '/api/do-command', {
     ChannelID: id,
     Command: {
-      UserCommand: 'ForceClose',
+      Name: 'ForceClose',
     },
   })
   return response.ok
@@ -140,7 +140,7 @@ export const channelPay = async (
   const response = await Starlightd.post(dispatch, '/api/do-command', {
     ChannelID: id,
     Command: {
-      UserCommand: 'ChannelPay',
+      Name: 'ChannelPay',
       Amount: amount,
     },
   })
@@ -155,7 +155,7 @@ export const deposit = async (
   const response = await Starlightd.post(dispatch, '/api/do-command', {
     ChannelID: id,
     Command: {
-      UserCommand: 'TopUp',
+      Name: 'TopUp',
       Amount: amount,
     },
   })

@@ -70,7 +70,7 @@ func (c tbCodec) Decode(b []byte) (taskbasket.Task, error) {
 
 const walletBucket = "wallet"
 
-// Taskbasket transaction-submitting task.
+// TbTx is a taskbasket transaction-submitting task.
 type TbTx struct {
 	g      *Agent
 	ChanID string // Starlight channel ID, or "wallet" for wallet txs
@@ -188,13 +188,14 @@ func (t *TbTx) Run(ctx context.Context) error {
 	return submitErr
 }
 
-// Taskbasket message-sending task.
+// TbMsg is a taskbasket message-sending task.
 type TbMsg struct {
 	g         *Agent
 	RemoteURL string
 	Msg       fsm.Message
 }
 
+// Run implements taskbasket.Task.
 func (m *TbMsg) Run(ctx context.Context) error {
 	j, err := json.Marshal(m.Msg)
 	if err != nil {

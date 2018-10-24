@@ -16,7 +16,7 @@ import (
 
 var (
 	errBadAddress    = errors.New("bad address")
-	errBadHttpStatus = errors.New("bad http status")
+	errBadHTTPStatus = errors.New("bad http status")
 )
 
 // FindAccount looks up the account ID and Starlight URL
@@ -48,7 +48,7 @@ func (g *Agent) FindAccount(target string) (accountID, starlightURL string, err 
 		return "", "", err
 	}
 	if resp.StatusCode/100 != 2 {
-		return "", "", errors.Wrapf(errBadHttpStatus, "http status %d looking up TOML", resp.StatusCode)
+		return "", "", errors.Wrapf(errBadHTTPStatus, "http status %d looking up TOML", resp.StatusCode)
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -74,7 +74,7 @@ func (g *Agent) FindAccount(target string) (accountID, starlightURL string, err 
 		return "", "", errors.Wrapf(err, "getting account ID from %s", stellarTOML.FedURL)
 	}
 	if resp.StatusCode/100 != 2 {
-		return "", "", errors.Wrapf(errBadHttpStatus, "http status %d", resp.StatusCode)
+		return "", "", errors.Wrapf(errBadHTTPStatus, "http status %d", resp.StatusCode)
 	}
 	var acct struct {
 		ID string `json:"account_id"`

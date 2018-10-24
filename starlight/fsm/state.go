@@ -1,7 +1,9 @@
 package fsm
 
+// State is the type of a channel-state constant.
 type State string
 
+// Channel-state constants.
 const (
 	// Start indicates a channel that does not (yet) exist.
 	//
@@ -43,7 +45,7 @@ func (u *Updater) transitionTo(newState State) error {
 		switch u.C.Role {
 		case Guest:
 			if u.C.PrevState != Start {
-				return ErrUnexpectedState
+				return errUnexpectedState
 			}
 			err := sendChannelAcceptMsg(u.Seed, u.C, u.O, u.LedgerTime)
 			if err != nil {

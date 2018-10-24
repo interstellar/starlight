@@ -20,7 +20,7 @@ describe('cancel', () => {
       {
         ChannelID: '1',
         Command: {
-          UserCommand: 'CleanUp',
+          Name: 'CleanUp',
         },
       }
     )
@@ -42,7 +42,7 @@ describe('force close', () => {
       {
         ChannelID: '1',
         Command: {
-          UserCommand: 'ForceClose',
+          Name: 'ForceClose',
         },
       }
     )

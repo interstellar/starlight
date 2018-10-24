@@ -170,8 +170,8 @@ func (g *Agent) keepAlive(ctx context.Context, channelID string) {
 		}
 
 		err := g.DoCommand(channelID, &fsm.Command{
-			UserCommand: fsm.ChannelPay,
-			Amount:      0,
+			Name:   fsm.ChannelPay,
+			Amount: 0,
 		})
 		if err != nil {
 			log.Printf("keep-alive payment on channel %s: %s", channelID, err)

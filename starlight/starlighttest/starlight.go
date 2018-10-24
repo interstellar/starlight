@@ -1,5 +1,4 @@
-// Package starlighttest contains agent-level integration tests for starlight
-
+// Package starlighttest contains agent-level integration tests for starlight.
 package starlighttest
 
 import (
@@ -16,6 +15,7 @@ import (
 	"github.com/interstellar/starlight/worizon/xlm"
 )
 
+// Starlightd is an in-memory starlight agent with HTTP endpoints for protocol messages and UI commands.
 type Starlightd struct {
 	g             *starlight.Agent
 	wclient       *worizon.Client
@@ -28,20 +28,23 @@ type Starlightd struct {
 	balance       xlm.Amount
 }
 
+// StartServer starts a Startlightd instance.
 func StartServer(ctx context.Context, testdir, name string) *Starlightd {
-	return start(nil, ctx, testdir, name)
+	return start(ctx, nil, testdir, name)
 }
 
+// Address returns the (trimmed) URL of the Starlightd server.
 func (s *Starlightd) Address() string {
 	return s.address
 }
 
+// Close releases the resources associated with s.
 func (s *Starlightd) Close() {
 	s.g.Close() // TODO(bobg): This should be CloseWait, but that's much slower. Figure out why!
 	s.server.Close()
 }
 
-func start(t *testing.T, ctx context.Context, testdir, name string) *Starlightd {
+func start(ctx context.Context, t *testing.T, testdir, name string) *Starlightd {
 	g, wclient := starlight.StartTestnetAgent(ctx, t, fmt.Sprintf("%s/testdb_%s", testdir, name))
 	s := &Starlightd{
 		g:             g,

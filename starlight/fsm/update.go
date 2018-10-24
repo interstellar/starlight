@@ -10,6 +10,7 @@ import (
 	"github.com/interstellar/starlight/errors"
 )
 
+// Updater contains the state necessary to effect a state transition in a channel.
 type Updater struct {
 	C          *Channel
 	O          Outputter
@@ -19,6 +20,7 @@ type Updater struct {
 	Passphrase string
 }
 
+// Tx causes the updater to update its channel in response to a transaction appearing in a Stellar ledger.
 func (u *Updater) Tx(tx *Tx) error {
 	log.Printf("received tx: %+v", *tx)
 	success := tx.Result.Result.Code == xdr.TransactionResultCodeTxSuccess
@@ -39,6 +41,7 @@ func (u *Updater) Tx(tx *Tx) error {
 
 }
 
+// Msg causes the updater to update its channel in response to a protocol message received from a peer Agent.
 func (u *Updater) Msg(m *Message) error {
 	log.Printf("received message: %+v", *m)
 	if err := u.verifyMsg(m); err != nil {
@@ -66,13 +69,15 @@ func (u *Updater) Msg(m *Message) error {
 	return errors.New("no message specified")
 }
 
+// Cmd causes the updater to update its channel in response to a user command.
 func (u *Updater) Cmd(c *Command) error {
 	log.Printf("received command: %+v", *c)
 	c.Time = u.LedgerTime
-	f := commandFuncs[c.UserCommand]
+	f := commandFuncs[c.Name]
 	return f(c, u)
 }
 
+// Time causes the updater to update its channel in response to a deadline arriving.
 func (u *Updater) Time() error {
 	t, err := u.C.TimerTime()
 	if err != nil {

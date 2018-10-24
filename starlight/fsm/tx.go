@@ -33,6 +33,7 @@ type Tx struct {
 	SeqNum     string
 }
 
+// NewTx produces a Tx from a Horizon Transaction object.
 func NewTx(htx *horizon.Transaction) (*Tx, error) {
 	var env xdr.TransactionEnvelope
 	err := xdr.SafeUnmarshalBase64(htx.EnvelopeXdr, &env)
@@ -68,7 +69,7 @@ var txHandlerFuncs = []func(*Updater, *Tx, bool) (bool, error){
 }
 
 var (
-	ErrUnexpectedState = errors.New("unexpected state")
+	errUnexpectedState = errors.New("unexpected state")
 	errNoSeed          = errors.New("fsm: seed required")
 	errNoMatch         = errors.New("did not recognize transaction")
 )
@@ -98,7 +99,7 @@ func handleSetupAccountTx(u *Updater, tx *Tx, success bool) (bool, error) {
 	}
 
 	if u.C.State != SettingUp {
-		return true, errors.Wrapf(ErrUnexpectedState, "got %s, want %s", u.C.State, SettingUp)
+		return true, errors.Wrapf(errUnexpectedState, "got %s, want %s", u.C.State, SettingUp)
 	}
 
 	// compute the initial sequence number of the account
@@ -111,10 +112,11 @@ func handleSetupAccountTx(u *Updater, tx *Tx, success bool) (bool, error) {
 }
 
 var (
-	zero xdr.Uint32 = 0
+	zero xdr.Uint32
 	two  xdr.Uint32 = 2
 )
 
+// MatchesFundingTx reports whether a transaction is the funding transaction for the channel.
 func MatchesFundingTx(c *Channel, tx *Tx) bool {
 	return txMatches(tx, c.HostAcct,
 		paymentOp(c.HostAcct, c.EscrowAcct, c.HostAmount+500*xlm.Millilumen+8*c.ChannelFeerate),
@@ -196,7 +198,7 @@ func handleFundingTx(u *Updater, tx *Tx, success bool) (bool, error) {
 		return false, nil
 	}
 	if u.C.State != AwaitingFunding {
-		return false, errors.Wrapf(ErrUnexpectedState, "got %s, want %s", u.C.State, AwaitingFunding)
+		return false, errors.Wrapf(errUnexpectedState, "got %s, want %s", u.C.State, AwaitingFunding)
 	}
 	if !success {
 		if u.C.Role == Host {
@@ -226,7 +228,7 @@ func handleCoopCloseTx(u *Updater, tx *Tx, success bool) (bool, error) {
 		return false, nil
 	}
 	if u.C.State != AwaitingClose {
-		return false, errors.Wrapf(ErrUnexpectedState, "got %s, want %s", u.C.State, AwaitingClose)
+		return false, errors.Wrapf(errUnexpectedState, "got %s, want %s", u.C.State, AwaitingClose)
 	}
 	if !success {
 		err := u.setForceCloseState()
@@ -240,7 +242,7 @@ func handleRatchetTx(u *Updater, ptx *Tx, success bool) (bool, error) {
 	tx := ptx.Env.Tx
 
 	for _, role := range []Role{Host, Guest} {
-		var ratchetAcct AccountId
+		var ratchetAcct AccountID
 		switch role {
 		case Host:
 			ratchetAcct = u.C.HostRatchetAcct
@@ -333,7 +335,7 @@ func handleSettleWithGuestTx(u *Updater, ptx *Tx, _ bool) (bool, error) {
 	}
 	// skip checking the amount
 	if u.C.State != AwaitingSettlement {
-		return false, errors.Wrapf(ErrUnexpectedState, "got %s, want %s", u.C.State, AwaitingSettlement)
+		return false, errors.Wrapf(errUnexpectedState, "got %s, want %s", u.C.State, AwaitingSettlement)
 	}
 	// stay in AwaitingSettlement state
 	return true, nil
@@ -401,7 +403,7 @@ func handleTopUpTx(u *Updater, ptx *Tx, success bool) (bool, error) {
 	return false, nil
 }
 
-func txMatches(ptx *Tx, src AccountId, ops ...xdr.Operation) bool {
+func txMatches(ptx *Tx, src AccountID, ops ...xdr.Operation) bool {
 	tx := ptx.Env.Tx
 	if len(tx.Operations) != len(ops) {
 		return false
@@ -445,7 +447,7 @@ func xdrEqual(a, b interface{}) bool {
 	return bytes.Equal(abytes.Bytes(), bbytes.Bytes())
 }
 
-func createAccountOp(src, dest AccountId, bal xlm.Amount) xdr.Operation {
+func createAccountOp(src, dest AccountID, bal xlm.Amount) xdr.Operation {
 	return xdr.Operation{
 		SourceAccount: src.XDR(),
 		Body: xdr.OperationBody{
@@ -458,7 +460,7 @@ func createAccountOp(src, dest AccountId, bal xlm.Amount) xdr.Operation {
 	}
 }
 
-func paymentOp(src, dest AccountId, amt xlm.Amount) xdr.Operation {
+func paymentOp(src, dest AccountID, amt xlm.Amount) xdr.Operation {
 	return xdr.Operation{
 		SourceAccount: src.XDR(),
 		Body: xdr.OperationBody{
@@ -474,7 +476,7 @@ func paymentOp(src, dest AccountId, amt xlm.Amount) xdr.Operation {
 	}
 }
 
-func mergeOp(src, dest AccountId) xdr.Operation {
+func mergeOp(src, dest AccountID) xdr.Operation {
 	return xdr.Operation{
 		SourceAccount: src.XDR(),
 		Body: xdr.OperationBody{
@@ -484,7 +486,7 @@ func mergeOp(src, dest AccountId) xdr.Operation {
 	}
 }
 
-func bumpSequenceOp(acct AccountId, bumpTo int64) xdr.Operation {
+func bumpSequenceOp(acct AccountID, bumpTo int64) xdr.Operation {
 	return xdr.Operation{
 		SourceAccount: acct.XDR(),
 		Body: xdr.OperationBody{

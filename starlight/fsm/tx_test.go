@@ -25,32 +25,32 @@ var hostSeed = "SBHRLPZCQARHBNYMYQDRI6VWRSE7V6HEYMPVWISYI76BQ3I552FAOA4C"
 var guestSeed = "SAZLNS7Z6LHHJODTFCYMWKLNGTZGZYU336OXJIUFI2GM4R5IRTAP53AF"
 
 func createTestChannel() (*Channel, error) {
-	var hostAcct AccountId
+	var hostAcct AccountID
 	hostAcctKeyPair := key.DeriveAccountPrimary([]byte(hostSeed))
 	err := hostAcct.SetAddress(hostAcctKeyPair.Address())
 	if err != nil {
 		return nil, err
 	}
-	var guestAcct AccountId
+	var guestAcct AccountID
 	guestAcctKeyPair := key.DeriveAccountPrimary([]byte(guestSeed))
 	err = guestAcct.SetAddress(guestAcctKeyPair.Address())
 	if err != nil {
 		return nil, err
 	}
-	var escrowAcct AccountId
+	var escrowAcct AccountID
 	var channelKeyIndex uint32 = 1 // 0 used by DeriveAccountPrimary
 	escrowAcctKeyPair := key.DeriveAccount([]byte(hostSeed), channelKeyIndex)
 	err = escrowAcct.SetAddress(escrowAcctKeyPair.Address())
 	if err != nil {
 		return nil, err
 	}
-	var hostRatchetAcct AccountId
+	var hostRatchetAcct AccountID
 	hostRatchetAcctKeyPair := key.DeriveAccount([]byte(hostSeed), channelKeyIndex+1)
 	err = hostRatchetAcct.SetAddress(hostRatchetAcctKeyPair.Address())
 	if err != nil {
 		return nil, err
 	}
-	var guestRatchetAcct AccountId
+	var guestRatchetAcct AccountID
 	guestRatchetAcctKeyPair := key.DeriveAccount([]byte(hostSeed), channelKeyIndex+2)
 	err = guestRatchetAcct.SetAddress(guestRatchetAcctKeyPair.Address())
 	if err != nil {

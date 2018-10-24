@@ -27,8 +27,11 @@ import (
 	"github.com/interstellar/starlight/worizon/xlm"
 )
 
+// Role is the type of a role constant.
 type Role string
 
+// Roles. A participant in a channel is either the channel's host,
+// if they created the channel, or the guest, if they accepted a channel proposal.
 const (
 	Host  Role = "Host"
 	Guest Role = "Guest"
@@ -62,11 +65,11 @@ type Channel struct {
 	PendingAmountReceived  xlm.Amount
 	PaymentTime            time.Time
 	PendingPaymentTime     time.Time
-	HostAcct               AccountId
-	GuestAcct              AccountId
-	EscrowAcct             AccountId
-	HostRatchetAcct        AccountId
-	GuestRatchetAcct       AccountId
+	HostAcct               AccountID
+	GuestAcct              AccountID
+	EscrowAcct             AccountID
+	HostRatchetAcct        AccountID
+	GuestRatchetAcct       AccountID
 	KeyIndex               uint32
 	HostRatchetAcctSeqNum  xdr.SequenceNumber
 	GuestRatchetAcctSeqNum xdr.SequenceNumber
@@ -96,64 +99,69 @@ type Channel struct {
 	CounterpartyCoopCloseSig xdr.DecoratedSignature
 }
 
-// Satisfy json.Marshaler. Required for genbolt.
+// MarshalJSON implements json.Marshaler. Required for genbolt.
 func (ch *Channel) MarshalJSON() ([]byte, error) {
 	type t Channel
 	return json.Marshal((*t)(ch))
 }
 
-// Satisfy json.Unmarshaler. Required for genbolt.
+// UnmarshalJSON implements json.Unmarshaler. Required for genbolt.
 func (ch *Channel) UnmarshalJSON(b []byte) error {
 	type t Channel
 	return json.Unmarshal(b, (*t)(ch))
 }
 
-type AccountId xdr.AccountId
+// AccountID is a Stellar account ID.
+type AccountID xdr.AccountId
 
 // MarshalText implements the TextMarshaler interface for
 // the accountID type, allowing us to serialize the account
 // IDs to their string addresses, rather than the default
 // xdr Uint256 slice.
-func (id *AccountId) MarshalText() ([]byte, error) {
+func (id *AccountID) MarshalText() ([]byte, error) {
 	return []byte(id.Address()), nil
 }
 
 // UnmarshalText implements the TextMarshaler interface, taking
 // our custom-serialized JSON for Channel objects and converting
 // the string addresses back into xdr.AccountId types.
-func (id *AccountId) UnmarshalText(data []byte) error {
+func (id *AccountID) UnmarshalText(data []byte) error {
 	return id.SetAddress(string(data))
 }
 
 // MarshalBinary satisfies interface BinaryMarshaler.
-func (id *AccountId) MarshalBinary() ([]byte, error) {
+func (id *AccountID) MarshalBinary() ([]byte, error) {
 	return (*xdr.AccountId)(id).MarshalBinary()
 }
 
 // UnmarshalBinary satisfies interface BinaryUnmarshaler.
-func (id *AccountId) UnmarshalBinary(data []byte) error {
+func (id *AccountID) UnmarshalBinary(data []byte) error {
 	return (*xdr.AccountId)(id).UnmarshalBinary(data)
 }
 
-func (id *AccountId) Address() string {
+// Address produces the Stellar address string for id.
+func (id *AccountID) Address() string {
 	if id == nil || id.Ed25519 == nil {
 		return ""
 	}
 	return (*xdr.AccountId)(id).Address()
 }
 
-func (id *AccountId) SetAddress(address string) error {
+// SetAddress sets *id to the account ID corresponding to the given Stellar address.
+func (id *AccountID) SetAddress(address string) error {
 	if address == "" {
 		return nil
 	}
 	return (*xdr.AccountId)(id).SetAddress(address)
 }
 
-func (id *AccountId) Equals(other AccountId) bool {
+// Equals tells whether two Stellar account IDs are the same.
+func (id *AccountID) Equals(other AccountID) bool {
 	return (*xdr.AccountId)(id).Equals(xdr.AccountId(other))
 }
 
-func (id *AccountId) XDR() *xdr.AccountId {
+// XDR produces the XDR form of a Stellar account ID.
+func (id *AccountID) XDR() *xdr.AccountId {
 	return (*xdr.AccountId)(id)
 }
 
@@ -235,8 +243,8 @@ func (ch *Channel) signRatchetTx(ratchetTx *b.TransactionBuilder, ratchetSig xdr
 	return nil
 }
 
+// SetupAndFundingReserveAmount reports the amount in lumens needed to set up and fund the channel.
 func (ch *Channel) SetupAndFundingReserveAmount() xlm.Amount {
-
 	var result xlm.Amount
 	result += setupMinBalanceAmount()
 	result += ch.setupFeeAmount()

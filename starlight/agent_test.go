@@ -326,7 +326,7 @@ func TestAgentCreateChannel(t *testing.T) {
 			agentFunc: func(g *Agent) {
 				db.Update(g.db, func(root *db.Root) error {
 					guestAcctStr, _, _ := g.FindAccount("alice*starlight.com")
-					var guestAcct fsm.AccountId
+					var guestAcct fsm.AccountID
 					err := guestAcct.SetAddress(guestAcctStr)
 					if err != nil {
 						return err

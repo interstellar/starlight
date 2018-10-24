@@ -7,6 +7,7 @@ import (
 	"github.com/stellar/go/xdr"
 )
 
+// PrimaryAccountIndex is the index to use in DeriveAccount when deriving the primary account key for a given seed.
 const PrimaryAccountIndex uint32 = 0
 
 // DeriveAccountPrimary derives the primary account key

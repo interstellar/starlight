@@ -33,7 +33,7 @@ import (
 var (
 	errAcctsSame           = errors.New("same host and guest acct address")
 	errAlreadyConfigured   = errors.New("already configured")
-	ErrExists              = errors.New("channel exists")
+	errExists              = errors.New("channel exists")
 	errInsufficientBalance = errors.New("insufficient balance")
 	errInvalidEdit         = errors.New("can only update password and horizon URL")
 	errInvalidHorizonURL   = errors.New("invalid Horizon URL")
@@ -204,10 +204,14 @@ func (g *Agent) start(root *db.Root) error {
 	return nil
 }
 
+// Close releases resources associated with the Agent.
+// It does not wait for its subordinate goroutines to exit.
 func (g *Agent) Close() {
 	g.rootCancel()
 }
 
+// CloseWait releases resources associated with the Agent.
+// It waits for its subordinate goroutines to exit.
 func (g *Agent) CloseWait() {
 	g.Close()
 	g.wg.Wait()
@@ -243,7 +247,7 @@ func (g *Agent) ConfigInit(c *Config) error {
 		g.seed = make([]byte, 32)
 		randRead(g.seed)
 		k := key.DeriveAccountPrimary(g.seed)
-		primaryAcct := fsm.AccountId(key.PublicKeyXDR(k))
+		primaryAcct := fsm.AccountID(key.PublicKeyXDR(k))
 
 		if len(c.Password) > 72 {
 			return errors.Wrap(errInvalidPassword, "too long (max 72 chars)") // bcrypt limit
@@ -531,7 +535,7 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 	}
 }
 
-func (g *Agent) getTestnetFaucetFunds(acctID fsm.AccountId) {
+func (g *Agent) getTestnetFaucetFunds(acctID fsm.AccountID) {
 	// The faucet is not 100% reliable (it often times out),
 	// so this tries five times before giving up.
 	// On failure, it reports the result as an *Update for the
@@ -639,7 +643,7 @@ func (g *Agent) checkChannelUnique(a, b string) error {
 			c := chans.Get(currChanID)
 			p, q := c.HostAcct.Address(), c.GuestAcct.Address()
 			if (a == p && b == q) || (a == q && b == p) {
-				return errors.Wrapf(ErrExists, "between host %s and guest %s", p, q)
+				return errors.Wrapf(errExists, "between host %s and guest %s", p, q)
 			}
 			return nil
 		})
@@ -690,7 +694,7 @@ func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount, host
 		// Local node is the host.
 		// Remote node is the guest.
 
-		var guestAcct fsm.AccountId
+		var guestAcct fsm.AccountID
 		err := guestAcct.SetAddress(guestAcctStr)
 		if err != nil {
 			return errors.Wrapf(err, "setting guest address %s", guestAcctStr)
@@ -700,21 +704,21 @@ func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount, host
 		channelKeyPair := key.DeriveAccount(g.seed, channelKeyIndex)
 		channelID := channelKeyPair.Address()
 
-		var escrowAcct fsm.AccountId
+		var escrowAcct fsm.AccountID
 		err = escrowAcct.SetAddress(channelKeyPair.Address())
 		if err != nil {
 			return errors.Wrapf(err, "setting escrow address %s", channelKeyPair.Address())
 		}
 
 		firstThrowawayKeyPair := key.DeriveAccount(g.seed, channelKeyIndex+1)
-		var hostRatchetAcct fsm.AccountId
+		var hostRatchetAcct fsm.AccountID
 		err = hostRatchetAcct.SetAddress(firstThrowawayKeyPair.Address())
 		if err != nil {
 			return errors.Wrapf(err, "setting host ratchet address %s", firstThrowawayKeyPair.Address())
 		}
 
 		secondThrowawayKeyPair := key.DeriveAccount(g.seed, channelKeyIndex+2)
-		var guestRatchetAcct fsm.AccountId
+		var guestRatchetAcct fsm.AccountID
 		err = guestRatchetAcct.SetAddress(secondThrowawayKeyPair.Address())
 		if err != nil {
 			return errors.Wrapf(err, "setting guest ratchet address %s", secondThrowawayKeyPair.Address())
@@ -723,7 +727,7 @@ func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount, host
 		fundingTime := g.wclient.Now()
 
 		if ch = g.getChannel(root, channelID); ch.State != fsm.Start {
-			return errors.Wrap(ErrExists, string(channelID))
+			return errors.Wrap(errExists, string(channelID))
 		}
 
 		ch = &fsm.Channel{
@@ -760,9 +764,9 @@ func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount, host
 
 		return g.doUpdateChannel(root, ch.ID, func(root *db.Root, updater *fsm.Updater, update *Update) error {
 			c := &fsm.Command{
-				UserCommand: fsm.CreateChannel,
-				Amount:      ch.HostAmount,
-				Recipient:   guestFedAddr,
+				Name:      fsm.CreateChannel,
+				Amount:    ch.HostAmount,
+				Recipient: guestFedAddr,
 			}
 			update.InputCommand = c
 			return updater.Cmd(c)
@@ -771,6 +775,7 @@ func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount, host
 	return ch, err
 }
 
+// DoWalletPay implements the wallet-pay command.
 func (g *Agent) DoWalletPay(dest string, amount xlm.Amount) error {
 	if dest == "" {
 		return errEmptyAddress
@@ -818,10 +823,10 @@ func (g *Agent) DoWalletPay(dest string, amount xlm.Amount) error {
 				Balance: uint64(w.Balance),
 			},
 			InputCommand: &fsm.Command{
-				UserCommand: fsm.Pay,
-				Amount:      amount,
-				Recipient:   dest,
-				Time:        time,
+				Name:      fsm.Pay,
+				Amount:    amount,
+				Recipient: dest,
+				Time:      time,
 			},
 			InputLedgerTime: time,
 			PendingSequence: strconv.FormatInt(int64(w.Seqnum), 10),
@@ -905,7 +910,7 @@ func (g *Agent) DoCommand(channelID string, c *fsm.Command) error {
 	if len(channelID) == 0 {
 		return errNoChannelSpecified
 	}
-	if c.UserCommand == "" {
+	if c.Name == "" {
 		return errors.New("no command specified")
 	}
 	return g.updateChannel(channelID, func(root *db.Root, updater *fsm.Updater, update *Update) error {
@@ -1002,7 +1007,7 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 	err = g.updateChannel(m.ChannelID, func(root *db.Root, updater *fsm.Updater, update *Update) error {
 		if m.ChannelProposeMsg != nil {
 			updater.C.Role = fsm.Guest
-			updater.C.EscrowAcct = fsm.AccountId(escrowAcct)
+			updater.C.EscrowAcct = fsm.AccountID(escrowAcct)
 			updater.C.GuestAcct = *root.Agent().PrimaryAcct()
 			updater.C.GuestRatchetAcctSeqNum = guestSeqNum
 			updater.C.HostRatchetAcctSeqNum = hostSeqNum
@@ -1014,7 +1019,7 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 	})
 	switch errors.Root(err) {
 	case nil:
-	case ErrExists, fsm.ErrChannelExists: // TODO(debnil): Add more non-retriable errors.
+	case errExists, fsm.ErrChannelExists: // TODO(debnil): Add more non-retriable errors.
 		// StatusResetContent is used to designate non-retriable errors.
 		// TODO(debnil): Find a more suitable status code if possible.
 		log.Printf("handling RPC message, channel %s: %s", string(m.ChannelID), err)
@@ -1058,7 +1063,7 @@ func (g *Agent) handleTOML(w http.ResponseWriter, req *http.Request) {
 	tomlTemplate.Execute(w, v)
 }
 
-func (g *Agent) getSequenceNumbers(chanID string, guestRatchetAcct, hostRatchetAcct fsm.AccountId) (base, guest, host xdr.SequenceNumber, err error) {
+func (g *Agent) getSequenceNumbers(chanID string, guestRatchetAcct, hostRatchetAcct fsm.AccountID) (base, guest, host xdr.SequenceNumber, err error) {
 	var escrowAcct xdr.AccountId
 	err = escrowAcct.SetAddress(chanID)
 	if err != nil {
