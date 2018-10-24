@@ -6,7 +6,7 @@ export const stroopsToLumens = (stroops: number, options: any = {}) => {
   const lumens = stroops * singleStroop
 
   if (lumens <= singleStroop) {
-    return Big(lumens).toFixed().toString()
+    return Big(lumens).toFixed()
   }
 
   if (options.short) {
