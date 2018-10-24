@@ -78,7 +78,7 @@ func index(w http.ResponseWriter, req *http.Request) {
 				// If you want to make changes to the client and deploy them,
 				// change this URL to point to where you've deployed your changes.
 				// See ./sync-frontend.sh for how we're hosting the client.
-				xmlhttp.open('GET', 'https://starlight-client.s3.amazonaws.com/index.html', true);
+				xmlhttp.open('GET', 'https://starlight-client.s3.amazonaws.com/v1/index.html', true);
 				xmlhttp.send();
 			</script>
 		</html>
