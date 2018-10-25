@@ -1037,3 +1037,39 @@ func TestMessageAuthentication(t *testing.T) {
 		t.Fatalf("got %s, want %s", err, keypair.ErrInvalidSignature)
 	}
 }
+
+func TestMessageVersion(t *testing.T) {
+	recipient, err := createTestChannel()
+	if err != nil {
+		t.Fatal(err)
+	}
+	recipient.KeyIndex = 0
+	recipient.Role = Guest
+	u := &Updater{
+		C:    recipient,
+		O:    ono{},
+		Seed: []byte(guestSeed),
+	}
+	sender, err := createTestChannel()
+	if err != nil {
+		t.Fatal(err)
+	}
+	sender.Role = Host
+	h := createTestHost()
+	m, err := createChannelProposeMsg([]byte(hostSeed), sender, h)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.Version != version {
+		t.Fatalf("got Version %d, want %d\n", m.Version, version)
+	}
+	err = u.verifyMsg(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.Version = 20
+	err = u.verifyMsg(m)
+	if err != errInvalidVersion {
+		t.Fatalf("got %s, want %s", err, errInvalidVersion)
+	}
+}

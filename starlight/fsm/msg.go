@@ -14,16 +14,21 @@ import (
 	"github.com/interstellar/starlight/worizon/xlm"
 )
 
+// version denotes the current Starlight protocol version.
+const version = 1
+
 var (
 	// ErrChannelExists means a channel propose message was received for a channel that already exists.
 	ErrChannelExists = errors.New("received channel propose message for channel that already exists")
 
+	errInvalidVersion           = errors.New("invalid version number")
 	errUnusedSettleWithGuestSig = errors.New("unused settle with guest sig")
 )
 
 // Message defines a JSON schema for Starlight messages.
 type Message struct {
 	ChannelID string
+	Version   int
 
 	ChannelProposeMsg  *ChannelProposeMsg  `json:",omitempty"`
 	ChannelAcceptMsg   *ChannelAcceptMsg   `json:",omitempty"`
@@ -32,9 +37,9 @@ type Message struct {
 	PaymentCompleteMsg *PaymentCompleteMsg `json:",omitempty"`
 	CloseMsg           *CloseMsg           `json:",omitempty"`
 
-	// Signature is signed by the sender's key on the non-nil
-	// Message field.
-	Signature []byte
+	// Signature is a signature over the JSON representation of the message
+	// (minus the Signature field itself), made with the sender's key.
+	Signature []byte `json:",omitempty"`
 }
 
 // ChannelProposeMsg defines a JSON schema for proposal over a Channel.
@@ -467,39 +472,19 @@ func (u *Updater) handleCloseMsg(m *Message) error {
 	return u.transitionTo(AwaitingClose)
 }
 
-// getMsgBytes returns a JSON marshaled byte slice of the non-nil field
-// in the message. If all fields are nil, this returns an error.
-// NOTE(vniu): currently we do not return an error if multiple fields are
-// set, as later fields are just ignored, but this should be revisited.
-func (m *Message) getMsgBytes() ([]byte, error) {
-	switch {
-	case m.ChannelProposeMsg != nil:
-		return json.Marshal(m.ChannelProposeMsg)
-
-	case m.ChannelAcceptMsg != nil:
-		return json.Marshal(m.ChannelAcceptMsg)
-
-	case m.PaymentProposeMsg != nil:
-		return json.Marshal(m.PaymentProposeMsg)
-
-	case m.PaymentAcceptMsg != nil:
-		return json.Marshal(m.PaymentAcceptMsg)
-
-	case m.PaymentCompleteMsg != nil:
-		return json.Marshal(m.PaymentCompleteMsg)
-
-	case m.CloseMsg != nil:
-		return json.Marshal(m.CloseMsg)
-	default:
-		return nil, errors.New("no message field set")
-	}
+// bytesToSign gets the representation of the message covered
+// by the signature, both for signing and validating purposes.
+func (m *Message) bytesToSign() ([]byte, error) {
+	msgcopy := *m
+	msgcopy.Signature = nil
+	return json.Marshal(msgcopy)
 }
 
 func (m *Message) signMsg(seed []byte, i uint32) (*Message, error) {
 	if seed == nil {
 		return nil, errNoSeed
 	}
-	bytes, err := m.getMsgBytes()
+	bytes, err := m.bytesToSign()
 	if err != nil {
 		return nil, err
 	}

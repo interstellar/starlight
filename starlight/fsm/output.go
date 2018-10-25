@@ -138,6 +138,7 @@ func createPaymentCompleteMsg(seed []byte, ch *Channel) (*Message, error) {
 			RoundNumber:      ch.RoundNumber,
 			SenderRatchetSig: senderRatchetSig,
 		},
+		Version: version,
 	}
 	return m.signMsg(seed, ch.KeyIndex)
 }
@@ -201,6 +202,7 @@ func createChannelProposeMsg(seed []byte, ch *Channel, h *WalletAcct) (*Message,
 			Feerate:             ch.ChannelFeerate,
 			CounterpartyAddress: h.Address,
 		},
+		Version: version,
 	}
 	return m.signMsg(seed, ch.KeyIndex)
 }
@@ -263,6 +265,7 @@ func createPaymentProposeMsg(seed []byte, ch *Channel) (*Message, error) {
 			SenderSettleWithGuestSig: settleWithGuestSig,
 			SenderSettleWithHostSig:  settleWithHostSig,
 		},
+		Version: version,
 	}
 	return m.signMsg(seed, ch.KeyIndex)
 }
@@ -326,6 +329,7 @@ func createPaymentAcceptMsg(seed []byte, ch *Channel) (*Message, error) {
 			RecipientSettleWithGuestSig: settleWithGuestSig,
 			RecipientSettleWithHostSig:  settleWithHostSig,
 		},
+		Version: version,
 	}
 	return m.signMsg(seed, ch.KeyIndex)
 }
@@ -362,6 +366,7 @@ func createChannelAcceptMsg(seed []byte, ch *Channel, ledgerTime time.Time) (*Me
 			GuestRatchetRound1Sig:      ratchetTxSig,
 			GuestSettleOnlyWithHostSig: settleOnlyWithHostSig,
 		},
+		Version: version,
 	}
 	return m.signMsg(seed, ch.KeyIndex)
 }
@@ -389,6 +394,7 @@ func createCloseMsg(seed []byte, ch *Channel) (*Message, error) {
 		CloseMsg: &CloseMsg{
 			CooperativeCloseSig: coopCloseSig,
 		},
+		Version: version,
 	}
 	return m.signMsg(seed, ch.KeyIndex)
 }

@@ -150,7 +150,40 @@ func (u *Updater) verifyMsg(m *Message) error {
 			return err
 		}
 	}
-	bytes, err := m.getMsgBytes()
+	// Ensure that m has exactly one non-nil field.
+	counter := 0
+	if m.ChannelProposeMsg != nil {
+		counter++
+	}
+	if m.ChannelAcceptMsg != nil {
+		counter++
+	}
+	if m.PaymentProposeMsg != nil {
+		counter++
+	}
+	if m.PaymentAcceptMsg != nil {
+		counter++
+	}
+	if m.PaymentCompleteMsg != nil {
+		counter++
+	}
+	if m.CloseMsg != nil {
+		counter++
+	}
+
+	if counter == 0 {
+		return errors.New("no message field set")
+	}
+
+	if counter != 1 {
+		return errors.New("multiple message fields set")
+	}
+
+	// Ensure m Version matches software version.
+	if m.Version != version {
+		return errInvalidVersion
+	}
+	bytes, err := m.bytesToSign()
 	if err != nil {
 		return err
 	}
