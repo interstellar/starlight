@@ -34,7 +34,7 @@ const Links = styled.div`
 const LogoLink = styled(Link)`
   background: ${CORNFLOWER_DARK};
   display: block;
-  padding: 50px 40px 30px 40px;
+  padding: 43px 40px 30px;
   text-decoration: none;
 `
 const Nav = styled.div`
@@ -47,18 +47,20 @@ const Nav = styled.div`
 `
 const NavLink = styled(ReactNavLink)`
   color: white;
-  display: block;
+  display: flex;
+  align-items: center;
   font-size: 18px;
-  margin: 20px 0;
+  margin: 29px 0;
   padding: 0 40px;
   text-decoration: none;
+
 
   &:hover {
     color: ${CORNFLOWER};
   }
 `
 const NavIcon = styled(Icon)`
-  margin-right: 10px;
+  margin-right: 15px;
 `
 const View = styled.div`
   background: ${WILDSAND};

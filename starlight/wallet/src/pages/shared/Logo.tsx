@@ -7,11 +7,17 @@ const Container = styled.div`
   text-align: center;
 `
 const Preview = styled.span<{ large?: boolean }>`
+  background: rgba(0,0,0,0.5);
+  border-radius: 5px;
+  box-sizing: border-box;
   color: ${WHITE};
   display: inline-block;
   font-size: ${props => (props.large ? '16px' : '12px')};
+  margin-top: ${props => (props.large ? '10px' : '5px')};;
+  padding: 4px 16px;
   text-align: center;
-  width: 100%;
+  width: ${props => (props.large ? 'auto' : '100%')};
+
 `
 interface Props {
   large?: boolean
@@ -31,7 +37,9 @@ export class Logo extends React.Component<Props, {}> {
             transform="translate(-40 -50)"
           />
         </svg>
-        <Preview large={this.props.large}>developer preview</Preview>
+        <div>
+          <Preview large={this.props.large}>developer preview</Preview>
+        </div>
       </Container>
     )
   }
