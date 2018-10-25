@@ -75,7 +75,11 @@ const fetch = async (dispatch: any, From: number) => {
                 state.channels[channelID].EscrowAcct === sourceAccount
               ) {
                 // it's from a channel
-                // handled elsewhere
+                // activity is handled elsewhere
+                dispatch({
+                  type: WALLET_UPDATE,
+                  Account: event.Account,
+                })
                 return
               }
             }
