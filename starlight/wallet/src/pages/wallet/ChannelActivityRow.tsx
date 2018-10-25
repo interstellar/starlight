@@ -27,6 +27,7 @@ export class ChannelActivityRow extends React.Component<Props, {}> {
         : ''
     const activity = this.props.activity
     const op = this.props.activity.op
+
     switch (op.type) {
       case 'deposit':
       case 'topUp': {
@@ -81,6 +82,10 @@ export class ChannelActivityRow extends React.Component<Props, {}> {
       }
       case 'outgoingChannelPayment':
       case 'incomingChannelPayment': {
+        // This removes keep-alive payments from the table
+        if (op.myDelta === 0) {
+          return null
+        } else {
         return (
           <tr>
             <TableData align="left">
@@ -102,7 +107,7 @@ export class ChannelActivityRow extends React.Component<Props, {}> {
             <TableData align="right">&mdash;</TableData>
           </tr>
         )
-      }
+      }}
       case 'withdrawal': {
         return (
           <tr>

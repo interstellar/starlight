@@ -57,6 +57,12 @@ export class ActivityRow extends React.Component<Props, {}> {
       this.props.pending &&
       (op.type === 'incomingChannelPayment' ||
         op.type === 'outgoingChannelPayment')
+
+    // This removes keep-alive payments from the table
+    if (op.myDelta === 0 && op.theirDelta === 0) {
+      return null
+    }
+
     return (
       <Row pending={pendingPayment}>
         <TableData align="left">
