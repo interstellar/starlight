@@ -62,22 +62,23 @@ export class BarGraph extends React.Component<Props> {
     if (this.totalAmount() === 0) {
       return 0
     }
-    return Math.round((amount / this.totalAmount()) * 100)
+    return (amount / this.totalAmount()) * 100
   }
 
   public render() {
     return (
       <GraphWrapper>
         <LabelWrapper align="right">
-          { this.props.leftTooltip ?
+          {this.props.leftTooltip ? (
             <Tooltip hover content={this.props.leftTooltip}>
               <Label>{this.props.leftLabel || 'Send'}</Label>
-            </Tooltip> :
+            </Tooltip>
+          ) : (
             <Label>{this.props.leftLabel || 'Send'}</Label>
-          }
-            <SubLabel color={this.props.leftColor}>
-              {formatAmount(stroopsToLumens(this.props.leftAmount))} XLM
-            </SubLabel>
+          )}
+          <SubLabel color={this.props.leftColor}>
+            {formatAmount(stroopsToLumens(this.props.leftAmount))} XLM
+          </SubLabel>
         </LabelWrapper>
         <SegmentWrapper>
           <GraphSegment
@@ -96,12 +97,13 @@ export class BarGraph extends React.Component<Props> {
           />
         </SegmentWrapper>
         <LabelWrapper align="left">
-          { this.props.rightTooltip ?
+          {this.props.rightTooltip ? (
             <Tooltip hover content={this.props.rightTooltip}>
               <Label>{this.props.rightLabel || 'Receive'}</Label>
-            </Tooltip> :
+            </Tooltip>
+          ) : (
             <Label>{this.props.rightLabel || 'Receive'}</Label>
-          }
+          )}
           <SubLabel color={this.props.rightColor}>
             {formatAmount(stroopsToLumens(this.props.rightAmount))} XLM
           </SubLabel>

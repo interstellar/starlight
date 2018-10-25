@@ -54,7 +54,7 @@ export class MiniBarGraph extends React.Component<Props> {
     if (this.totalAmount === 0) {
       return 0
     }
-    return Math.round((amount / this.totalAmount) * 100)
+    return (amount / this.totalAmount) * 100
   }
 
   public render() {
@@ -64,7 +64,8 @@ export class MiniBarGraph extends React.Component<Props> {
           <Label color={CORNFLOWER}>
             {formatAmount(
               stroopsToLumens(this.props.leftAmount, { short: true })
-            )} XLM
+            )}{' '}
+            XLM
           </Label>
           <GraphSegment
             color={CORNFLOWER}
@@ -86,7 +87,8 @@ export class MiniBarGraph extends React.Component<Props> {
           <Label color={EBONYCLAY}>
             {formatAmount(
               stroopsToLumens(this.props.rightAmount, { short: true })
-            )} XLM
+            )}{' '}
+            XLM
           </Label>
         </SegmentWrapper>
       </GraphWrapper>

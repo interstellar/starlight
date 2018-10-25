@@ -3,7 +3,7 @@ import styled from 'styled-components'
 import { connect } from 'react-redux'
 import { Dispatch } from 'redux'
 
-import { validRecipientAccount } from 'helpers/account'
+import { usernameToAddress, validRecipientAccount } from 'helpers/account'
 import { formatAmount, stroopsToLumens, lumensToStroops } from 'helpers/lumens'
 
 import { BtnSubmit } from 'pages/shared/Button'
@@ -167,6 +167,11 @@ export class SendPayment extends React.Component<Props, State> {
             {/* TODO: validate this is a number, and not more than the wallet balance */}
             <Unit>XLM</Unit>
           </UnitContainer>
+          <HelpBlock isShowing={
+            this.state.recipient === usernameToAddress(this.props.username)
+          }>
+            You cannot send payments to yourself.
+          </HelpBlock>
           <HelpBlock isShowing={!hasChannel && this.recipientIsValid()}>
             You do not have a channel open with this recipient. Open a channel
             or proceed to send this payment from your account on the Stellar
