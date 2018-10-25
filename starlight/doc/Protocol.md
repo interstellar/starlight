@@ -30,6 +30,10 @@ It generalizes,
 with some minor modifications,
 to payment channels in other assets issued on Stellar.
 
+The Starlight protocol is still under active development.
+Until it is stabilized,
+we may make incompatible changes and upgrades to it without notice.
+
 The Starlight protocol makes use of several built-in features and functionalities of the Stellar Protocol,
 including multisignature accounts,
 sequence numbers,
@@ -1117,14 +1121,29 @@ _ `PendingPaymentTime` as `PaymentTime`
 
 ## Messages
 
-Every message has two top-level fields:
+Every message has three top-level fields:
 
 1. `Body`
-2. `MessageSignature`
+2. `Version`
+3. `MessageSignature`
 
-The message-specific fields
+The message-type-specific fields
 (specified in the following sections)
 go in the `Body`.
+
+`Version` is a number, representing the protocol version.
+This number will be incremented with each incompatible change to the protocol.
+Later versions of the software may be able to understand messages with older version numbers,
+but are not guaranteed to.
+The current `Version` number is 1.
+
+When any message is sent,
+the agent sets the `Version` number to its current protocol version number.
+
+When any message is received,
+the agent looks at the `Version`.
+If it is a version number that it does not support,
+it ignores the message.
 
 `MessageSignature` is how a party authenticates that the message was sent by their channel counterparty.
 It is a signature on the serialized message (with the `MessageSignature` field excluded).
