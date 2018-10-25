@@ -13,7 +13,7 @@ import { TransactionFee } from 'pages/shared/TransactionFee'
 import { Total } from 'pages/shared/Total'
 import { Unit, UnitContainer } from 'pages/shared/Unit'
 import { ApplicationState } from 'types/schema'
-import { deposit } from 'state/channels'
+import { deposit, getMyBalance } from 'state/channels'
 import { ChannelState } from 'types/schema'
 import { getWalletStroops } from 'state/wallet'
 import { formatAmount, stroopsToLumens, lumensToStroops } from 'helpers/lumens'
@@ -92,10 +92,10 @@ export class Deposit extends React.Component<Props, State> {
               onBlur={() => {
                 this.setState({
                   formErrors: {
-                    amount: !!this.state.amount && (
-                      parseFloat(this.state.amount) <= 0 ||
-                      !this.walletHasSufficientBalance()
-                    ),
+                    amount:
+                      !!this.state.amount &&
+                      (parseFloat(this.state.amount) <= 0 ||
+                        !this.walletHasSufficientBalance()),
                   },
                 })
               }}
@@ -122,12 +122,11 @@ export class Deposit extends React.Component<Props, State> {
           </HelpBlock>
 
           <HelpBlock isShowing={!!total && this.walletHasSufficientBalance()}>
-            Once this is deposited, your new balance in this channel will{' '}
-            be {
-              formatAmount(
-                stroopsToLumens((this.props.availableBalance + (total || 0)))
-              )
-            } XLM.
+            Once this is deposited, your new balance in this channel will be{' '}
+            {formatAmount(
+              stroopsToLumens(getMyBalance(this.props.channel) + (total || 0))
+            )}{' '}
+            XLM.
           </HelpBlock>
 
           <Label>Transaction Fee</Label>
