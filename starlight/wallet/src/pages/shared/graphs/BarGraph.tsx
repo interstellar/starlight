@@ -5,7 +5,7 @@ import { GraphSegment } from 'pages/shared/graphs/GraphSegment'
 import { DUSTYGRAY } from 'pages/shared/Colors'
 import { Tooltip } from 'pages/shared/Tooltip'
 
-import { formatAmount, stroopsToLumens } from 'helpers/lumens'
+import { stroopsToLumens } from 'helpers/lumens'
 
 const GraphWrapper = styled.span`
   display: flex;
@@ -77,7 +77,7 @@ export class BarGraph extends React.Component<Props> {
             <Label>{this.props.leftLabel || 'Send'}</Label>
           )}
           <SubLabel color={this.props.leftColor}>
-            {formatAmount(stroopsToLumens(this.props.leftAmount))} XLM
+            {stroopsToLumens(this.props.leftAmount)} XLM
           </SubLabel>
         </LabelWrapper>
         <SegmentWrapper>
@@ -105,7 +105,7 @@ export class BarGraph extends React.Component<Props> {
             <Label>{this.props.rightLabel || 'Receive'}</Label>
           )}
           <SubLabel color={this.props.rightColor}>
-            {formatAmount(stroopsToLumens(this.props.rightAmount))} XLM
+            {stroopsToLumens(this.props.rightAmount)} XLM
           </SubLabel>
         </LabelWrapper>
       </GraphWrapper>

@@ -7,7 +7,7 @@ import { Timestamp } from 'pages/shared/Timestamp'
 import { ValueChange } from 'pages/shared/ValueChange'
 import { ChannelOp } from 'types/types'
 import { ChannelState } from 'types/schema'
-import { formatAmount, stroopsToLumens } from 'helpers/lumens'
+import { stroopsToLumens } from 'helpers/lumens'
 import { fromNowPast } from 'helpers/moment'
 
 const Row = styled.tr<{ pending: boolean }>`
@@ -67,13 +67,13 @@ export class ActivityRow extends React.Component<Props, {}> {
           <ValueChange value={op.myDelta} />
         </TableData>
         <TableData align="right" color={DUSTYGRAY}>
-          {formatAmount(stroopsToLumens(op.myBalance + op.myDelta))} XLM
+          {stroopsToLumens(op.myBalance + op.myDelta)} XLM
         </TableData>
         <TableData align="right">
           <ValueChange value={op.theirDelta} />
         </TableData>
         <TableData align="right" color={DUSTYGRAY}>
-          {formatAmount(stroopsToLumens(op.theirBalance + op.theirDelta))} XLM
+          {stroopsToLumens(op.theirBalance + op.theirDelta)} XLM
         </TableData>
       </Row>
     )

@@ -4,7 +4,7 @@ import { Dispatch } from 'redux'
 import styled from 'styled-components'
 
 import { validRecipientAccount } from 'helpers/account'
-import { formatAmount, stroopsToLumens, lumensToStroops } from 'helpers/lumens'
+import { stroopsToLumens, lumensToStroops } from 'helpers/lumens'
 
 import { BtnSubmit } from 'pages/shared/Button'
 import { CORNFLOWER, RADICALRED } from 'pages/shared/Colors'
@@ -125,7 +125,7 @@ export class CreateChannel extends React.Component<Props, State> {
           <Label htmlFor="initialDeposit">Initial Deposit</Label>
           <Hint>
             <strong>
-              {formatAmount(stroopsToLumens(this.props.availableBalance))} XLM
+              {stroopsToLumens(this.props.availableBalance)} XLM
             </strong>{' '}
             available in account
           </Hint>
@@ -157,9 +157,8 @@ export class CreateChannel extends React.Component<Props, State> {
           <HelpBlock
             isShowing={!!this.amount() && !this.walletHasSufficientBalance()}
           >
-            You only have{' '}
-            {formatAmount(stroopsToLumens(this.props.availableBalance))} XLM
-            available in your wallet.
+            You only have {stroopsToLumens(this.props.availableBalance)}{' '}
+            XLM available in your wallet.
           </HelpBlock>
 
           <HalfWidth>

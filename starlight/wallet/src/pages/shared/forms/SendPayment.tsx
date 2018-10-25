@@ -4,7 +4,7 @@ import { connect } from 'react-redux'
 import { Dispatch } from 'redux'
 
 import { usernameToAddress, validRecipientAccount } from 'helpers/account'
-import { formatAmount, stroopsToLumens, lumensToStroops } from 'helpers/lumens'
+import { stroopsToLumens, lumensToStroops } from 'helpers/lumens'
 
 import { BtnSubmit } from 'pages/shared/Button'
 import { Heading } from 'pages/shared/Heading'
@@ -123,18 +123,14 @@ export class SendPayment extends React.Component<Props, State> {
               {hasChannel && (
                 <span>
                   <strong>
-                    {formatAmount(
-                      stroopsToLumens(this.channelBalance() as number)
-                    )}{' '}
+                    {stroopsToLumens(this.channelBalance() as number)}{' '}
                     XLM
                   </strong>{' '}
                   available in channel;{' '}
                 </span>
               )}
               <strong>
-                {formatAmount(
-                  stroopsToLumens(this.props.availableBalance).toString()
-                )}{' '}
+                {stroopsToLumens(this.props.availableBalance)}{' '}
                 XLM
               </strong>{' '}
               available in account
@@ -185,7 +181,7 @@ export class SendPayment extends React.Component<Props, State> {
             }
           >
             You only have{' '}
-            {formatAmount(stroopsToLumens(this.channelBalance() || 0))} XLM
+            {stroopsToLumens(this.channelBalance() || 0)} XLM
             available in this channel. The entire payment will occur on the
             Stellar network from your account instead.
           </HelpBlock>
@@ -199,11 +195,11 @@ export class SendPayment extends React.Component<Props, State> {
           >
             {channelBalance === undefined ||
             this.props.availableBalance > channelBalance
-              ? `You only have ${formatAmount(
-                  stroopsToLumens(this.props.availableBalance)
+              ? `You only have ${stroopsToLumens(
+                  this.props.availableBalance
                 )} XLM available in your wallet.`
-              : `You only have ${formatAmount(
-                  stroopsToLumens(channelBalance)
+              : `You only have ${stroopsToLumens(
+                  channelBalance
                 )} XLM available in this channel.`}
           </HelpBlock>
           <Label>Transaction Fee</Label>

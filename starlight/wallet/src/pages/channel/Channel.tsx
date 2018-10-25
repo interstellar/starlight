@@ -11,7 +11,7 @@ import { ApplicationState } from 'types/schema'
 import { ChannelState } from 'types/schema'
 
 import { fromNowPast } from 'helpers/moment'
-import { formatAmount, stroopsToLumens } from 'helpers/lumens'
+import { stroopsToLumens } from 'helpers/lumens'
 
 import { ConnectedChannelActions } from 'pages/channel/ChannelActions'
 import { ChannelActivityTable } from 'pages/channel/ChannelActivityTable'
@@ -109,7 +109,7 @@ export class Channel extends React.Component<Props, {}> {
           <Detail>
             <DetailLabel>Your Balance</DetailLabel>
             <DetailValue>
-              {formatAmount(stroopsToLumens(sendCapacity))} XLM
+              {stroopsToLumens(sendCapacity)} XLM
             </DetailValue>
           </Detail>
           <Detail>

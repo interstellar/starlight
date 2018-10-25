@@ -15,7 +15,7 @@ import { BarGraph } from 'pages/shared/graphs/BarGraph'
 import { Icon } from 'pages/shared/Icon'
 
 import { getWalletStroops } from 'state/wallet'
-import { formatAmount, lumensToStroops, stroopsToLumens } from 'helpers/lumens'
+import { lumensToStroops, stroopsToLumens } from 'helpers/lumens'
 
 import {
   getNumberOfOpenHostChannels,
@@ -72,24 +72,19 @@ export class WalletBalance extends React.Component<Props, {}> {
       <AvailableWrapper>
         <BalanceContainer>
           <Balance>
-            {formatAmount(stroopsToLumens(this.total(), { short: true }))} XLM{' '}
+            {stroopsToLumens(this.total(), { short: true })} XLM{' '}
             {this.total() === 0 && (
               <LoadingIcon className="fa-pulse" name="spinner" />
             )}
           </Balance>
           {!!this.props.reserve && (
             <Reserve>
-              {formatAmount(
-                stroopsToLumens(
-                  this.props.walletBalance + this.props.channelBalance,
-                  { short: true }
-                )
+              {stroopsToLumens(
+                this.props.walletBalance + this.props.channelBalance,
+                { short: true }
               )}{' '}
               XLM Available +{' '}
-              {formatAmount(
-                stroopsToLumens(this.props.reserve, { short: true })
-              )}{' '}
-              XLM Reserve
+              {stroopsToLumens(this.props.reserve, { short: true })} XLM Reserve
             </Reserve>
           )}
         </BalanceContainer>

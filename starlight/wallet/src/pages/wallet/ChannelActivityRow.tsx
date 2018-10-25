@@ -1,7 +1,7 @@
 import * as React from 'react'
 
 import { validPublicKey } from 'helpers/account'
-import { formatAmount, stroopsToLumens } from 'helpers/lumens'
+import { stroopsToLumens } from 'helpers/lumens'
 
 import { ChannelActivity } from 'types/types'
 
@@ -46,7 +46,7 @@ export class ChannelActivityRow extends React.Component<Props, {}> {
               />
             </TableData>
             <TableData align="right">
-              {formatAmount(stroopsToLumens(Math.abs(op.myDelta)))} XLM
+              {stroopsToLumens(Math.abs(op.myDelta))} XLM
             </TableData>
             <TableData align="right">
               <ValueChange value={-1 * fee} />
@@ -71,7 +71,7 @@ export class ChannelActivityRow extends React.Component<Props, {}> {
               />
             </TableData>
             <TableData align="right">
-              {formatAmount(stroopsToLumens(Math.abs(op.myDelta)))} XLM
+              {stroopsToLumens(Math.abs(op.myDelta))} XLM
             </TableData>
             <TableData align="right">
               <ValueChange value={fee} />

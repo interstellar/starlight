@@ -4,7 +4,7 @@ import styled from 'styled-components'
 import { GraphSegment } from 'pages/shared/graphs/GraphSegment'
 import { ALTO, CORNFLOWER, EBONYCLAY } from 'pages/shared/Colors'
 
-import { formatAmount, stroopsToLumens } from 'helpers/lumens'
+import { stroopsToLumens } from 'helpers/lumens'
 
 const GraphWrapper = styled.span`
   align-items: center;
@@ -62,10 +62,7 @@ export class MiniBarGraph extends React.Component<Props> {
       <GraphWrapper>
         <SegmentWrapper position="flex-end">
           <Label color={CORNFLOWER}>
-            {formatAmount(
-              stroopsToLumens(this.props.leftAmount, { short: true })
-            )}{' '}
-            XLM
+            {stroopsToLumens(this.props.leftAmount, { short: true })} XLM
           </Label>
           <GraphSegment
             color={CORNFLOWER}
@@ -85,10 +82,7 @@ export class MiniBarGraph extends React.Component<Props> {
             width={this.calculatePercentage(this.props.rightAmount)}
           />
           <Label color={EBONYCLAY}>
-            {formatAmount(
-              stroopsToLumens(this.props.rightAmount, { short: true })
-            )}{' '}
-            XLM
+            {stroopsToLumens(this.props.rightAmount, { short: true })} XLM
           </Label>
         </SegmentWrapper>
       </GraphWrapper>
