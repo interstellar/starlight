@@ -25,5 +25,5 @@ export const lumensToStroops = (lumens: number) => {
 }
 
 export const formatAmount = (amount: string) => {
-  return Number(amount).toLocaleString()
+  return Number(amount).toLocaleString(undefined, { maximumFractionDigits: 7 })
 }
