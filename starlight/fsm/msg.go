@@ -177,10 +177,17 @@ func (u *Updater) handlePaymentAcceptMsg(m *Message) error {
 		return errors.Wrap(err, "ratchet tx")
 	}
 
-	hostTx, err := buildSettleWithHostTx(u.C, u.C.PendingPaymentTime)
+	var hostTx *b.TransactionBuilder
+
+	if u.C.GuestAmount == 0 {
+		hostTx, err = buildSettleOnlyWithHostTx(u.C, u.C.PendingPaymentTime)
+	} else {
+		hostTx, err = buildSettleWithHostTx(u.C, u.C.PendingPaymentTime)
+	}
 	if err != nil {
 		return err
 	}
+
 	if err = verifySig(hostTx, recipientKey, accept.RecipientSettleWithHostSig); err != nil {
 		return errors.Wrap(err, "settle with host tx")
 	}
@@ -293,7 +300,7 @@ func (u *Updater) handleChannelAcceptMsg(m *Message) error {
 	// Set current ratchet tx
 	u.C.signRatchetTx(ratchetTx, accept.GuestRatchetRound1Sig, u.Seed)
 
-	settleOnlyWithHostTx, err := buildSettleOnlyWithHostTx(u.C)
+	settleOnlyWithHostTx, err := buildSettleOnlyWithHostTx(u.C, u.C.FundingTime)
 	if err != nil {
 		return err
 	}
@@ -362,7 +369,7 @@ func (u *Updater) handlePaymentProposeMsg(m *Message) error {
 			log.Printf("dropped message: %s", errUnusedSettleWithGuestSig)
 			return errUnusedSettleWithGuestSig
 		}
-		settleWithHostTx, err = buildSettleOnlyWithHostTx(&ch2)
+		settleWithHostTx, err = buildSettleOnlyWithHostTx(&ch2, payment.PaymentTime)
 		if err != nil {
 			log.Printf("dropped message: error building SettleOnlyWithHostTx %s", err)
 			return err

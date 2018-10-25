@@ -230,7 +230,7 @@ func createPaymentProposeMsg(seed []byte, ch *Channel) (*Message, error) {
 
 	var settleWithHostSig, settleWithGuestSig xdr.DecoratedSignature
 	if ch2.GuestAmount == 0 {
-		settleOnlyWithHostTx, err := buildSettleOnlyWithHostTx(&ch2)
+		settleOnlyWithHostTx, err := buildSettleOnlyWithHostTx(&ch2, ch2.PendingPaymentTime)
 		if err != nil {
 			return nil, err
 		}
@@ -344,7 +344,7 @@ func sendPaymentAcceptMsg(seed []byte, ch *Channel, o Outputter) error {
 }
 
 func createChannelAcceptMsg(seed []byte, ch *Channel, ledgerTime time.Time) (*Message, error) {
-	settleOnlyWithHostTx, err := buildSettleOnlyWithHostTx(ch)
+	settleOnlyWithHostTx, err := buildSettleOnlyWithHostTx(ch, ch.FundingTime)
 	if err != nil {
 		return nil, err
 	}

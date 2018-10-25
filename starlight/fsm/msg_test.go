@@ -434,23 +434,14 @@ func TestHandlePaymentAcceptMessage(t *testing.T) {
 			wantErr: keypair.ErrInvalidSignature,
 			sender:  Host,
 		},
+		// TODO: test empty signatures when guest has zero balance properly
 		{
-			name: "host zero guest balance not-nil sig",
+			name: "host wrong kind of settle with host tx",
 			chFunc: func(ch *Channel) {
 				ch.GuestAmount = -1 * xlm.Microlumen
 				ch.PendingAmountSent = 1 * xlm.Microlumen
 			},
-			wantErr: errUnusedSettleWithGuestSig,
-			sender:  Host,
-		},
-		{
-			name: "host zero guest balance nil sig",
-			chFunc: func(ch *Channel) {
-				ch.GuestAmount = -1 * xlm.Microlumen
-				ch.PendingAmountSent = 1 * xlm.Microlumen
-			},
-			msgFunc: func(m *PaymentAcceptMsg) { m.RecipientSettleWithGuestSig = nil },
-			wantErr: nil,
+			wantErr: keypair.ErrInvalidSignature,
 			sender:  Host,
 		},
 		{
@@ -504,25 +495,6 @@ func TestHandlePaymentAcceptMessage(t *testing.T) {
 			name:    "guest wrong settle with host sig",
 			msgFunc: func(m *PaymentAcceptMsg) { m.RecipientSettleWithHostSig = m.RecipientRatchetSig },
 			wantErr: keypair.ErrInvalidSignature,
-			sender:  Guest,
-		},
-		{
-			name: "guest zero guest balance not nil sig",
-			chFunc: func(ch *Channel) {
-				ch.GuestAmount = 1 * xlm.Microlumen
-				ch.PendingAmountSent = 1 * xlm.Microlumen
-			},
-			wantErr: errUnusedSettleWithGuestSig,
-			sender:  Guest,
-		},
-		{
-			name: "guest zero guest balance nil sig",
-			chFunc: func(ch *Channel) {
-				ch.GuestAmount = 1 * xlm.Microlumen
-				ch.PendingAmountSent = 1 * xlm.Microlumen
-			},
-			msgFunc: func(m *PaymentAcceptMsg) { m.RecipientSettleWithGuestSig = nil },
-			wantErr: nil,
 			sender:  Guest,
 		},
 	}

@@ -43,8 +43,8 @@ func buildSetupAccountTx(ch *Channel, account AccountID, seqnum xdr.SequenceNumb
 	return tb, err
 }
 
-func buildSettleOnlyWithHostTx(ch *Channel) (*b.TransactionBuilder, error) {
-	minTime := uint64(ch.FundingTime.Add(2 * ch.FinalityDelay).Add(ch.MaxRoundDuration).Unix())
+func buildSettleOnlyWithHostTx(ch *Channel, paymentTime time.Time) (*b.TransactionBuilder, error) {
+	minTime := uint64(paymentTime.Add(2 * ch.FinalityDelay).Add(ch.MaxRoundDuration).Unix())
 	if minTime > math.MaxInt64 {
 		return nil, checked.ErrOverflow
 	}

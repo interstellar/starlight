@@ -91,7 +91,7 @@ func TestBuildAndSignSettlementTxes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tx, err := buildSettleOnlyWithHostTx(ch)
+	tx, err := buildSettleOnlyWithHostTx(ch, time.Now())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -522,7 +522,7 @@ func TestVerifyTxSig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	builder, err := buildSettleOnlyWithHostTx(ch)
+	builder, err := buildSettleOnlyWithHostTx(ch, time.Now())
 	if err != nil {
 		t.Fatal(err)
 	}
