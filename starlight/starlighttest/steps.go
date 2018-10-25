@@ -155,7 +155,7 @@ func channelCreationSteps(alice, bob *Starlightd, maxRoundDurMin, finalityDelayM
 				Type:      update.AccountType,
 				UpdateNum: 2,
 			},
-			delta:       10000 * xlm.Lumen,
+			delta:       10000*xlm.Lumen - hostFeerate,
 			checkLedger: true,
 		}, {
 			name:  "bob wallet funding update",
@@ -166,7 +166,7 @@ func channelCreationSteps(alice, bob *Starlightd, maxRoundDurMin, finalityDelayM
 				Type:      update.AccountType,
 				UpdateNum: 2,
 			},
-			delta:       10000 * xlm.Lumen,
+			delta:       10000*xlm.Lumen - hostFeerate,
 			checkLedger: true,
 		}, {
 			name:  "bob create channel with alice",
