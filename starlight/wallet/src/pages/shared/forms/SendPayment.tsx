@@ -36,9 +36,9 @@ const Form = styled.form`
 interface State {
   amount: string
   formErrors: {
-    amount: boolean,
+    amount: boolean
     recipient: boolean
-  },
+  }
   loading: boolean
   recipient: string
   showError: boolean
@@ -146,11 +146,11 @@ export class SendPayment extends React.Component<Props, State> {
               onBlur={() => {
                 this.setState({
                   formErrors: {
-                    amount: !!this.state.amount && (
-                      parseFloat(this.state.amount) <= 0 ||
-                      !validAmount ||
-                      !this.walletHasSufficientBalance()
-                    ),
+                    amount:
+                      !!this.state.amount &&
+                      (parseFloat(this.state.amount) <= 0 ||
+                        !validAmount ||
+                        !this.walletHasSufficientBalance()),
                     recipient: this.state.formErrors.recipient,
                   },
                 })
@@ -174,6 +174,7 @@ export class SendPayment extends React.Component<Props, State> {
           </HelpBlock>
           <HelpBlock
             isShowing={
+              hasChannel &&
               !hasChannelWithSufficientBalance &&
               this.walletHasSufficientBalance()
             }
