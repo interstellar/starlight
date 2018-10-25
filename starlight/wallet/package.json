@@ -20,7 +20,6 @@
     "@fortawesome/fontawesome-svg-core": "^1.2.1",
     "@fortawesome/free-solid-svg-icons": "^5.1.1",
     "@fortawesome/react-fontawesome": "^0.1.0",
-    "@types/big.js": "^4.0.5",
     "babel-polyfill": "~6.16.0",
     "big.js": "^5.2.2",
     "connected-react-router": "^4.3.0",
