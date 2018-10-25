@@ -656,8 +656,8 @@ func (g *Agent) Authenticate(name, password string) bool {
 }
 
 const (
-	defaultMaxRoundDurMin   = 24 * 60
-	defaultFinalityDelayMin = 4 * 60
+	defaultMaxRoundDurMin   = 60
+	defaultFinalityDelayMin = 60
 	defaultChannelFeerate   = 10 * xlm.Millilumen
 	defaultHostFeerate      = 100 * xlm.Stroop
 )
