@@ -62,7 +62,7 @@ export class MiniBarGraph extends React.Component<Props> {
       <GraphWrapper>
         <SegmentWrapper position="flex-end">
           <Label color={CORNFLOWER}>
-            {stroopsToLumens(this.props.leftAmount, { short: true })} XLM
+            {stroopsToLumens(this.props.leftAmount)} XLM
           </Label>
           <GraphSegment
             color={CORNFLOWER}
@@ -82,7 +82,7 @@ export class MiniBarGraph extends React.Component<Props> {
             width={this.calculatePercentage(this.props.rightAmount)}
           />
           <Label color={EBONYCLAY}>
-            {stroopsToLumens(this.props.rightAmount, { short: true })} XLM
+            {stroopsToLumens(this.props.rightAmount)} XLM
           </Label>
         </SegmentWrapper>
       </GraphWrapper>
