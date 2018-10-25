@@ -85,7 +85,7 @@ Starlight provides a simple lumen wallet, which manages an account that is funde
 
 The wallet gives you a Stellar address, e.g., "alice\*localhost:7000".
 
-You can use this wallet to make on-network payments to users' Stellar addresses (i.e., alice@stellar.org) or their Stellar account IDs (e.g., GAIH3ULLFQ4DGSECF2AR555KZ4KNDGEKN4AFI4SU2M7B43MGK3QJZNSR).
+You can use this wallet to make on-network payments to users' Stellar addresses (i.e., alice\*stellar.org) or their Stellar account IDs (e.g., GAIH3ULLFQ4DGSECF2AR555KZ4KNDGEKN4AFI4SU2M7B43MGK3QJZNSR).
 
 Try having Alice send a 100 XLM payment to Bob.
 
@@ -153,7 +153,7 @@ $ open http://localhost:5000
 To run a second development wallet on port 5001, connecting to a `starlightd` running on port 7001:
 
 ```sh
-$ PORT=5001 STARLIGHTD_URL=http://localhost:7001 npm run start
+$ PORT=5001 STARLIGHTD_URL=http://localhost:7001 npm start
 ```
 
 ### Running tests
@@ -165,7 +165,7 @@ To run the Starlight server unit tests:
 
 ```sh
 $ cd $I10R/starlight
-$ go test ./...
+$ go test -short ./...
 ```
 
 To run the Starlight wallet unit tests:
