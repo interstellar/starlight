@@ -17,7 +17,11 @@ export const stroopsToLumens = (stroops: number, options: any = {}) => {
 }
 
 export const lumensToStroops = (lumens: number) => {
-  return Math.floor(lumens * 10000000)
+  return Math.floor(
+    Number(
+      Big(lumens).times(Big(10000000))
+    )
+  )
 }
 
 export const formatAmount = (amount: string) => {
