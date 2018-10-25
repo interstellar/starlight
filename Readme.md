@@ -2,7 +2,7 @@
 
 # Starlight
 
-Starlight is a demo implementation of payment channels on Stellar.
+Starlight is a demo implementation of payment channels on [Stellar](https://stellar.org/).
 
 Payment channels allow parties to transact privately, instantly, and securely, while paying zero fees. They are also a first step toward constructing and connecting to payment channel networks like [Lightning](https://lightning.network/) and [Interledger](https://interledger.org/).
 
