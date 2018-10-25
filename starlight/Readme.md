@@ -15,10 +15,15 @@ If you encounter any bugs, want to request a feature, or have any questions abou
 **Please note that this software is still in development and will likely contain multiple security and functional bugs and issues. This code is for testing only on the Stellar testnet. It is not compatible with the Stellar mainnet. Attempting to modify it for use on the Stellar mainnet may result in permanent XLM loss. Any use of this software is strictly at your own risk, and we will not be liable for any losses or damages.**
 
 - [Starlight](#starlight)
+    - [Demo](#demo)
     - [Setup](#setup)
     - [Tutorial](#tutorial)
     - [Development](#development)
     - [Roadmap](#roadmap)
+
+## Demo
+
+![Demo](doc/images/demo.gif)
 
 ## Setup
 
