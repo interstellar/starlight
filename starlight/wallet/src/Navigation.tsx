@@ -14,9 +14,10 @@ import {
   CORNFLOWER,
   CORNFLOWER_DARK,
   EBONYCLAY,
-  WHITE,
   WILDSAND,
 } from 'pages/shared/Colors'
+
+const NAV_WIDTH = '243px;'
 
 const Container = styled.div`
   background: ${WILDSAND};
@@ -33,7 +34,7 @@ const Links = styled.div`
 const LogoLink = styled(Link)`
   background: ${CORNFLOWER_DARK};
   display: block;
-  padding: 45px 0;
+  padding: 50px 40px 30px 40px;
   text-decoration: none;
 `
 const Nav = styled.div`
@@ -42,7 +43,7 @@ const Nav = styled.div`
   flex-direction: column;
   min-height: 100vh;
   position: fixed;
-  width: 200px;
+  width: ${NAV_WIDTH};
 `
 const NavLink = styled(ReactNavLink)`
   color: white;
@@ -59,17 +60,10 @@ const NavLink = styled(ReactNavLink)`
 const NavIcon = styled(Icon)`
   margin-right: 10px;
 `
-const Preview = styled.span`
-  color: ${WHITE};
-  display: inline-block;
-  font-size: 12px;
-  text-align: center;
-  width: 100%;
-`
 const View = styled.div`
   background: ${WILDSAND};
   flex: 1;
-  margin-left: 200px;
+  margin-left: ${NAV_WIDTH};
   min-height: 100vh;
 `
 
@@ -99,7 +93,6 @@ export class Navigation extends React.Component<{}, {}> {
           <Links>
             <LogoLink to="/">
               <Logo />
-              <Preview>developer preview</Preview>
             </LogoLink>
             <NavLink to="/wallet" activeStyle={{ color: CORNFLOWER }}>
               <NavIcon name="wallet" />

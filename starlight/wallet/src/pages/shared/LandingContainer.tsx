@@ -5,6 +5,6 @@ import { EBONYCLAY } from 'pages/shared/Colors'
 export const LandingContainer = styled.div`
   color: ${EBONYCLAY};
   display: block;
-  margin: 90px auto;
+  margin: 100px auto;
   width: 600px;
 `
