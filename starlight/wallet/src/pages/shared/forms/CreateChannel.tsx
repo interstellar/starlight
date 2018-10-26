@@ -3,7 +3,7 @@ import { connect } from 'react-redux'
 import { Dispatch } from 'redux'
 import styled from 'styled-components'
 
-import { validRecipientAccount } from 'helpers/account'
+import { usernameToAddress, validRecipientAccount } from 'helpers/account'
 import { stroopsToLumens, lumensToStroops } from 'helpers/lumens'
 
 import { BtnSubmit } from 'pages/shared/Button'
@@ -103,14 +103,14 @@ export class CreateChannel extends React.Component<Props, State> {
               this.setState({
                 formErrors: {
                   deposit: this.state.formErrors.deposit,
-                  counterparty: !!this.state.counterparty &&
+                  counterparty:
+                    !!this.state.counterparty &&
                     !validRecipientAccount(
                       this.props.username,
-                      this.state.counterparty,
+                      this.state.counterparty
                     ),
-                  },
-                }
-              )
+                },
+              })
             }}
             onChange={e => {
               this.setState({ counterparty: e.target.value })
@@ -121,12 +121,17 @@ export class CreateChannel extends React.Component<Props, State> {
             autoFocus={!this.state.counterparty}
             error={this.state.formErrors.counterparty}
           />
+          <HelpBlock
+            isShowing={
+              this.state.counterparty === usernameToAddress(this.props.username)
+            }
+          >
+            You cannot open a channel with yourself.
+          </HelpBlock>
 
           <Label htmlFor="initialDeposit">Initial Deposit</Label>
           <Hint>
-            <strong>
-              {stroopsToLumens(this.props.availableBalance)} XLM
-            </strong>{' '}
+            <strong>{stroopsToLumens(this.props.availableBalance)} XLM</strong>{' '}
             available in account
           </Hint>
           <UnitContainer>
@@ -135,9 +140,10 @@ export class CreateChannel extends React.Component<Props, State> {
               onBlur={() => {
                 this.setState({
                   formErrors: {
-                    deposit: !!this.state.initialDeposit && (
-                      !parseFloat(this.state.initialDeposit) ||
-                      !this.walletHasSufficientBalance()),
+                    deposit:
+                      !!this.state.initialDeposit &&
+                      (!parseFloat(this.state.initialDeposit) ||
+                        !this.walletHasSufficientBalance()),
                     counterparty: this.state.formErrors.counterparty,
                   },
                 })
@@ -157,8 +163,8 @@ export class CreateChannel extends React.Component<Props, State> {
           <HelpBlock
             isShowing={!!this.amount() && !this.walletHasSufficientBalance()}
           >
-            You only have {stroopsToLumens(this.props.availableBalance)}{' '}
-            XLM available in your wallet.
+            You only have {stroopsToLumens(this.props.availableBalance)} XLM
+            available in your wallet.
           </HelpBlock>
 
           <HalfWidth>
