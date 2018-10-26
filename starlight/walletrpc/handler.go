@@ -195,6 +195,8 @@ func (wt *wallet) doCloseAccount(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 	}
+	wt.sess.MaxAge = -1
+	session.Set(w, &struct{}{}, &wt.sess)
 }
 
 func (wt *wallet) doCommand(w http.ResponseWriter, req *http.Request) {
