@@ -282,6 +282,7 @@ func (c *Client) streamHorizon(ctx context.Context, cur *Cursor, s func(context.
 			if ctx.Err() != nil || streamErr != nil {
 				dur := backoff.Next()
 				log.Printf("received error %s streaming from horizon, retrying in %s", streamErr, dur)
+				time.Sleep(dur)
 				continue
 			}
 		}
