@@ -8,9 +8,25 @@ import thunk from 'redux-thunk'
 import { rootReducer } from 'reducers'
 import { ApplicationState } from 'types/schema'
 
+// increment this number to force a refresh on the client
+// i.e. - when making a breaking change to our Redux structure
+const REDUX_STORE_VERSION = 1
+
 const persistConfig = {
   key: 'root',
   storage,
+  version: REDUX_STORE_VERSION,
+  migrate: (state: any) => {
+    if (state._persist.version !== REDUX_STORE_VERSION) {
+      return Promise.resolve({
+        config: state.config,
+        lifecycle: state.lifecycle,
+        _persist: state._persist,
+      })
+    } else {
+      return Promise.resolve(state)
+    }
+  },
 }
 
 const persistedReducer = persistReducer(persistConfig, rootReducer)
