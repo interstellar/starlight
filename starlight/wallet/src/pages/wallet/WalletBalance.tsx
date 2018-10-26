@@ -14,7 +14,6 @@ import {
 import { BarGraph } from 'pages/shared/graphs/BarGraph'
 import { Icon } from 'pages/shared/Icon'
 
-import { getWalletStroops } from 'state/wallet'
 import { lumensToStroops, stroopsToLumens } from 'helpers/lumens'
 
 import {
@@ -112,14 +111,14 @@ export class WalletBalance extends React.Component<Props, {}> {
 }
 
 const mapStateToProps = (state: ApplicationState) => {
-  const walletAccountExists = getWalletStroops(state) !== 0
+  const walletAccountExists = state.wallet.Balance !== 0
   const walletReserve = walletAccountExists ? lumensToStroops(1) : 0
 
   return {
     reserve:
       getNumberOfOpenHostChannels(state) * lumensToStroops(5.08) +
       walletReserve,
-    walletBalance: getWalletStroops(state) - walletReserve,
+    walletBalance: state.wallet.Balance - walletReserve,
     channelBalance: getTotalChannelBalance(state),
   }
 }

@@ -113,17 +113,7 @@ const reducer: Reducer<WalletState> = (
 }
 
 // selectors
-
-export const getWalletState = (state: ApplicationState) => state.wallet
-
-export const getWalletStroops = (state: ApplicationState) => {
-  const walletState = getWalletState(state)
-  return walletState.Balance
-}
-
-export const getWalletActivities = (
-  state: ApplicationState
-): WalletActivity[] => {
+const getActivities = (state: ApplicationState): WalletActivity[] => {
   const walletOps = state.wallet.Ops
   return walletOps.map(op => {
     const pending = op.type === 'outgoingPayment' && op.pending
@@ -137,14 +127,8 @@ export const getWalletActivities = (
   })
 }
 
-// asynchronous
-
 // Side effects
-export const send = async (
-  dispatch: Dispatch,
-  recipient: string,
-  amount: number
-) => {
+const send = async (dispatch: Dispatch, recipient: string, amount: number) => {
   if (validAddress(recipient)) {
     const address = recipient
     // look up Stellar account for address
@@ -172,5 +156,7 @@ export const send = async (
 }
 
 export const wallet = {
+  getActivities,
   reducer,
+  send,
 }

@@ -17,7 +17,6 @@ import { Total } from 'pages/shared/Total'
 import { Unit, UnitContainer } from 'pages/shared/Unit'
 
 import { ApplicationState } from 'types/schema'
-import { getWalletStroops } from 'state/wallet'
 import { createChannel } from 'state/channels'
 
 const Amount = styled.div`
@@ -269,7 +268,7 @@ export class CreateChannel extends React.Component<Props, State> {
 
 const mapStateToProps = (state: ApplicationState) => {
   return {
-    availableBalance: getWalletStroops(state),
+    availableBalance: state.wallet.Balance,
     username: state.config.Username,
   }
 }

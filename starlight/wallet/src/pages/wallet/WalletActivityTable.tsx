@@ -9,8 +9,8 @@ import { ChannelActivityRow } from 'pages/wallet/ChannelActivityRow'
 import { Table, TableHeaderRow, TableHeader } from 'pages/shared/Table'
 import { WalletActivityRow } from 'pages/wallet/WalletActivityRow'
 
-import { getWalletActivities } from 'state/wallet'
 import { getChannelActivity } from 'state/channels'
+import { wallet } from 'state/wallet'
 
 interface Props {
   activity: Activity[]
@@ -52,7 +52,7 @@ const mapStateToProps = (state: ApplicationState) => {
   // aggregate activity across channels and wallet
   const chans = Object.values(state.channels)
   const channelActivityArrays = chans.map(getChannelActivity)
-  const walletActivity = getWalletActivities(state)
+  const walletActivity = wallet.getActivities(state)
   const activities = ([] as Activity[]).concat(
     ...channelActivityArrays,
     walletActivity

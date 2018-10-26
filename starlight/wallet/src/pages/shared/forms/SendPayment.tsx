@@ -15,8 +15,9 @@ import { Total } from 'pages/shared/Total'
 import { TransactionFee } from 'pages/shared/TransactionFee'
 import { Unit, UnitContainer } from 'pages/shared/Unit'
 import { RADICALRED, SEAFOAM } from 'pages/shared/Colors'
+
+import { wallet } from 'state/wallet'
 import { ApplicationState, ChannelsState } from 'types/schema'
-import { getWalletStroops, send } from 'state/wallet'
 
 import {
   channelPay,
@@ -123,15 +124,13 @@ export class SendPayment extends React.Component<Props, State> {
               {hasChannel && (
                 <span>
                   <strong>
-                    {stroopsToLumens(this.channelBalance() as number)}{' '}
-                    XLM
+                    {stroopsToLumens(this.channelBalance() as number)} XLM
                   </strong>{' '}
                   available in channel;{' '}
                 </span>
               )}
               <strong>
-                {stroopsToLumens(this.props.availableBalance)}{' '}
-                XLM
+                {stroopsToLumens(this.props.availableBalance)} XLM
               </strong>{' '}
               available in account
             </Hint>
@@ -163,9 +162,11 @@ export class SendPayment extends React.Component<Props, State> {
             {/* TODO: validate this is a number, and not more than the wallet balance */}
             <Unit>XLM</Unit>
           </UnitContainer>
-          <HelpBlock isShowing={
-            this.state.recipient === usernameToAddress(this.props.username)
-          }>
+          <HelpBlock
+            isShowing={
+              this.state.recipient === usernameToAddress(this.props.username)
+            }
+          >
             You cannot send payments to yourself.
           </HelpBlock>
           <HelpBlock isShowing={!hasChannel && this.recipientIsValid()}>
@@ -180,8 +181,7 @@ export class SendPayment extends React.Component<Props, State> {
               this.walletHasSufficientBalance()
             }
           >
-            You only have{' '}
-            {stroopsToLumens(this.channelBalance() || 0)} XLM
+            You only have {stroopsToLumens(this.channelBalance() || 0)} XLM
             available in this channel. The entire payment will occur on the
             Stellar network from your account instead.
           </HelpBlock>
@@ -350,7 +350,7 @@ export class SendPayment extends React.Component<Props, State> {
 
 const mapStateToProps = (state: ApplicationState) => {
   return {
-    availableBalance: getWalletStroops(state),
+    availableBalance: state.wallet.Balance,
     channels: state.channels,
     counterpartyAccounts: getCounterpartyAccounts(state),
     username: state.config.Username,
@@ -360,7 +360,7 @@ const mapStateToProps = (state: ApplicationState) => {
 const mapDispatchToProps = (dispatch: Dispatch) => {
   return {
     walletPay: (recipient: string, amount: number) => {
-      return send(dispatch, recipient, amount)
+      return wallet.send(dispatch, recipient, amount)
     },
     channelPay: (id: string, amount: number) => {
       return channelPay(dispatch, id, amount)

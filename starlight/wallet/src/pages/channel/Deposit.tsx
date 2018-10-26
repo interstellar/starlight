@@ -15,7 +15,6 @@ import { Unit, UnitContainer } from 'pages/shared/Unit'
 import { ApplicationState } from 'types/schema'
 import { deposit, getMyBalance } from 'state/channels'
 import { ChannelState } from 'types/schema'
-import { getWalletStroops } from 'state/wallet'
 import { stroopsToLumens, lumensToStroops } from 'helpers/lumens'
 
 const View = styled.div`
@@ -80,9 +79,7 @@ export class Deposit extends React.Component<Props, State> {
           <div>
             <Label htmlFor="amount">Amount</Label>
             <Hint>
-              <strong>
-                {stroopsToLumens(this.props.availableBalance)}
-              </strong>{' '}
+              <strong>{stroopsToLumens(this.props.availableBalance)}</strong>{' '}
               XLM available in account
             </Hint>
           </div>
@@ -116,16 +113,14 @@ export class Deposit extends React.Component<Props, State> {
               amount !== undefined && !this.walletHasSufficientBalance()
             }
           >
-            You only have{' '}
-            {stroopsToLumens(this.props.availableBalance)} XLM
+            You only have {stroopsToLumens(this.props.availableBalance)} XLM
             available in your wallet.
           </HelpBlock>
 
           <HelpBlock isShowing={!!total && this.walletHasSufficientBalance()}>
             Once this is deposited, your new balance in this channel will be{' '}
-            {stroopsToLumens(
-              getMyBalance(this.props.channel) + (total || 0)
-            )} XLM.
+            {stroopsToLumens(getMyBalance(this.props.channel) + (total || 0))}{' '}
+            XLM.
           </HelpBlock>
 
           <Label>Transaction Fee</Label>
@@ -210,7 +205,7 @@ export class Deposit extends React.Component<Props, State> {
 
 const mapStateToProps = (state: ApplicationState) => {
   return {
-    availableBalance: getWalletStroops(state),
+    availableBalance: state.wallet.Balance,
   }
 }
 
