@@ -373,6 +373,9 @@ func (c *Client) stream(
 		if err != nil {
 			return errors.Wrap(err, "Error sending HTTP request")
 		}
+		if resp.StatusCode/100 != 2 {
+			return fmt.Errorf("Got bad HTTP status code %d", resp.StatusCode)
+		}
 		defer resp.Body.Close()
 
 		reader := bufio.NewReader(resp.Body)

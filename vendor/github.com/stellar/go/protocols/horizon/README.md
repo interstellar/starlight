@@ -13,6 +13,14 @@ For each new version we will only track changes from the previous version.
 
 ## Changes
 
+### 0.15.0 Release candidate
+
+#### Changes
+
+- Trades: the trade resource now has both `base_offer_id` and `counter_offer_id` properties which relate to the 
+respective side of the trade. The current `offer_id`, which related to the "sell" offer, remains for backward 
+compatibility.
+
 ### 0.14.0 Release candidate
 
 #### SDKs with full support

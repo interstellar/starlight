@@ -27,7 +27,7 @@ func (a *Asset) SetCredit(code string, issuer AccountId) error {
 	case length >= 5 && length <= 12:
 		newbody := AssetAlphaNum12{Issuer: issuer}
 		copy(newbody.AssetCode[:], []byte(code)[:length])
-		typ = AssetTypeAssetTypeCreditAlphanum4
+		typ = AssetTypeAssetTypeCreditAlphanum12
 		body = newbody
 	default:
 		return errors.New("Asset code length is invalid")

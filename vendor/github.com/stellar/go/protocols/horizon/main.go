@@ -273,11 +273,13 @@ type Trade struct {
 	PT                 string    `json:"paging_token"`
 	LedgerCloseTime    time.Time `json:"ledger_close_time"`
 	OfferID            string    `json:"offer_id"`
+	BaseOfferID        string    `json:"base_offer_id"`
 	BaseAccount        string    `json:"base_account"`
 	BaseAmount         string    `json:"base_amount"`
 	BaseAssetType      string    `json:"base_asset_type"`
 	BaseAssetCode      string    `json:"base_asset_code,omitempty"`
 	BaseAssetIssuer    string    `json:"base_asset_issuer,omitempty"`
+	CounterOfferID     string    `json:"counter_offer_id"`
 	CounterAccount     string    `json:"counter_account"`
 	CounterAmount      string    `json:"counter_amount"`
 	CounterAssetType   string    `json:"counter_asset_type"`

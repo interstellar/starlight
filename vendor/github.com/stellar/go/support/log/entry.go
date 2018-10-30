@@ -1,6 +1,7 @@
 package log
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 
@@ -9,6 +10,28 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stellar/go/support/errors"
 )
+
+// Ctx appends all fields from `e` to the new logger created from `ctx`
+// logger and returns it.
+func (e *Entry) Ctx(ctx context.Context) *Entry {
+	if ctx == nil {
+		return e
+	}
+
+	found := ctx.Value(&loggerContextKey)
+	if found == nil {
+		return e
+	}
+
+	entry := found.(*Entry)
+
+	// Copy all fields from e to entry
+	for key, value := range e.Data {
+		entry = entry.WithField(key, value)
+	}
+
+	return entry
+}
 
 func (e *Entry) SetLevel(level logrus.Level) {
 	e.Logger.Level = level
