@@ -110,6 +110,9 @@ type Agent struct {
 
 	db *bolt.DB // doubles as a mutex for the fields in this struct
 
+	// Channel to indicate when testnet faucet funds returns successfully
+	wallet chan struct{}
+
 	// Maps Starlight channel IDs to cancellation functions.
 	// Call the cancellation function to stop the goroutines associated with the channel.
 	cancelers map[string]context.CancelFunc
@@ -151,6 +154,7 @@ func StartAgent(ctx context.Context, boltDB *bolt.DB) (*Agent, error) {
 		wg:         new(sync.WaitGroup),
 		rootCtx:    ctx,
 		rootCancel: cancel,
+		wallet:     make(chan struct{}),
 	}
 
 	g.evcond.L = new(sync.Mutex)
@@ -409,6 +413,16 @@ func (g *Agent) isReadyFunded(root *db.Root) bool {
 // When such transactions hit the ledger,
 // it reports an *Update back for the client to consume.
 func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
+	// Wait until getTestnetFaucetFunds returns successfully
+
+	select {
+	// Block until accounts are ready to be watched
+	case <-g.wallet:
+		break
+	case <-g.rootCtx.Done():
+		return
+	}
+
 	err := g.wclient.StreamTxs(g.rootCtx, acctID, cursor, func(htx worizon.Tx) error {
 		InputTx, err := fsm.NewTx(&htx)
 		if err != nil {
@@ -568,6 +582,7 @@ func (g *Agent) getTestnetFaucetFunds(acctID fsm.AccountID) {
 	// On failure, it reports the result as an *Update for the
 	// client to consume.
 	backoff := &net.Backoff{Base: 100 * time.Millisecond}
+	defer close(g.wallet)
 
 	for i := 0; i < 5; i++ {
 		resp, err := g.httpclient.Get("https://friendbot.stellar.org/?addr=" + acctID.Address())
@@ -604,6 +619,8 @@ func (g *Agent) getTestnetFaucetFunds(acctID fsm.AccountID) {
 		}
 		return
 	}
+	// TODO(vniu): stop the watchWalletAcct goroutine and potentially
+	// exit the agent when getting testnet faucet funds fails.
 	db.Update(g.db, func(root *db.Root) error {
 		g.putUpdate(root, &Update{
 			Type:    update.WarningType,
