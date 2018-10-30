@@ -186,6 +186,11 @@ func TestHandleRatchetTx(t *testing.T) {
 	if !ok {
 		t.Fatal("handleRatchetTx returned not-ok status")
 	}
+	u.C.Role = Host
+	_, err = handleRatchetTx(u, tx, false)
+	if err != errRatchetTxFailed {
+		t.Fatal("handleRatchetTx succeeded with success==false")
+	}
 }
 
 func TestHandleFundingTx(t *testing.T) {

@@ -169,7 +169,8 @@ func (t *TbTx) Run(ctx context.Context) error {
 					return nil
 				})
 				if err != nil {
-					log.Fatalf("unreserving wallet funds after unretriable tx failure: %s", err)
+					log.Printf("unreserving wallet funds after unretriable tx failure: %s", err)
+					t.g.mustDeauthenticate()
 				}
 				return nil // will not retry
 			}

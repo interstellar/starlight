@@ -73,6 +73,7 @@ var (
 	errUnexpectedState = errors.New("unexpected state")
 	errNoSeed          = errors.New("fsm: seed required")
 	errNoMatch         = errors.New("did not recognize transaction")
+	errRatchetTxFailed = errors.New("ratchet tx failed")
 )
 
 func handleSetupAccountTx(u *Updater, tx *Tx, success bool) (bool, error) {
@@ -269,7 +270,8 @@ func handleRatchetTx(u *Updater, ptx *Tx, success bool) (bool, error) {
 		if u.C.Role == role {
 			// It's my ratchet tx.
 			if !success {
-				log.Fatalf("unexpected failure on submitted ratchet tx, channel %s", string(u.C.ID))
+				log.Printf("unexpected failure on submitted ratchet tx, channel %s", string(u.C.ID))
+				return true, errRatchetTxFailed
 			}
 			err := u.transitionTo(AwaitingSettlementMintime)
 			return true, err

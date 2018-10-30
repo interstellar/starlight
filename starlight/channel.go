@@ -43,7 +43,8 @@ func (g *Agent) watchEscrowAcct(ctx context.Context, chanID string) {
 		return g.updateChannel(chanID, updateFromTxCaller(ftx))
 	})
 	if err != nil {
-		log.Fatalf("updating channel %s from tx: %s", string(chanID), err)
+		log.Printf("updating channel %s from tx: %s", string(chanID), err)
+		g.mustDeauthenticate()
 	}
 }
 

@@ -557,7 +557,8 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 		return nil
 	})
 	if err != nil {
-		log.Fatalf("watching wallet-account txs: %s", err)
+		log.Printf("watching wallet-account txs: %s", err)
+		g.mustDeauthenticate()
 	}
 }
 
@@ -653,6 +654,17 @@ func (g *Agent) Authenticate(name, password string) bool {
 		}
 	}
 	return ok
+}
+
+func (g *Agent) mustDeauthenticate() {
+	log.Println("agent deauthenticating and entering watchtower mode")
+	err := db.Update(g.db, func(root *db.Root) error {
+		g.seed = nil
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
 }
 
 const (
@@ -956,7 +968,8 @@ func (g *Agent) scheduleTimer(tx *bolt.Tx, t time.Time, chanID string) {
 				return updater.Time()
 			})
 			if err != nil {
-				log.Fatalf("scheduling timer on channel %s: %s", string(chanID), err)
+				log.Printf("scheduling timer on channel %s: %s", string(chanID), err)
+				g.mustDeauthenticate()
 			}
 		})
 	})
