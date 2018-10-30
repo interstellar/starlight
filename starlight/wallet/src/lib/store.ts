@@ -17,7 +17,7 @@ const persistConfig = {
   storage,
   version: REDUX_STORE_VERSION,
   migrate: (state: any) => {
-    if (state._persist.version !== REDUX_STORE_VERSION) {
+    if (state && state._persist.version !== REDUX_STORE_VERSION) {
       return Promise.resolve({
         config: state.config,
         lifecycle: state.lifecycle,
