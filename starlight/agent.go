@@ -116,6 +116,11 @@ type Agent struct {
 	// Maps Starlight channel IDs to cancellation functions.
 	// Call the cancellation function to stop the goroutines associated with the channel.
 	cancelers map[string]context.CancelFunc
+
+	// acctsReady maps channel IDs to a channel that indicates
+	// whether or not the accounts have been successfully created
+	// and are ready to be streamed from Horizon.
+	acctsReady map[string]chan struct{}
 }
 
 // Config has user-facing, primary options for the Starlight agent
@@ -155,6 +160,7 @@ func StartAgent(ctx context.Context, boltDB *bolt.DB) (*Agent, error) {
 		rootCtx:    ctx,
 		rootCancel: cancel,
 		wallet:     make(chan struct{}),
+		acctsReady: make(map[string]chan struct{}),
 	}
 
 	g.evcond.L = new(sync.Mutex)
@@ -446,8 +452,15 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 			for index, op := range InputTx.Env.Tx.Operations {
 				switch op.Body.Type {
 				case xdr.OperationTypeCreateAccount:
+					// watch for escrow accounts being created, close the acctReady channel
 					createAccount := op.Body.CreateAccountOp
-					if createAccount.Destination.Address() != acctID {
+					createAccountAddr := createAccount.Destination.Address()
+					if acctReady, ok := g.acctsReady[createAccountAddr]; ok {
+						close(acctReady)
+						delete(g.acctsReady, createAccountAddr)
+					}
+
+					if createAccountAddr != acctID {
 						continue
 					}
 

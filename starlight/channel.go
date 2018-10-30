@@ -25,11 +25,23 @@ import (
 // It runs until its context is canceled.
 func (g *Agent) watchEscrowAcct(ctx context.Context, chanID string) {
 	var c fsm.Channel
+	var acctReady, canceled <-chan struct{}
 
 	db.View(g.db, func(root *db.Root) error {
 		c = *g.getChannel(root, chanID)
+		acctReady = g.acctsReady[chanID]
+		canceled = g.rootCtx.Done()
 		return nil
 	})
+
+	if acctReady != nil {
+		select {
+		case <-acctReady:
+			break
+		case <-canceled:
+			return
+		}
+	}
 
 	err := g.wclient.StreamTxs(ctx, chanID, (horizon.Cursor)(c.Cursor), func(htx worizon.Tx) error {
 		ftx, err := fsm.NewTx(&htx)
@@ -327,6 +339,13 @@ func (g *Agent) watchChannel(root *db.Root, chanID string) {
 	ctx, cancel := context.WithCancel(g.rootCtx)
 	g.cancelers[string(chanID)] = cancel
 	keepAlive := root.Agent().Config().KeepAlive()
+
+	c := g.getChannel(root, chanID)
+	switch c.State {
+	case fsm.Start, fsm.SettingUp:
+		acctReady := make(chan struct{})
+		g.acctsReady[chanID] = acctReady
+	}
 
 	root.Tx().OnCommit(func() {
 		g.allez(func() { g.watchEscrowAcct(ctx, chanID) }, fmt.Sprintf("watchEscrowAcct(%s)", chanID))
