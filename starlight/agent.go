@@ -320,14 +320,15 @@ func (g *Agent) ConfigInit(c *Config, hostURL string) error {
 func (g *Agent) ConfigEdit(c *Config) error {
 	// Can update password and/or horizon url;
 	// attempting to update other fields is an error.
-	if c.Username != "" {
+	if c.Username != "" || c.MaxRoundDurMin != 0 || c.FinalityDelayMin != 0 ||
+		c.ChannelFeerate != 0 || c.HostFeerate != 0 || c.KeepAlive != nil {
 		return errInvalidEdit
-	}
-	if len(c.Password) > 72 {
-		return errors.Wrap(errInvalidPassword, "too long (max 72 chars)") // bcrypt limit
 	}
 	if c.Password == "" && c.HorizonURL == "" {
 		return errEmptyConfigEdit
+	}
+	if len(c.Password) > 72 {
+		return errors.Wrap(errInvalidPassword, "too long (max 72 chars)") // bcrypt limit
 	}
 	if c.HorizonURL != "" {
 		err := g.wclient.ValidateTestnetURL(c.HorizonURL)
