@@ -1,60 +1,60 @@
 import configureStore from 'redux-mock-store'
 
+import { initialClientState, Client } from 'client/client'
 import { CONFIG_INIT } from 'state/config'
-import { EVENTS_RECEIVED } from 'state/events'
-import { Starlightd } from 'lib/starlightd'
-import { events } from 'state/events'
+import { events, UPDATE_CLIENT_STATE } from 'state/events'
 import { initialState } from 'state/testHelpers/initialState'
 import { WALLET_UPDATE } from 'state/wallet'
 
 const mockStore = configureStore()
 
 describe('reducer', () => {
-  it('with EVENTS_RECEIVED returns state', () => {
+  it('with UPDATE_CLIENT_STATE returns state', () => {
     const result = events.reducer(initialState.events, {
-      type: EVENTS_RECEIVED,
-      From: 1,
+      type: UPDATE_CLIENT_STATE,
+      clientState: {
+        ...initialClientState,
+        from: 1,
+      },
     })
 
-    expect(result.From).toEqual(1)
-    expect(result.list).toEqual(initialState.events.list)
+    expect(result.clientState.from).toEqual(1)
   })
 })
 
 describe('fetch', () => {
-  it('when ok, dispatch EVENTS_RECEIVED, CONFIG_INIT', async () => {
+  it('when ok, dispatch UPDATE_CLIENT_STATE, CONFIG_INIT', async () => {
     const store = mockStore()
-    Starlightd.post = jest.fn().mockImplementation(() =>
-      Promise.resolve({
-        body: [
-          {
-            Type: 'init',
-            UpdateNum: 1,
-            Config: {
-              Username: 'croaky',
-              Password: '[redacted]',
-            },
-            ChannelInfo: null,
-            Account: {
-              ID: 'GDQEYK27FM4LZCV54D7XB75DR76BGJJYJEKNGREPAVARTYA27KHL6H32',
-              Balance: 0,
-            },
+    const response = {
+      body: [
+        {
+          Type: 'init',
+          UpdateNum: 1,
+          Config: {
+            Username: 'croaky',
+            Password: '[redacted]',
           },
-        ],
-        ok: true,
-      })
-    )
+          ChannelInfo: null,
+          Account: {
+            ID: 'GDQEYK27FM4LZCV54D7XB75DR76BGJJYJEKNGREPAVARTYA27KHL6H32',
+            Balance: 0,
+          },
+        },
+      ],
+      ok: true,
+      loggedIn: true,
+    }
 
-    await events.fetch(store.dispatch, 0)
+    const client = new Client(initialClientState, () => undefined)
+    client.handler = events.getHandler(store.dispatch)
+    await client.handleResponse(response)
 
-    expect(Starlightd.post).toHaveBeenCalledWith(
-      store.dispatch,
-      '/api/updates',
-      { From: 0 }
-    )
     expect(store.getActions()[0]).toEqual({
-      type: EVENTS_RECEIVED,
-      From: 1,
+      type: UPDATE_CLIENT_STATE,
+      clientState: {
+        ...initialClientState,
+        from: 2,
+      },
     })
     expect(store.getActions()[1]).toEqual({
       type: CONFIG_INIT,

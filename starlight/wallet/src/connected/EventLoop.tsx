@@ -4,60 +4,51 @@ import { connect } from 'react-redux'
 
 import { ApplicationState } from 'types/schema'
 import { events } from 'state/events'
+import { Client } from 'client/client'
+import { Update, ClientState } from 'client/types'
+import { LOGOUT_SUCCESS } from 'state/lifecycle'
 
 interface Props {
-  fetch: (From: number) => any
-  From: number
+  handler: (update: Update) => any
+  clientState: ClientState
+  dispatchLogout: () => void
 }
 
 class EventLoop extends React.Component<Props, {}> {
-  private stop: boolean
+  private client: Client
 
   public async componentDidMount() {
-    this.stop = false
-    this.loop()
+    this.client = new Client(this.props.clientState, this.props.dispatchLogout)
+    this.client.subscribe(this.props.handler)
   }
 
   public render() {
     return this.props.children
   }
 
-  private async loop() {
-    if (this.stop) {
-      return
-    }
-    const ok = await this.tick()
-    if (!ok) {
-      await this.backoff(10000)
-    }
-
-    this.loop()
-  }
-
-  private async tick() {
-    return await this.props.fetch(this.props.From)
-  }
-
   public async componentWillUnmount() {
-    this.stop = true
-  }
-
-  private async backoff(ms: number) {
-    await new Promise(resolve => setTimeout(resolve, ms))
+    this.client.unsubscribe()
   }
 }
 
 const mapStateToProps = (state: ApplicationState) => {
   return {
-    From: state.events.From,
+    clientState: state.events.clientState,
   }
 }
+
 const mapDispatchToProps = (dispatch: Dispatch) => {
   return {
-    fetch: (From: number) => events.fetch(dispatch, From),
+    handler: events.getHandler(dispatch),
+    dispatchLogout: () => {
+      dispatch({
+        type: LOGOUT_SUCCESS,
+      })
+    },
   }
 }
-export const ConnectedEventLoop = connect(
+
+export const ConnectedEventLoop = connect<{}, {}, {}>(
   mapStateToProps,
   mapDispatchToProps
 )(EventLoop)

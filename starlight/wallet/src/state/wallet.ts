@@ -1,10 +1,10 @@
 import { Reducer, Dispatch } from 'redux'
 
 import { WalletState, ApplicationState } from 'types/schema'
-import { Starlightd } from 'lib/starlightd'
 import { TX_SUCCESS, TX_FAILED } from 'state/events'
 import { WalletActivity, OutgoingPaymentOp } from 'types/types'
 import { validAddress } from 'helpers/account'
+import { Starlightd } from 'lib/starlightd'
 
 // Actions
 export const ADD_WALLET_ACTIVITY = 'wallet/ADD_WALLET_ACTIVITY'
@@ -135,7 +135,9 @@ const send = async (dispatch: Dispatch, recipient: string, amount: number) => {
     const lookupResponse = await Starlightd.post(
       dispatch,
       '/api/find-account',
-      { stellar_addr: address }
+      {
+        stellar_addr: address,
+      }
     )
     const account = lookupResponse.body.AcctID
     // save the reverse mapping from account to address

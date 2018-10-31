@@ -155,6 +155,7 @@ export interface TxSuccessEvent {
 
 export interface TxFailedEvent {
   Type: 'tx_failed'
+  Account: Account
   UpdateNum: number
   InputTx: InputTx
   UpdateLedgerTime: string

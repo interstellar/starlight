@@ -1,4 +1,5 @@
 import { ApplicationState } from 'types/schema'
+import { initialClientState } from 'client/client'
 
 export const initialState: ApplicationState = {
   lifecycle: {
@@ -10,8 +11,7 @@ export const initialState: ApplicationState = {
     HorizonURL: 'https://horizon-testnet.stellar.org',
   },
   events: {
-    From: 1,
-    list: [],
+    clientState: initialClientState,
   },
   wallet: {
     ID: '',

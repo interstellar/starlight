@@ -1,4 +1,5 @@
 import { ChannelOp, WalletOp } from 'types/types'
+import { ClientState } from 'client/types'
 
 export interface ApplicationState {
   config: ConfigState
@@ -15,12 +16,7 @@ export interface ConfigState {
 }
 
 export interface EventsState {
-  From: number
-  list: Array<{
-    Type: string
-    UpdateNum: number
-    Config: any
-  }>
+  clientState: ClientState
 }
 
 export interface LifecycleState {
