@@ -109,14 +109,14 @@ func channelCreationSteps(alice, bob *Starlightd, maxRoundDurMin, finalityDelayM
 			agent: alice,
 			path:  "/api/config-init",
 			// WARNING: this software is not compatible with Stellar mainnet.
-			body: `
+			body: fmt.Sprintf(`
 			{
 				"Username":"alice",
 				"Password":"password",
 				"DemoServer":true,
-				"HorizonURL":"https://horizon-testnet.stellar.org/",
+				"HorizonURL":"%s",
 				"KeepAlive":false
-			}`,
+			}`, *HorizonURL),
 		}, {
 			name:  "alice config init update",
 			agent: alice,
@@ -134,13 +134,13 @@ func channelCreationSteps(alice, bob *Starlightd, maxRoundDurMin, finalityDelayM
 				"Username":"bob",
 				"Password":"password",
 				"DemoServer":true,
-				"HorizonURL":"https://horizon-testnet.stellar.org/",
+				"HorizonURL":"%s",
 				"KeepAlive":false,
 				"MaxRoundDurMin": %d,
 				"FinalityDelayMin": %d,
 				"HostFeerate": %d,
 				"ChannelFeerate":%d
-			}`, maxRoundDurMin, finalityDelayMin, hostFeerate, channelFeerate),
+			}`, *HorizonURL, maxRoundDurMin, finalityDelayMin, hostFeerate, channelFeerate),
 		}, {
 			name:  "bob config init update",
 			agent: bob,
@@ -907,13 +907,13 @@ func cleanupSteps(alice *httptest.Server, bob *Starlightd, maxRoundDurMin, final
 				"Username":"bob",
 				"Password":"password",
 				"DemoServer":true,
-				"HorizonURL":"https://horizon-testnet.stellar.org/",
+				"HorizonURL":"%s",
 				"KeepAlive":false,
 				"MaxRoundDurMin": %d,
 				"FinalityDelayMin": %d,
 				"HostFeerate": %d,
 				"ChannelFeerate":%d
-			}`, maxRoundDurMin, finalityDelayMin, hostFeerate, channelFeerate),
+			}`, *HorizonURL, maxRoundDurMin, finalityDelayMin, hostFeerate, channelFeerate),
 		}, {
 			name:  "bob config init update",
 			agent: bob,
@@ -931,7 +931,7 @@ func cleanupSteps(alice *httptest.Server, bob *Starlightd, maxRoundDurMin, final
 				Type:      update.AccountType,
 				UpdateNum: 2,
 			},
-			delta:       10000 * xlm.Lumen,
+			delta:       10000*xlm.Lumen - hostFeerate,
 			checkLedger: true,
 		}, {
 			name:  "bob create channel with alice",

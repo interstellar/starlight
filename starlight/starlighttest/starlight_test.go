@@ -2,6 +2,7 @@ package starlighttest
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -30,15 +31,14 @@ func TestAgentRequest(t *testing.T) {
 			name:  "config init",
 			agent: alice,
 			path:  "/api/config-init",
-			// TODO(vniu): replace Horizon URL with non-rate limited Horizon.
 			// WARNING: this software is not compatible with Stellar mainnet.
-			body: `
+			body: fmt.Sprintf(`
 			{
 				"Username":"vicki",
 				"Password":"password",
 				"DemoServer":true,
-				"HorizonURL":"https://horizon-testnet.stellar.org"
-			}`,
+				"HorizonURL":"%s"
+			}`, *HorizonURL),
 		}, {
 			name:  "get init update",
 			agent: alice,

@@ -193,6 +193,12 @@ $ cd $I10R/starlight/starlighttest
 $ go test
 ```
 
+To run the integration tests with a custom Horizon URL:
+
+```sh
+$ go test -args -horizon="http://custom-horizon-testnet.com"
+```
+
 ## Roadmap
 
 Starlight is under active development at Interstellar. Our top priorities for the coming year include:
