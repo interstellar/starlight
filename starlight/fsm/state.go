@@ -47,7 +47,7 @@ func (u *Updater) transitionTo(newState State) error {
 		switch u.C.Role {
 		case Guest:
 			if u.C.PrevState != Start {
-				return errUnexpectedState
+				return ErrUnexpectedState
 			}
 			err := sendChannelAcceptMsg(u.Seed, u.C, u.O, u.LedgerTime)
 			if err != nil {

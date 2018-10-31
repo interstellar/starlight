@@ -247,7 +247,7 @@ func TestConfigEdit(t *testing.T) {
 		Password:    "new password",
 		OldPassword: "wrong old password",
 	})
-	if err != errPasswordsDontMatch {
+	if errors.Root(err) != errPasswordsDontMatch {
 		t.Errorf("got %s, want %s", err, errPasswordsDontMatch)
 	}
 

@@ -226,14 +226,17 @@ func post(client *http.Client, url string, body io.Reader) error {
 	if err != nil {
 		return err
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusResetContent {
-		log.Printf("non-retriable post to %s", url)
+	r, ok := parse(resp.Body)
+	if ok && !r.Retriable {
+		return nil
 	}
+
 	if resp.StatusCode/100 != 2 {
 		return errors.New("bad status " + resp.Status)
 	}
+
 	return nil
 }
 

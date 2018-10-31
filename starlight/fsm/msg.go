@@ -17,14 +17,6 @@ import (
 // version denotes the current Starlight protocol version.
 const version = 1
 
-var (
-	// ErrChannelExists means a channel propose message was received for a channel that already exists.
-	ErrChannelExists = errors.New("received channel propose message for channel that already exists")
-
-	errInvalidVersion           = errors.New("invalid version number")
-	errUnusedSettleWithGuestSig = errors.New("unused settle with guest sig")
-)
-
 // Message defines a JSON schema for Starlight messages.
 type Message struct {
 	ChannelID string
@@ -93,7 +85,7 @@ type CloseMsg struct {
 
 func (u *Updater) handlePaymentCompleteMsg(m *Message) error {
 	if u.C.State != PaymentAccepted {
-		return errors.Wrap(errUnexpectedState, u.C.State)
+		return errors.Wrap(ErrUnexpectedState, u.C.State)
 	}
 	var (
 		senderRatchetAccount AccountID
@@ -196,7 +188,7 @@ func (u *Updater) handlePaymentAcceptMsg(m *Message) error {
 	var recipientSettleWithGuestSig *xdr.DecoratedSignature
 	if u.C.GuestAmount == 0 {
 		if accept.RecipientSettleWithGuestSig != nil {
-			return errUnusedSettleWithGuestSig
+			return ErrUnusedSettleWithGuestSig
 		}
 	} else {
 		guestTx, err = buildSettleWithGuestTx(u.C, u.C.PendingPaymentTime)
@@ -272,7 +264,7 @@ func (u *Updater) handleChannelProposeMsg(m *Message) error {
 func (u *Updater) handleChannelAcceptMsg(m *Message) error {
 	accept := m.ChannelAcceptMsg
 	if u.C.State != ChannelProposed {
-		return errors.Wrap(errUnexpectedState, u.C.State)
+		return errors.Wrap(ErrUnexpectedState, u.C.State)
 	}
 	if u.C.Role != Host {
 		log.Printf("dropped message: host cannot accept channel")
@@ -319,7 +311,7 @@ func (u *Updater) handlePaymentProposeMsg(m *Message) error {
 	case Open, PaymentProposed, AwaitingPaymentMerge:
 		// Accepted states
 	default:
-		return errors.Wrap(errUnexpectedState, u.C.State)
+		return errors.Wrap(ErrUnexpectedState, u.C.State)
 	}
 	if payment.PaymentAmount < 0 {
 		log.Printf("dropped message: invalid payment amount %s", payment.PaymentAmount)
@@ -366,8 +358,8 @@ func (u *Updater) handlePaymentProposeMsg(m *Message) error {
 	var settleWithHostTx, settleWithGuestTx *b.TransactionBuilder
 	if ch2.GuestAmount == 0 {
 		if payment.SenderSettleWithGuestSig.Signature != nil {
-			log.Printf("dropped message: %s", errUnusedSettleWithGuestSig)
-			return errUnusedSettleWithGuestSig
+			log.Printf("dropped message: %s", ErrUnusedSettleWithGuestSig)
+			return ErrUnusedSettleWithGuestSig
 		}
 		settleWithHostTx, err = buildSettleOnlyWithHostTx(&ch2, payment.PaymentTime)
 		if err != nil {
@@ -447,7 +439,7 @@ func (u *Updater) handleCloseMsg(m *Message) error {
 	switch u.C.State {
 	case Open, PaymentProposed, AwaitingClose: // Accepted states.
 	default:
-		return errors.Wrap(errUnexpectedState, u.C.State)
+		return errors.Wrap(ErrUnexpectedState, u.C.State)
 	}
 
 	var verifyKey keypair.KP

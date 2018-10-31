@@ -87,7 +87,7 @@ func TestDuplicateChannelCreation(t *testing.T) {
 				"GuestAddr": "alice*%s", 
 				"HostAmount": 10000000000
 			}`, alice.address),
-			wantCode: http.StatusResetContent,
+			wantCode: http.StatusBadRequest,
 		})
 		var channelID string
 		for _, step := range steps {

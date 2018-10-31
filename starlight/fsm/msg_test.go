@@ -101,8 +101,8 @@ func TestHandleChannelAcceptMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = u.handleChannelAcceptMsg(m)
-	if errors.Root(err) != errUnexpectedState {
-		t.Fatalf("got error %s, want %s", err, errUnexpectedState)
+	if errors.Root(err) != ErrUnexpectedState {
+		t.Fatalf("got error %s, want %s", err, ErrUnexpectedState)
 	}
 	u.transitionTo(ChannelProposed)
 	err = u.handleChannelAcceptMsg(m)
@@ -148,7 +148,7 @@ func TestHandlePaymentProposeMessage(t *testing.T) {
 			name:         "incorrect state",
 			handlerUFunc: func(u *Updater) { u.transitionTo(Closed) },
 			wantState:    Closed,
-			wantErr:      errUnexpectedState,
+			wantErr:      ErrUnexpectedState,
 			handler:      Guest,
 		},
 		{
@@ -185,7 +185,7 @@ func TestHandlePaymentProposeMessage(t *testing.T) {
 			msgFunc: func(m *PaymentProposeMsg) {
 				m.SenderSettleWithGuestSig = m.SenderSettleWithHostSig
 			},
-			wantErr:   errUnusedSettleWithGuestSig,
+			wantErr:   ErrUnusedSettleWithGuestSig,
 			wantState: Open,
 			handler:   Guest,
 		},
@@ -270,7 +270,7 @@ func TestHandlePaymentProposeMessage(t *testing.T) {
 			msgFunc: func(m *PaymentProposeMsg) {
 				m.SenderSettleWithGuestSig = m.SenderSettleWithHostSig
 			},
-			wantErr:   errUnusedSettleWithGuestSig,
+			wantErr:   ErrUnusedSettleWithGuestSig,
 			wantState: Open,
 			handler:   Host,
 		},
@@ -606,7 +606,7 @@ func TestHandlePaymentCompleteMessage(t *testing.T) {
 		{
 			name:      "incorrect starting state",
 			chFunc:    func(ch *Channel) { ch.State = Closed },
-			wantErr:   errUnexpectedState,
+			wantErr:   ErrUnexpectedState,
 			wantState: Closed,
 			recipient: Guest,
 		},
@@ -809,7 +809,7 @@ func TestHandleCloseMsg(t *testing.T) {
 		{
 			name:      "incorrect starting state",
 			chFunc:    func(ch *Channel) { ch.State = Closed },
-			wantErr:   errUnexpectedState,
+			wantErr:   ErrUnexpectedState,
 			wantState: Closed,
 			handler:   Host,
 		},
@@ -1041,7 +1041,7 @@ func TestMessageVersion(t *testing.T) {
 	}
 	m.Version = 20
 	err = u.verifyMsg(m)
-	if err != errInvalidVersion {
-		t.Fatalf("got %s, want %s", err, errInvalidVersion)
+	if err != ErrInvalidVersion {
+		t.Fatalf("got %s, want %s", err, ErrInvalidVersion)
 	}
 }

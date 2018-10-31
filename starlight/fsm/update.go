@@ -181,7 +181,7 @@ func (u *Updater) verifyMsg(m *Message) error {
 
 	// Ensure m Version matches software version.
 	if m.Version != version {
-		return errInvalidVersion
+		return ErrInvalidVersion
 	}
 	bytes, err := m.bytesToSign()
 	if err != nil {

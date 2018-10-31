@@ -31,25 +31,6 @@ import (
 	"github.com/interstellar/starlight/worizon/xlm"
 )
 
-var (
-	errAcctsSame           = errors.New("same host and guest acct address")
-	errAlreadyConfigured   = errors.New("already configured")
-	errExists              = errors.New("channel exists")
-	errInsufficientBalance = errors.New("insufficient balance")
-	errInvalidEdit         = errors.New("can only update password and horizon URL")
-	errInvalidHorizonURL   = errors.New("invalid Horizon URL")
-	errInvalidPassword     = errors.New("invalid password")
-	errInvalidUsername     = errors.New("invalid username")
-	errNotConfigured       = errors.New("not configured")
-	errNotFunded           = errors.New("primary acct not funded")
-	errPasswordsDontMatch  = errors.New("old password doesn't match")
-	errAccountNotFound     = errors.New("account not found")
-	errEmptyAddress        = errors.New("destination address not set")
-	errEmptyAmount         = errors.New("amount not set")
-	errNoChannelSpecified  = errors.New("channel not specified")
-	errEmptyConfigEdit     = errors.New("config edit fields not set")
-)
-
 // An Agent acts on behalf of the user to open, close,
 // maintain, and use payment channels.
 // Its methods are safe to call concurrently.
@@ -367,7 +348,7 @@ func (g *Agent) ConfigEdit(c *Config) error {
 			digest := root.Agent().Config().PwHash()
 			err := bcrypt.CompareHashAndPassword(digest, []byte(c.OldPassword))
 			if err != nil {
-				return errPasswordsDontMatch
+				return errors.Sub(errPasswordsDontMatch, err)
 			}
 
 			digest, err = bcrypt.GenerateFromPassword([]byte(c.Password), bcrypt.DefaultCost)
@@ -764,7 +745,8 @@ func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount) (*fs
 		var guestAcct fsm.AccountID
 		err := guestAcct.SetAddress(guestAcctStr)
 		if err != nil {
-			return errors.Wrapf(err, "setting guest address %s", guestAcctStr)
+			err = errors.Sub(errInvalidAddress, err)
+			return errors.Wrap(err, "guest address", guestAcctStr)
 		}
 
 		channelKeyIndex := nextChannelKeyIndex(root.Agent(), 3)
@@ -774,21 +756,21 @@ func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount) (*fs
 		var escrowAcct fsm.AccountID
 		err = escrowAcct.SetAddress(channelKeyPair.Address())
 		if err != nil {
-			return errors.Wrapf(err, "setting escrow address %s", channelKeyPair.Address())
+			return errors.Wrap(err, "setting escrow address", channelKeyPair.Address())
 		}
 
 		firstThrowawayKeyPair := key.DeriveAccount(g.seed, channelKeyIndex+1)
 		var hostRatchetAcct fsm.AccountID
 		err = hostRatchetAcct.SetAddress(firstThrowawayKeyPair.Address())
 		if err != nil {
-			return errors.Wrapf(err, "setting host ratchet address %s", firstThrowawayKeyPair.Address())
+			return errors.Wrap(err, "setting host ratchet address", firstThrowawayKeyPair.Address())
 		}
 
 		secondThrowawayKeyPair := key.DeriveAccount(g.seed, channelKeyIndex+2)
 		var guestRatchetAcct fsm.AccountID
 		err = guestRatchetAcct.SetAddress(secondThrowawayKeyPair.Address())
 		if err != nil {
-			return errors.Wrapf(err, "setting guest ratchet address %s", secondThrowawayKeyPair.Address())
+			return errors.Wrap(err, "setting guest ratchet address", secondThrowawayKeyPair.Address())
 		}
 
 		fundingTime := g.wclient.Now()
@@ -856,7 +838,7 @@ func (g *Agent) DoWalletPay(dest string, amount xlm.Amount) error {
 		}
 		w := root.Agent().Wallet()
 		if w.Balance <= amount+xlm.Amount(root.Agent().Config().HostFeerate()) {
-			return errors.New("insufficient funds")
+			return errInsufficientBalance
 		}
 
 		w.Balance -= amount
@@ -978,7 +960,7 @@ func (g *Agent) DoCommand(channelID string, c *fsm.Command) error {
 		return errNoChannelSpecified
 	}
 	if c.Name == "" {
-		return errors.New("no command specified")
+		return errNoCommandSpecified
 	}
 	return g.updateChannel(channelID, func(root *db.Root, updater *fsm.Updater, update *Update) error {
 		if !root.Agent().Ready() {
@@ -1027,11 +1009,11 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 	m := new(fsm.Message)
 	err := json.NewDecoder(req.Body).Decode(m)
 	if err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
+		WriteError(req, w, errors.Sub(ErrUnmarshaling, err))
 		return
 	}
 	if len(m.ChannelID) == 0 {
-		http.Error(w, "bad request", http.StatusBadRequest)
+		WriteError(req, w, errors.Sub(errNoChannelSpecified, err))
 		return
 	}
 	var guestSeqNum, hostSeqNum, baseSeqNum xdr.SequenceNumber
@@ -1041,34 +1023,31 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 		propose := m.ChannelProposeMsg
 		err := g.checkChannelUnique(propose.HostAcct.Address(), propose.GuestAcct.Address())
 		if err != nil {
-			http.Error(w, "channel exists between parties", http.StatusResetContent)
+			WriteError(req, w, err)
 			return
 		}
 		err = escrowAcct.SetAddress(string(m.ChannelID))
 		if err != nil {
-			http.Error(w, "invalid channel ID", http.StatusBadRequest)
+			WriteError(req, w, errors.Sub(errInvalidChannelID, err))
 			return
 		}
 		baseSeqNum, guestSeqNum, hostSeqNum, err = g.getSequenceNumbers(m.ChannelID, propose.GuestRatchetAcct, propose.HostRatchetAcct)
 		if err != nil {
-			//TODO(debnil): StatusBadRequest implies a faulty input error. We may want to distinguish that
-			//from other possible errors (e.g., network timeout).
-			http.Error(w, "error fetching accounts", http.StatusBadRequest)
+			WriteError(req, w, errors.Sub(errFetchingAccounts, err))
 			return
 		}
 		hostAccount, starlightURL, err = g.FindAccount(m.ChannelProposeMsg.CounterpartyAddress)
 		if starlightURL == "" {
-			http.Error(w, "counterparty starlight URL not found", http.StatusBadRequest)
+			WriteError(req, w, err)
 			return
 		}
 		if err != nil {
-			errStr := fmt.Sprintf("counterparty starlight URL not found, got err %s", err)
-			http.Error(w, errStr, http.StatusBadRequest)
+			WriteError(req, w, errors.Wrap(err, "counterparty starlight URL not found"))
 			return
 		}
 		if hostAccount != m.ChannelProposeMsg.HostAcct.Address() {
-			http.Error(w, fmt.Sprintf("host acct %s doesn't match acct %s retrieved from federation address %s",
-				m.ChannelProposeMsg.HostAcct.Address(), hostAccount, m.ChannelProposeMsg.CounterpartyAddress), http.StatusBadRequest)
+			WriteError(req, w, errors.Wrapf(errBadRequest, "host acct %s doesn't match acct %s retrieved from federation address %s",
+				m.ChannelProposeMsg.HostAcct.Address(), hostAccount, m.ChannelProposeMsg.CounterpartyAddress))
 			return
 		}
 	}
@@ -1077,10 +1056,10 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 			maxRoundDur := time.Minute * time.Duration(root.Agent().Config().MaxRoundDurMin())
 			finalityDelay := time.Minute * time.Duration(root.Agent().Config().FinalityDelayMin())
 			if m.ChannelProposeMsg.MaxRoundDuration != maxRoundDur {
-				return fmt.Errorf("channel proposed with max round dur %s, want %s", m.ChannelProposeMsg.MaxRoundDuration, maxRoundDur)
+				return errors.Wrapf(errBadRequest, "channel proposed with max round dur %s, want %s", m.ChannelProposeMsg.MaxRoundDuration, maxRoundDur)
 			}
 			if m.ChannelProposeMsg.FinalityDelay != finalityDelay {
-				return fmt.Errorf("channel proposed with finality delay %s, want %s", m.ChannelProposeMsg.FinalityDelay, finalityDelay)
+				return errors.Wrapf(errBadRequest, "channel proposed with finality delay %s, want %s", m.ChannelProposeMsg.FinalityDelay, finalityDelay)
 			}
 			updater.C.Role = fsm.Guest
 			updater.C.EscrowAcct = fsm.AccountID(escrowAcct)
@@ -1093,19 +1072,9 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 		update.InputMessage = m
 		return updater.Msg(m)
 	})
-	switch errors.Root(err) {
-	case nil:
-	case errExists, fsm.ErrChannelExists: // TODO(debnil): Add more non-retriable errors.
-		// StatusResetContent is used to designate non-retriable errors.
-		// TODO(debnil): Find a more suitable status code if possible.
-		log.Printf("handling RPC message, channel %s: %s", string(m.ChannelID), err)
-		http.Error(w, "non-retriable error", http.StatusResetContent)
-		return
-	default:
-		log.Printf("handling RPC message, channel %s: %s", string(m.ChannelID), err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
+	log.Printf("handling RPC message, channel %s: %s", string(m.ChannelID), err)
+	WriteError(req, w, err)
+	return
 }
 
 func (g *Agent) handleFed(w http.ResponseWriter, req *http.Request) {

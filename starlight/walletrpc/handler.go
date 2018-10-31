@@ -4,9 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
-	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"time"
 
@@ -94,7 +92,7 @@ func (wt *wallet) updates(w http.ResponseWriter, req *http.Request) {
 	var v struct{ From uint64 }
 	err := json.NewDecoder(req.Body).Decode(&v)
 	if err != nil {
-		httperror(req, w, fmt.Sprintf("bad request: %s", err.Error()), 400)
+		starlight.WriteError(req, w, errors.Sub(starlight.ErrUnmarshaling, err))
 		return
 	}
 	ctx := req.Context()
@@ -113,14 +111,12 @@ func (wt *wallet) configEdit(w http.ResponseWriter, req *http.Request) {
 	var config starlight.Config
 	err := json.NewDecoder(req.Body).Decode(&config)
 	if err != nil {
-		httperror(req, w, fmt.Sprintf("bad request: %s", err.Error()), 400)
+		starlight.WriteError(req, w, errors.Sub(starlight.ErrUnmarshaling, err))
 		return
 	}
 	err = wt.agent.ConfigEdit(&config)
 	if err != nil {
-		// TODO(kr): distinguish 5xx/4xx.
-		// For now, just blame everything on the client.
-		httperror(req, w, err.Error(), 400)
+		starlight.WriteError(req, w, err)
 		return
 	}
 }
@@ -129,14 +125,12 @@ func (wt *wallet) configInit(w http.ResponseWriter, req *http.Request) {
 	var config starlight.Config
 	err := json.NewDecoder(req.Body).Decode(&config)
 	if err != nil {
-		httperror(req, w, fmt.Sprintf("bad request: %s", err.Error()), 400)
+		starlight.WriteError(req, w, errors.Sub(starlight.ErrUnmarshaling, err))
 		return
 	}
 	err = wt.agent.ConfigInit(&config, req.Host)
 	if err != nil {
-		// TODO(kr): distinguish 5xx/4xx.
-		// For now, just blame everything on the client.
-		httperror(req, w, err.Error(), 400)
+		starlight.WriteError(req, w, err)
 		return
 	}
 	if net.IsLoopback(req.Host) {
@@ -152,7 +146,7 @@ func (wt *wallet) doCreateChannel(w http.ResponseWriter, req *http.Request) {
 	}
 	err := json.NewDecoder(req.Body).Decode(&v)
 	if err != nil {
-		httperror(req, w, fmt.Sprintf("bad request: %s", err.Error()), 400)
+		starlight.WriteError(req, w, errors.Sub(starlight.ErrUnmarshaling, err))
 		return
 	}
 	ch, err := wt.agent.DoCreateChannel(v.GuestAddr, v.HostAmount)
@@ -161,7 +155,7 @@ func (wt *wallet) doCreateChannel(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(ch)
 	default:
-		httperror(req, w, err.Error(), 500)
+		starlight.WriteError(req, w, err)
 	}
 }
 
@@ -172,13 +166,13 @@ func (wt *wallet) doWalletPay(w http.ResponseWriter, req *http.Request) {
 	}
 	err := json.NewDecoder(req.Body).Decode(&v)
 	if err != nil {
-		httperror(req, w, fmt.Sprintf("bad request: %s", err.Error()), 400)
+		starlight.WriteError(req, w, errors.Sub(starlight.ErrUnmarshaling, err))
 		return
 	}
 	xlmAmount := xlm.Amount(v.Amount)
 	err = wt.agent.DoWalletPay(v.Dest, xlmAmount)
 	if err != nil {
-		httperror(req, w, err.Error(), 500)
+		starlight.WriteError(req, w, err)
 	}
 }
 
@@ -188,12 +182,12 @@ func (wt *wallet) doCloseAccount(w http.ResponseWriter, req *http.Request) {
 	}
 	err := json.NewDecoder(req.Body).Decode(&v)
 	if err != nil {
-		http.Error(w, "bad request", 400)
+		starlight.WriteError(req, w, errors.Sub(starlight.ErrUnmarshaling, err))
 		return
 	}
 	err = wt.agent.DoCloseAccount(v.Dest)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		starlight.WriteError(req, w, err)
 	}
 	wt.sess.MaxAge = -1
 	session.Set(w, &struct{}{}, &wt.sess)
@@ -206,12 +200,12 @@ func (wt *wallet) doCommand(w http.ResponseWriter, req *http.Request) {
 	}
 	err := json.NewDecoder(req.Body).Decode(&v)
 	if err != nil {
-		httperror(req, w, fmt.Sprintf("bad request: %s", err.Error()), 400)
+		starlight.WriteError(req, w, errors.Sub(starlight.ErrUnmarshaling, err))
 		return
 	}
 	err = wt.agent.DoCommand(v.ChannelID, &v.Command)
 	if err != nil {
-		httperror(req, w, err.Error(), 500)
+		starlight.WriteError(req, w, err)
 	}
 }
 
@@ -222,7 +216,7 @@ func (wt *wallet) findAccount(w http.ResponseWriter, req *http.Request) {
 	}
 	err := json.NewDecoder(req.Body).Decode(&v)
 	if err != nil {
-		httperror(req, w, err.Error(), http.StatusBadRequest)
+		starlight.WriteError(req, w, errors.Sub(starlight.ErrUnmarshaling, err))
 		return
 	}
 	var result struct {
@@ -231,16 +225,10 @@ func (wt *wallet) findAccount(w http.ResponseWriter, req *http.Request) {
 	}
 	result.AcctID, result.StarlightURL, err = wt.agent.FindAccount(v.Addr)
 	if err != nil {
-		httperror(req, w, err.Error(), http.StatusInternalServerError)
+		starlight.WriteError(req, w, err)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
-}
-
-func httperror(req *http.Request, w http.ResponseWriter, err string, code int) {
-	log.Printf("request to %s returned internal error %s, returned status code %d", req.URL.Path, err, code)
-	http.Error(w, err, code)
-	return
 }
 
 func (wt *wallet) status(w http.ResponseWriter, req *http.Request) {
@@ -258,7 +246,7 @@ func (wt *wallet) login(w http.ResponseWriter, req *http.Request) {
 	var cred struct{ Username, Password string }
 	err := json.NewDecoder(req.Body).Decode(&cred)
 	if err != nil {
-		httperror(req, w, "bad request", 400)
+		starlight.WriteError(req, w, errors.Sub(starlight.ErrUnmarshaling, err))
 		return
 	}
 
@@ -267,7 +255,7 @@ func (wt *wallet) login(w http.ResponseWriter, req *http.Request) {
 	ok := wt.agent.Authenticate(cred.Username, cred.Password)
 
 	if !ok {
-		httperror(req, w, "unauthorized", 401)
+		starlight.WriteError(req, w, starlight.ErrAuthFailed)
 		return
 	}
 	if net.IsLoopback(req.Host) {
@@ -286,7 +274,7 @@ func (wt *wallet) auth(f http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		err := session.Get(req, &struct{}{}, &wt.sess)
 		if err != nil {
-			httperror(req, w, "unauthorized", 401)
+			starlight.WriteError(req, w, errors.Sub(starlight.ErrUnauthorized, err))
 			return
 		}
 		f(w, req)

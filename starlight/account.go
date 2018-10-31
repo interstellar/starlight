@@ -15,11 +15,6 @@ import (
 	"github.com/interstellar/starlight/net"
 )
 
-var (
-	errBadAddress    = errors.New("bad address")
-	errBadHTTPStatus = errors.New("bad http status")
-)
-
 // FindAccount looks up the account ID and Starlight URL
 // for the Stellar account named by target.
 //
@@ -39,11 +34,13 @@ func (g *Agent) FindAccount(target string) (accountID, starlightURL string, err 
 		var guest xdr.AccountId
 		err := guest.SetAddress(target)
 		if err != nil {
-			return "", "", errors.Wrap(errBadAddress, err, target)
+			err = errors.Sub(errBadAddress, err)
+			return "", "", errors.Wrap(err, target)
 		}
 		acct, err := g.wclient.LoadAccount(target)
 		if err != nil {
-			return "", "", errors.Wrap(errBadAddress, err, target)
+			err = errors.Sub(errBadAddress, err)
+			return "", "", errors.Wrapf(err, "loading account %s", target)
 		}
 		if acct.HomeDomain == "" {
 			return "", "", errors.Wrap(errBadAddress, "no home domain set")
@@ -58,13 +55,14 @@ func (g *Agent) FindAccount(target string) (accountID, starlightURL string, err 
 	// See https://www.stellar.org/developers/guides/concepts/stellar-toml.html.
 	resp, err := g.httpclient.Get(protocol(host) + host + "/.well-known/stellar.toml")
 	if err != nil {
-		return "", "", err
+		return "", "", errors.Sub(errBadHTTPRequest, err)
 	}
 	if resp.StatusCode/100 != 2 {
-		return "", "", errors.Wrapf(errBadHTTPStatus, "http status %d looking up TOML", resp.StatusCode)
+		return "", "", errors.Wrapf(errBadHTTPStatus, "got http status %d looking up TOML", resp.StatusCode)
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		err = errors.Sub(errBadHTTPRequest, err)
 		return "", "", errors.Wrap(err, "reading TOML")
 	}
 	var stellarTOML struct {
@@ -73,6 +71,7 @@ func (g *Agent) FindAccount(target string) (accountID, starlightURL string, err 
 	}
 	err = toml.Unmarshal(body, &stellarTOML)
 	if err != nil {
+		err = errors.Sub(errDecoding, err)
 		return "", "", errors.Wrap(err, "unmarshaling TOML")
 	}
 	if !federation {
@@ -87,16 +86,18 @@ func (g *Agent) FindAccount(target string) (accountID, starlightURL string, err 
 	}
 	resp, err = g.httpclient.Get(stellarTOML.FedURL + "?" + q.Encode())
 	if err != nil {
+		err = errors.Sub(errBadHTTPRequest, err)
 		return "", "", errors.Wrapf(err, "getting account ID from %s", stellarTOML.FedURL)
 	}
 	if resp.StatusCode/100 != 2 {
-		return "", "", errors.Wrapf(errBadHTTPStatus, "http status %d", resp.StatusCode)
+		return "", "", errors.Wrapf(errBadHTTPStatus, "got http status %d", resp.StatusCode)
 	}
 	var acct struct {
 		ID string `json:"account_id"`
 	}
 	err = json.NewDecoder(resp.Body).Decode(&acct)
 	if err != nil {
+		err = errors.Sub(errDecoding, err)
 		return "", "", errors.Wrapf(err, "decoding account ID from %s", stellarTOML.FedURL)
 	}
 	return acct.ID, stellarTOML.StarlightURL, nil

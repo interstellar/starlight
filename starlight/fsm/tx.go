@@ -69,13 +69,6 @@ var txHandlerFuncs = []func(*Updater, *Tx, bool) (bool, error){
 	handleTopUpTx,
 }
 
-var (
-	errUnexpectedState = errors.New("unexpected state")
-	errNoSeed          = errors.New("fsm: seed required")
-	errNoMatch         = errors.New("did not recognize transaction")
-	errRatchetTxFailed = errors.New("ratchet tx failed")
-)
-
 func handleSetupAccountTx(u *Updater, tx *Tx, success bool) (bool, error) {
 	// ignore the first two SetupAccountTxs
 	if txMatches(tx, u.C.HostAcct,
@@ -101,7 +94,7 @@ func handleSetupAccountTx(u *Updater, tx *Tx, success bool) (bool, error) {
 	}
 
 	if u.C.State != SettingUp {
-		return true, errors.Wrapf(errUnexpectedState, "got %s, want %s", u.C.State, SettingUp)
+		return true, errors.Wrapf(ErrUnexpectedState, "got %s, want %s", u.C.State, SettingUp)
 	}
 
 	// compute the initial sequence number of the account
@@ -200,7 +193,7 @@ func handleFundingTx(u *Updater, tx *Tx, success bool) (bool, error) {
 		return false, nil
 	}
 	if u.C.State != AwaitingFunding {
-		return false, errors.Wrapf(errUnexpectedState, "got %s, want %s", u.C.State, AwaitingFunding)
+		return false, errors.Wrapf(ErrUnexpectedState, "got %s, want %s", u.C.State, AwaitingFunding)
 	}
 	if !success {
 		if u.C.Role == Host {
@@ -229,7 +222,7 @@ func handleCoopCloseTx(u *Updater, tx *Tx, success bool) (bool, error) {
 		return false, nil
 	}
 	if u.C.State != AwaitingClose {
-		return false, errors.Wrapf(errUnexpectedState, "got %s, want %s", u.C.State, AwaitingClose)
+		return false, errors.Wrapf(ErrUnexpectedState, "got %s, want %s", u.C.State, AwaitingClose)
 	}
 	if !success {
 		err := u.setForceCloseState()
@@ -337,7 +330,7 @@ func handleSettleWithGuestTx(u *Updater, ptx *Tx, _ bool) (bool, error) {
 	}
 	// skip checking the amount
 	if u.C.State != AwaitingSettlement {
-		return false, errors.Wrapf(errUnexpectedState, "got %s, want %s", u.C.State, AwaitingSettlement)
+		return false, errors.Wrapf(ErrUnexpectedState, "got %s, want %s", u.C.State, AwaitingSettlement)
 	}
 	// stay in AwaitingSettlement state
 	return true, nil
