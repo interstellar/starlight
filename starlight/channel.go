@@ -261,22 +261,6 @@ func (g *Agent) doUpdateChannel(root *db.Root, chanID string, f func(*db.Root, *
 		return nil // channel (still) does not exist; do not store it
 	}
 
-	if c.State == fsm.Open && c.PrevState == fsm.AwaitingFunding {
-		guestSeqNum, err := g.wclient.SequenceForAccount(c.GuestRatchetAcct.Address())
-		if err != nil {
-			return err
-		}
-		c.GuestRatchetAcctSeqNum = guestSeqNum
-	}
-
-	if c.State == fsm.AwaitingFunding || c.State == fsm.ChannelProposed {
-		hostSeqNum, err := g.wclient.SequenceForAccount(c.HostRatchetAcct.Address())
-		if err != nil {
-			return err
-		}
-		c.HostRatchetAcctSeqNum = hostSeqNum
-	}
-
 	g.putChannel(root, chanID, c)
 
 	root.Agent().PutWallet(h)
