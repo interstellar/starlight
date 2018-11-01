@@ -287,6 +287,15 @@ func handleRatchetTx(u *Updater, ptx *Tx, success bool) (bool, error) {
 			// Their ratchet tx is newer than expected.
 			u.C.CurrentSettleWithGuestTx = u.C.CounterpartyLatestSettleWithGuestTx
 			u.C.CurrentSettleWithHostTx = u.C.CounterpartyLatestSettleWithHostTx
+			switch u.C.Role {
+			case Guest:
+				u.C.GuestAmount = u.C.GuestAmount + u.C.PendingAmountReceived - u.C.PendingAmountSent
+				u.C.HostAmount = u.C.HostAmount - u.C.PendingAmountReceived + u.C.PendingAmountSent
+			case Host:
+				u.C.GuestAmount = u.C.GuestAmount - u.C.PendingAmountReceived + u.C.PendingAmountSent
+				u.C.HostAmount = u.C.HostAmount + u.C.PendingAmountReceived - u.C.PendingAmountSent
+			}
+			u.C.RoundNumber++
 			err := u.transitionTo(AwaitingSettlementMintime)
 			return true, err
 
