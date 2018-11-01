@@ -1,6 +1,7 @@
 package fsm
 
 import (
+	"encoding/json"
 	"log"
 	"time"
 
@@ -22,7 +23,11 @@ type Updater struct {
 
 // Tx causes the updater to update its channel in response to a transaction appearing in a Stellar ledger.
 func (u *Updater) Tx(tx *Tx) error {
-	log.Printf("received tx: %+v", *tx)
+	txstr, err := xdr.MarshalBase64(*tx.Env)
+	if err != nil {
+		return err
+	}
+	log.Printf("received tx: %s", txstr)
 	success := tx.Result.Result.Code == xdr.TransactionResultCodeTxSuccess
 
 	if tx.PT != "" {
@@ -43,7 +48,11 @@ func (u *Updater) Tx(tx *Tx) error {
 
 // Msg causes the updater to update its channel in response to a protocol message received from a peer Agent.
 func (u *Updater) Msg(m *Message) error {
-	log.Printf("received message: %+v", *m)
+	bytes, err := json.Marshal(*m)
+	if err != nil {
+		return err
+	}
+	log.Printf("received message: %s", string(bytes))
 	if err := u.verifyMsg(m); err != nil {
 		return err
 	}
