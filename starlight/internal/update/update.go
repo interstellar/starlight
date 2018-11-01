@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/interstellar/starlight/starlight/fsm"
+	"github.com/interstellar/starlight/worizon/xlm"
 )
 
 // Type is the type of an update-type constant.
@@ -86,6 +87,13 @@ type Config struct {
 	Username   string `json:",omitempty"`
 	Password   string `json:",omitempty"` // always "[redacted]" if set
 	HorizonURL string `json:",omitempty"`
+
+	MaxRoundDurMins   int64      `json:",omitempty"`
+	FinalityDelayMins int64      `json:",omitempty"`
+	ChannelFeerate    xlm.Amount `json:",omitempty"`
+	HostFeerate       xlm.Amount `json:",omitempty"`
+
+	KeepAlive bool `json:",omitempty"`
 }
 
 // MarshalJSON implements json.Marshaler. Required for genbolt.

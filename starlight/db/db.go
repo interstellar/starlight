@@ -331,40 +331,40 @@ func (o *Config) PutPwHash(v []byte) {
 	put(o.db, keyPwHash, rec)
 }
 
-// MaxRoundDurMin reads the record stored under key "MaxRoundDurMin".
-// If no record has been stored, MaxRoundDurMin returns
+// MaxRoundDurMins reads the record stored under key "MaxRoundDurMins".
+// If no record has been stored, MaxRoundDurMins returns
 // the zero value.
-func (o *Config) MaxRoundDurMin() int64 {
-	rec := get(o.db, keyMaxRoundDurMin)
+func (o *Config) MaxRoundDurMins() int64 {
+	rec := get(o.db, keyMaxRoundDurMins)
 	if rec == nil {
 		return 0
 	}
 	return int64(binary.BigEndian.Uint64(rec))
 }
 
-// PutMaxRoundDurMin stores v as a record under the key "MaxRoundDurMin".
-func (o *Config) PutMaxRoundDurMin(v int64) {
+// PutMaxRoundDurMins stores v as a record under the key "MaxRoundDurMins".
+func (o *Config) PutMaxRoundDurMins(v int64) {
 	rec := make([]byte, 8)
 	binary.BigEndian.PutUint64(rec, uint64(v))
-	put(o.db, keyMaxRoundDurMin, rec)
+	put(o.db, keyMaxRoundDurMins, rec)
 }
 
-// FinalityDelayMin reads the record stored under key "FinalityDelayMin".
-// If no record has been stored, FinalityDelayMin returns
+// FinalityDelayMins reads the record stored under key "FinalityDelayMins".
+// If no record has been stored, FinalityDelayMins returns
 // the zero value.
-func (o *Config) FinalityDelayMin() int64 {
-	rec := get(o.db, keyFinalityDelayMin)
+func (o *Config) FinalityDelayMins() int64 {
+	rec := get(o.db, keyFinalityDelayMins)
 	if rec == nil {
 		return 0
 	}
 	return int64(binary.BigEndian.Uint64(rec))
 }
 
-// PutFinalityDelayMin stores v as a record under the key "FinalityDelayMin".
-func (o *Config) PutFinalityDelayMin(v int64) {
+// PutFinalityDelayMins stores v as a record under the key "FinalityDelayMins".
+func (o *Config) PutFinalityDelayMins(v int64) {
 	rec := make([]byte, 8)
 	binary.BigEndian.PutUint64(rec, uint64(v))
-	put(o.db, keyFinalityDelayMin, rec)
+	put(o.db, keyFinalityDelayMins, rec)
 }
 
 // ChannelFeerate reads the record stored under key "ChannelFeerate".
@@ -537,24 +537,24 @@ func (o *SeqOfUpdateUpdate) Put(n uint64, v *update.Update) {
 }
 
 var (
-	keyAgent            = []byte("Agent")
-	keyChannelFeerate   = []byte("ChannelFeerate")
-	keyChannels         = []byte("Channels")
-	keyConfig           = []byte("Config")
-	keyEncryptedSeed    = []byte("EncryptedSeed")
-	keyFinalityDelayMin = []byte("FinalityDelayMin")
-	keyHorizonURL       = []byte("HorizonURL")
-	keyHostFeerate      = []byte("HostFeerate")
-	keyKeepAlive        = []byte("KeepAlive")
-	keyMaxRoundDurMin   = []byte("MaxRoundDurMin")
-	keyNextKeypathIndex = []byte("NextKeypathIndex")
-	keyPrimaryAcct      = []byte("PrimaryAcct")
-	keyPwHash           = []byte("PwHash")
-	keyPwType           = []byte("PwType")
-	keyReady            = []byte("Ready")
-	keyUpdates          = []byte("Updates")
-	keyUsername         = []byte("Username")
-	keyWallet           = []byte("Wallet")
+	keyAgent             = []byte("Agent")
+	keyChannelFeerate    = []byte("ChannelFeerate")
+	keyChannels          = []byte("Channels")
+	keyConfig            = []byte("Config")
+	keyEncryptedSeed     = []byte("EncryptedSeed")
+	keyFinalityDelayMins = []byte("FinalityDelayMins")
+	keyHorizonURL        = []byte("HorizonURL")
+	keyHostFeerate       = []byte("HostFeerate")
+	keyKeepAlive         = []byte("KeepAlive")
+	keyMaxRoundDurMins   = []byte("MaxRoundDurMins")
+	keyNextKeypathIndex  = []byte("NextKeypathIndex")
+	keyPrimaryAcct       = []byte("PrimaryAcct")
+	keyPwHash            = []byte("PwHash")
+	keyPwType            = []byte("PwType")
+	keyReady             = []byte("Ready")
+	keyUpdates           = []byte("Updates")
+	keyUsername          = []byte("Username")
+	keyWallet            = []byte("Wallet")
 )
 
 type db interface {

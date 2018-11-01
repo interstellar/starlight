@@ -116,10 +116,10 @@ type Config struct {
 	// It's never included in Updates.
 	OldPassword string `json:",omitempty"`
 
-	MaxRoundDurMin   int64      `json:",omitempty"`
-	FinalityDelayMin int64      `json:",omitempty"`
-	ChannelFeerate   xlm.Amount `json:",omitempty"`
-	HostFeerate      xlm.Amount `json:",omitempty"`
+	MaxRoundDurMins   int64      `json:",omitempty"`
+	FinalityDelayMins int64      `json:",omitempty"`
+	ChannelFeerate    xlm.Amount `json:",omitempty"`
+	HostFeerate       xlm.Amount `json:",omitempty"`
 
 	// KeepAlive, if set, indicates whether or not the agent will
 	// send 0-value keep-alive payments on its channels
@@ -251,6 +251,18 @@ func (g *Agent) ConfigInit(c *Config, hostURL string) error {
 		if !validateUsername(c.Username) {
 			return errInvalidUsername
 		}
+		if c.MaxRoundDurMins < 0 {
+			return errors.Wrap(errInvalidInput, "negative max round duration")
+		}
+		if c.FinalityDelayMins < 0 {
+			return errors.Wrap(errInvalidInput, "negative finality delay")
+		}
+		if c.ChannelFeerate < 0 {
+			return errors.Wrap(errInvalidInput, "negative channel feerate")
+		}
+		if c.HostFeerate < 0 {
+			return errors.Wrap(errInvalidInput, "negative host feerate")
+		}
 		digest, err := bcrypt.GenerateFromPassword([]byte(c.Password), bcrypt.DefaultCost)
 		if err != nil {
 			return err
@@ -263,11 +275,11 @@ func (g *Agent) ConfigInit(c *Config, hostURL string) error {
 		root.Agent().PutEncryptedSeed(sealBox(g.seed, []byte(c.Password)))
 		root.Agent().PutNextKeypathIndex(1)
 		root.Agent().PutPrimaryAcct(&primaryAcct)
-		if c.MaxRoundDurMin == 0 {
-			c.MaxRoundDurMin = defaultMaxRoundDurMin
+		if c.MaxRoundDurMins == 0 {
+			c.MaxRoundDurMins = defaultMaxRoundDurMins
 		}
-		if c.FinalityDelayMin == 0 {
-			c.FinalityDelayMin = defaultFinalityDelayMin
+		if c.FinalityDelayMins == 0 {
+			c.FinalityDelayMins = defaultFinalityDelayMins
 		}
 		if c.ChannelFeerate == 0 {
 			c.ChannelFeerate = defaultChannelFeerate
@@ -279,8 +291,8 @@ func (g *Agent) ConfigInit(c *Config, hostURL string) error {
 			c.KeepAlive = new(bool)
 			*c.KeepAlive = true
 		}
-		root.Agent().Config().PutMaxRoundDurMin(c.MaxRoundDurMin)
-		root.Agent().Config().PutFinalityDelayMin(c.FinalityDelayMin)
+		root.Agent().Config().PutMaxRoundDurMins(c.MaxRoundDurMins)
+		root.Agent().Config().PutFinalityDelayMins(c.FinalityDelayMins)
 		root.Agent().Config().PutChannelFeerate(int64(c.ChannelFeerate))
 		root.Agent().Config().PutHostFeerate(int64(c.HostFeerate))
 		root.Agent().Config().PutKeepAlive(*c.KeepAlive)
@@ -298,9 +310,14 @@ func (g *Agent) ConfigInit(c *Config, hostURL string) error {
 		g.putUpdate(root, &Update{
 			Type: update.InitType,
 			Config: &update.Config{
-				Username:   c.Username,
-				Password:   "[redacted]",
-				HorizonURL: c.HorizonURL,
+				Username:          c.Username,
+				Password:          "[redacted]",
+				HorizonURL:        c.HorizonURL,
+				MaxRoundDurMins:   c.MaxRoundDurMins,
+				FinalityDelayMins: c.FinalityDelayMins,
+				ChannelFeerate:    c.ChannelFeerate,
+				HostFeerate:       c.HostFeerate,
+				KeepAlive:         *c.KeepAlive,
 			},
 			Account: &update.Account{
 				ID:      primaryAcct.Address(),
@@ -318,13 +335,15 @@ func (g *Agent) ConfigInit(c *Config, hostURL string) error {
 // Only Password and HorizonURL can be changed;
 // attempting to change another field is an error.
 func (g *Agent) ConfigEdit(c *Config) error {
-	// Can update password and/or horizon url;
-	// attempting to update other fields is an error.
-	if c.Username != "" || c.MaxRoundDurMin != 0 || c.FinalityDelayMin != 0 ||
-		c.ChannelFeerate != 0 || c.HostFeerate != 0 || c.KeepAlive != nil {
+	// Username and KeepAlive payments are not editable
+	if c.Username != "" || c.KeepAlive != nil {
 		return errInvalidEdit
 	}
-	if c.Password == "" && c.HorizonURL == "" {
+
+	// Check if config is empty
+	c1 := *c
+	c1.OldPassword = ""
+	if c1 == (Config{}) {
 		return errEmptyConfigEdit
 	}
 	if len(c.Password) > 72 {
@@ -336,12 +355,23 @@ func (g *Agent) ConfigEdit(c *Config) error {
 			return err
 		}
 	}
+	if c.MaxRoundDurMins < 0 {
+		return errors.Wrap(errInvalidInput, "negative max round duration")
+	}
+	if c.FinalityDelayMins < 0 {
+		return errors.Wrap(errInvalidInput, "negative finality delay")
+	}
+	if c.ChannelFeerate < 0 {
+		return errors.Wrap(errInvalidInput, "negative channel feerate")
+	}
+	if c.HostFeerate < 0 {
+		return errors.Wrap(errInvalidInput, "negative host feerate")
+	}
 
 	return db.Update(g.db, func(root *db.Root) error {
 		if !g.isReadyConfigured(root) {
 			return errNotConfigured
 		}
-
 		if c.Password != "" {
 			if root.Agent().Config().PwType() != "bcrypt" {
 				return nil
@@ -359,21 +389,36 @@ func (g *Agent) ConfigEdit(c *Config) error {
 			root.Agent().Config().PutPwType("bcrypt")
 			root.Agent().Config().PutPwHash(digest[:])
 			root.Agent().PutEncryptedSeed(sealBox(g.seed, []byte(c.Password)))
-			g.putUpdate(root, &Update{
-				Type:   update.ConfigType,
-				Config: &update.Config{Password: "[redacted]"},
-			})
 		}
-
 		// WARNING: this software is not compatible with Stellar mainnet.
 		if c.HorizonURL != "" {
 			root.Agent().Config().PutHorizonURL(c.HorizonURL)
-			g.putUpdate(root, &Update{
-				Type:   update.ConfigType,
-				Config: &update.Config{HorizonURL: c.HorizonURL},
-			})
 			g.wclient.SetURL(c.HorizonURL)
 		}
+		if c.MaxRoundDurMins != 0 {
+			root.Agent().Config().PutMaxRoundDurMins(c.MaxRoundDurMins)
+		}
+		if c.FinalityDelayMins != 0 {
+			root.Agent().Config().PutFinalityDelayMins(c.FinalityDelayMins)
+		}
+		if c.ChannelFeerate != 0 {
+			root.Agent().Config().PutChannelFeerate(int64(c.ChannelFeerate))
+		}
+		if c.HostFeerate != 0 {
+			root.Agent().Config().PutHostFeerate(int64(c.HostFeerate))
+		}
+		g.putUpdate(root, &Update{
+			Type: update.ConfigType,
+			Config: &update.Config{
+				Username:          c.Username,
+				Password:          "[redacted]",
+				HorizonURL:        c.HorizonURL,
+				MaxRoundDurMins:   c.MaxRoundDurMins,
+				FinalityDelayMins: c.FinalityDelayMins,
+				ChannelFeerate:    c.ChannelFeerate,
+				HostFeerate:       c.HostFeerate,
+			},
+		})
 		return nil
 	})
 }
@@ -680,10 +725,10 @@ func (g *Agent) mustDeauthenticate() {
 }
 
 const (
-	defaultMaxRoundDurMin   = 60
-	defaultFinalityDelayMin = 60
-	defaultChannelFeerate   = 10 * xlm.Millilumen
-	defaultHostFeerate      = 100 * xlm.Stroop
+	defaultMaxRoundDurMins   = 60
+	defaultFinalityDelayMins = 60
+	defaultChannelFeerate    = 10 * xlm.Millilumen
+	defaultHostFeerate       = 100 * xlm.Stroop
 )
 
 // checkChannelUnique checks if there exists a channel between two parties with
@@ -792,8 +837,8 @@ func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount) (*fs
 			CounterpartyAddress: guestFedAddr,
 			RemoteURL:           starlightURL,
 			Passphrase:          g.passphrase(root),
-			MaxRoundDuration:    time.Duration(root.Agent().Config().MaxRoundDurMin()) * time.Minute,
-			FinalityDelay:       time.Duration(root.Agent().Config().FinalityDelayMin()) * time.Minute,
+			MaxRoundDuration:    time.Duration(root.Agent().Config().MaxRoundDurMins()) * time.Minute,
+			FinalityDelay:       time.Duration(root.Agent().Config().FinalityDelayMins()) * time.Minute,
 			ChannelFeerate:      xlm.Amount(root.Agent().Config().ChannelFeerate()),
 			HostFeerate:         xlm.Amount(root.Agent().Config().HostFeerate()),
 			FundingTime:         fundingTime,
@@ -1094,8 +1139,8 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 	}
 	err = g.updateChannel(m.ChannelID, func(root *db.Root, updater *fsm.Updater, update *Update) error {
 		if m.ChannelProposeMsg != nil {
-			maxRoundDur := time.Minute * time.Duration(root.Agent().Config().MaxRoundDurMin())
-			finalityDelay := time.Minute * time.Duration(root.Agent().Config().FinalityDelayMin())
+			maxRoundDur := time.Minute * time.Duration(root.Agent().Config().MaxRoundDurMins())
+			finalityDelay := time.Minute * time.Duration(root.Agent().Config().FinalityDelayMins())
 			if m.ChannelProposeMsg.MaxRoundDuration != maxRoundDur {
 				return errors.Wrapf(errBadRequest, "channel proposed with max round dur %s, want %s", m.ChannelProposeMsg.MaxRoundDuration, maxRoundDur)
 			}

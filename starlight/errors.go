@@ -25,6 +25,7 @@ var (
 	errInvalidAddress         = errors.New("invalid address")
 	errInvalidChannelID       = errors.New("invalid channel ID")
 	errInvalidEdit            = errors.New("can only update password and horizon URL")
+	errInvalidInput           = errors.New("invalid input")
 	errInvalidPassword        = errors.New("invalid password")
 	errInvalidUsername        = errors.New("invalid username")
 	errNoChannelSpecified     = errors.New("channel not specified")

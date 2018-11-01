@@ -51,10 +51,10 @@ type Config struct {
 	PwType string
 	PwHash []byte
 
-	MaxRoundDurMin   int64
-	FinalityDelayMin int64
-	ChannelFeerate   int64
-	HostFeerate      int64
+	MaxRoundDurMins   int64
+	FinalityDelayMins int64
+	ChannelFeerate    int64
+	HostFeerate       int64
 
 	KeepAlive bool
 }

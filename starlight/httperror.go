@@ -78,6 +78,7 @@ func init() {
 
 	// Configuration
 	errorFormatter.add(errAlreadyConfigured, 400, "already configured", false)
+	errorFormatter.add(errInvalidInput, 400, "invalid input", false)
 	errorFormatter.add(errInvalidPassword, 400, "invalid password", false)
 	errorFormatter.add(errInvalidUsername, 400, "invalid username", false)
 	errorFormatter.add(errInvalidEdit, 400, "invalid edit field", false)

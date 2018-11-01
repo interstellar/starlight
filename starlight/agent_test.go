@@ -119,9 +119,14 @@ func TestInitConfigUpdate(t *testing.T) {
 		Type:      update.InitType,
 		UpdateNum: 1,
 		Config: &update.Config{
-			Username:   "alice",
-			Password:   "[redacted]",
-			HorizonURL: testHorizonURL,
+			Username:          "alice",
+			Password:          "[redacted]",
+			HorizonURL:        testHorizonURL,
+			MaxRoundDurMins:   60,
+			FinalityDelayMins: 60,
+			ChannelFeerate:    100000,
+			HostFeerate:       100,
+			KeepAlive:         true,
 		},
 		Account: &update.Account{
 			ID:      "", // account ID is non-deterministic and checked below
@@ -176,11 +181,13 @@ func TestConfigEdit(t *testing.T) {
 	}
 
 	// WARNING: this software is not compatible with Stellar mainnet.
-	newHorizonURL := "https://horizon-testnet.stellar.org/"
+	newHorizonURL := "https://new-horizon-testnet.stellar.org/"
+	newFinalityDelayMins := int64(30)
 	edit := Config{
-		Password:    "new password",
-		OldPassword: "password",
-		HorizonURL:  newHorizonURL,
+		Password:          "new password",
+		OldPassword:       "password",
+		HorizonURL:        newHorizonURL,
+		FinalityDelayMins: newFinalityDelayMins,
 	}
 	err = g.ConfigEdit(&edit)
 	if err != nil {
@@ -193,6 +200,10 @@ func TestConfigEdit(t *testing.T) {
 		if url != newHorizonURL {
 			t.Errorf("got %s horizon url, want %s", url, newHorizonURL)
 		}
+		FinalityDelayMins := root.Agent().Config().FinalityDelayMins()
+		if FinalityDelayMins != newFinalityDelayMins {
+			t.Errorf("got %d finality delay, want %d", FinalityDelayMins, newFinalityDelayMins)
+		}
 		acctID = root.Agent().PrimaryAcct().Address()
 		return nil
 	})
@@ -201,15 +212,11 @@ func TestConfigEdit(t *testing.T) {
 	wantUpdates := []Update{{
 		Type:      update.ConfigType,
 		UpdateNum: 2,
-		Config:    &update.Config{Password: "[redacted]"},
-		Account: &update.Account{
-			Balance: 0,
-			ID:      acctID,
+		Config: &update.Config{
+			Password:          "[redacted]",
+			HorizonURL:        newHorizonURL,
+			FinalityDelayMins: newFinalityDelayMins,
 		},
-	}, {
-		Type:      update.ConfigType,
-		UpdateNum: 3,
-		Config:    &update.Config{HorizonURL: newHorizonURL},
 		Account: &update.Account{
 			Balance: 0,
 			ID:      acctID,

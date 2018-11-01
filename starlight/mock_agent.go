@@ -162,7 +162,7 @@ type horizonHTTP struct{}
 
 func (h horizonHTTP) RoundTrip(req *http.Request) (*http.Response, error) {
 	// WARNING: this software is not compatible with Stellar mainnet.
-	if req.Host == "horizon-testnet.stellar.org" {
+	if req.Host == "horizon-testnet.stellar.org" || req.Host == "new-horizon-testnet.stellar.org" {
 		if (req.URL.Path == "" && req.Method == "GET") || (req.URL.Path == "/transactions" && req.Method == "POST") {
 			buf, err := json.Marshal(map[string]string{
 				"horizon_version":    "test",
