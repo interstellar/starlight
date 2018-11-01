@@ -686,18 +686,23 @@ const (
 	defaultHostFeerate      = 100 * xlm.Stroop
 )
 
-func (g *Agent) checkChannelUnique(a, b string) error {
-	return db.View(g.db, func(root *db.Root) error {
+// checkChannelUnique checks if there exists a channel between two parties with
+// account IDS a and b. If so, it returns the channel ID and an error.
+func (g *Agent) checkChannelUnique(a, b string) ([]byte, error) {
+	var chanID []byte
+	err := db.View(g.db, func(root *db.Root) error {
 		chans := root.Agent().Channels()
-		return chans.Bucket().ForEach(func(currChanID, _ []byte) error {
-			c := chans.Get(currChanID)
+		return chans.Bucket().ForEach(func(curChanID, _ []byte) error {
+			c := chans.Get(curChanID)
 			p, q := c.HostAcct.Address(), c.GuestAcct.Address()
 			if (a == p && b == q) || (a == q && b == p) {
+				chanID = curChanID
 				return errors.Wrapf(errExists, "between host %s and guest %s", p, q)
 			}
 			return nil
 		})
 	})
+	return chanID, err
 }
 
 // DoCreateChannel creates a channel between the agent host and the guest
@@ -723,7 +728,7 @@ func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount) (*fs
 	if guestAcctStr == hostAcctStr {
 		return nil, errAcctsSame
 	}
-	err = g.checkChannelUnique(hostAcctStr, guestAcctStr)
+	_, err = g.checkChannelUnique(hostAcctStr, guestAcctStr)
 	if err != nil {
 		return nil, err
 	}
@@ -1022,9 +1027,44 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 	var starlightURL, hostAccount string
 	if m.ChannelProposeMsg != nil {
 		propose := m.ChannelProposeMsg
-		err := g.checkChannelUnique(propose.HostAcct.Address(), propose.GuestAcct.Address())
+		chanID, err := g.checkChannelUnique(propose.HostAcct.Address(), propose.GuestAcct.Address())
 		if err != nil {
-			WriteError(req, w, err)
+			err = db.Update(g.db, func(root *db.Root) error {
+				chans := root.Agent().Channels()
+				c := chans.Get(chanID)
+				switch c.State {
+				case fsm.SettingUp:
+					log.Printf("%s proposed a channel: agent is currently in SettingUp state proposing a channel to the same counterparty. Conflict will be resolved once the channel moves into ChannelProposed state", propose.HostAcct.Address())
+					return errors.Wrapf(errChannelExistsRetriable, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
+				case fsm.ChannelProposed:
+					// Decide whether or not to clean up your channel, then either clean up or return non-retriable error.
+					if propose.HostAmount < c.HostAmount {
+						log.Printf("%s proposed a channel: the channel proposed by this agent takes precedence, returning a non-retriable error", propose.HostAcct.Address())
+						return errors.Wrapf(errExists, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
+					}
+					if propose.HostAmount == c.HostAmount {
+						// Tie-break by string comparison to avoid force closing
+						if propose.HostAcct.Address() < c.HostAcct.Address() {
+							log.Printf("%s proposed a channel: the channel proposed by this agent takes precedence, returning a non-retriable error", propose.HostAcct.Address())
+							return errors.Wrapf(errExists, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
+						}
+					}
+					log.Printf("%s proposed a channel: cleaning up this agent's proposed channel before accepting", propose.HostAcct.Address())
+					go g.DoCommand(string(chanID), &fsm.Command{
+						Name: "CleanUp",
+					})
+					return errors.Wrapf(errChannelExistsRetriable, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
+				case fsm.AwaitingCleanup:
+					// Channel in cleanup process: counterparty should retry until cleanup is complete
+					return errors.Wrapf(errChannelExistsRetriable, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
+				default:
+					// Channel is already open or in some payment state: reject the proposed channel
+					return errors.Wrapf(errExists, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
+				}
+			})
+			if err != nil {
+				WriteError(req, w, err)
+			}
 			return
 		}
 		err = escrowAcct.SetAddress(string(m.ChannelID))
@@ -1073,8 +1113,10 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 		update.InputMessage = m
 		return updater.Msg(m)
 	})
-	log.Printf("handling RPC message, channel %s: %s", string(m.ChannelID), err)
-	WriteError(req, w, err)
+	if err != nil {
+		log.Printf("handling RPC message, channel %s: %s", string(m.ChannelID), err)
+		WriteError(req, w, err)
+	}
 	return
 }
 

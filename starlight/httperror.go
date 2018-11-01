@@ -67,11 +67,12 @@ func init() {
 	errorFormatter.add(errEmptyAmount, 400, "no amount specified", false)
 	errorFormatter.add(errInsufficientBalance, 400, "insufficient balance", true)
 	errorFormatter.add(errAcctsSame, 400, "same host and guest accounts", false)
-	errorFormatter.add(errExists, 400, "channel already exists", true)
 	errorFormatter.add(errNotFunded, 500, "agent not yet funded", true)
 	errorFormatter.add(errInvalidAddress, 400, "invalid address", false)
 
 	// Message errors
+	errorFormatter.add(errExists, 400, "channel already exists", false)
+	errorFormatter.add(errChannelExistsRetriable, 400, "channel already exists, in setting up state", true)
 	errorFormatter.add(errInvalidChannelID, 400, "invalid channel ID", false)
 	errorFormatter.add(errFetchingAccounts, 400, "error fetching sequence numbers for accounts", false)
 
