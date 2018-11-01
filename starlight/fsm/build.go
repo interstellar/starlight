@@ -210,3 +210,38 @@ func buildCooperativeCloseTx(ch *Channel) (*b.TransactionBuilder, error) {
 	err = tb.Mutate(b.Defaults{})
 	return tb, err
 }
+
+func buildCleanupTx(ch *Channel, h *WalletAcct) (*b.TransactionBuilder, error) {
+	var seqnum xdr.SequenceNumber
+	if ch.FundingTimedOut {
+		seqnum = ch.FundingTxSeqnum
+	} else {
+		seqnum = h.Seqnum
+	}
+	return ch.buildWalletTx(
+		seqnum,
+		b.AccountMerge(
+			b.SourceAccount{AddressOrSeed: ch.EscrowAcct.Address()},
+			b.Destination{AddressOrSeed: ch.HostAcct.Address()},
+		),
+		b.AccountMerge(
+			b.SourceAccount{AddressOrSeed: ch.HostRatchetAcct.Address()},
+			b.Destination{AddressOrSeed: ch.HostAcct.Address()},
+		),
+		b.AccountMerge(
+			b.SourceAccount{AddressOrSeed: ch.GuestRatchetAcct.Address()},
+			b.Destination{AddressOrSeed: ch.HostAcct.Address()},
+		),
+	)
+}
+
+func buildTopUpTx(ch *Channel, h *WalletAcct) (*b.TransactionBuilder, error) {
+	return ch.buildWalletTx(
+		h.Seqnum,
+		b.Payment(
+			b.SourceAccount{AddressOrSeed: ch.HostAcct.Address()},
+			b.Destination{AddressOrSeed: ch.EscrowAcct.Address()},
+			b.NativeAmount{Amount: ch.TopUpAmount.HorizonString()},
+		),
+	)
+}

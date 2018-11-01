@@ -3,7 +3,6 @@ package fsm
 import (
 	"time"
 
-	b "github.com/stellar/go/build"
 	"github.com/stellar/go/xdr"
 
 	"github.com/interstellar/starlight/starlight/key"
@@ -38,31 +37,7 @@ func publishFundingTx(seed []byte, ch *Channel, o Outputter, h *WalletAcct) erro
 }
 
 func publishCleanupTx(seed []byte, ch *Channel, o Outputter, h *WalletAcct) error {
-	var seqnum xdr.SequenceNumber
-	if ch.FundingTimedOut {
-		seqnum = ch.FundingTxSeqnum
-	} else {
-		seqnum = h.Seqnum
-	}
-
-	tx, err := b.Transaction(
-		b.Network{Passphrase: ch.Passphrase},
-		b.SourceAccount{AddressOrSeed: ch.HostAcct.Address()},
-		b.Sequence{Sequence: uint64(seqnum)},
-		b.BaseFee{Amount: uint64(ch.HostFeerate)},
-		b.AccountMerge(
-			b.SourceAccount{AddressOrSeed: ch.EscrowAcct.Address()},
-			b.Destination{AddressOrSeed: ch.HostAcct.Address()},
-		),
-		b.AccountMerge(
-			b.SourceAccount{AddressOrSeed: ch.HostRatchetAcct.Address()},
-			b.Destination{AddressOrSeed: ch.HostAcct.Address()},
-		),
-		b.AccountMerge(
-			b.SourceAccount{AddressOrSeed: ch.GuestRatchetAcct.Address()},
-			b.Destination{AddressOrSeed: ch.HostAcct.Address()},
-		),
-	)
+	tx, err := buildCleanupTx(ch, h)
 	if err != nil {
 		return err
 	}
@@ -91,17 +66,7 @@ func publishCoopCloseTx(seed []byte, ch *Channel, o Outputter, h *WalletAcct) er
 }
 
 func publishTopUpTx(seed []byte, ch *Channel, o Outputter, h *WalletAcct) error {
-	tx, err := b.Transaction(
-		b.Network{Passphrase: ch.Passphrase},
-		b.SourceAccount{AddressOrSeed: ch.HostAcct.Address()},
-		b.Sequence{Sequence: uint64(h.Seqnum)},
-		b.BaseFee{Amount: uint64(ch.HostFeerate)},
-		b.Payment(
-			b.SourceAccount{AddressOrSeed: ch.HostAcct.Address()},
-			b.Destination{AddressOrSeed: ch.EscrowAcct.Address()},
-			b.NativeAmount{Amount: ch.TopUpAmount.HorizonString()},
-		),
-	)
+	tx, err := buildTopUpTx(ch, h)
 	if err != nil {
 		return err
 	}
