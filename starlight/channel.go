@@ -281,8 +281,10 @@ func (g *Agent) doUpdateChannel(root *db.Root, chanID string, f func(*db.Root, *
 	}
 
 	// After saving the current state, start the channel, creating cancelers and starting the
-	// watch escrow account goroutine.
-	if c.PrevState == fsm.Start {
+	// watch escrow account goroutine. We only want to start new channel watch routines when
+	// the update came from a message or a command, otherwise this indicates an update on an
+	// already-started channel.
+	if c.PrevState == fsm.Start && (u.InputCommand != nil || u.InputMessage != nil) {
 		_, err := g.wclient.LoadAccount(c.HostAcct.Address())
 		if err != nil {
 			return errors.Wrapf(err, "error looking up host account %s", c.HostAcct.Address())
