@@ -420,18 +420,6 @@ func aliceCoopCloseSteps(alice, bob *Starlightd, payment xlm.Amount) []step {
 			// Balance should increase by
 			// 1.5 Lumens initial funding + channelFeerate
 			delta: 1*xlm.Lumen + 500*xlm.Millilumen + channelFeerate,
-		}, {
-			name:  "bob cooperative close channel closed update",
-			agent: bob,
-			update: &update.Update{
-				Type: update.ChannelType,
-				Channel: &fsm.Channel{
-					State:       fsm.Closed,
-					HostAmount:  hostAmount - payment,
-					GuestAmount: payment,
-				},
-			},
-			delta: 0,
 			// Account should be up to date with ledger at this point
 			checkLedger: true,
 		}, {
