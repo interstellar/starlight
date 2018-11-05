@@ -29,6 +29,8 @@ type Starlightd struct {
 	accountID     string
 	nextUpdateNum uint64
 	balance       xlm.Amount
+	hostAmount    xlm.Amount
+	guestAmount   xlm.Amount
 }
 
 // StartServer starts a Startlightd instance.

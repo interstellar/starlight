@@ -21,9 +21,9 @@ import (
 )
 
 const (
-	channelFeerate = 10 * xlm.Millilumen
-	hostFeerate    = 100 * xlm.Stroop
-	hostAmount     = 1000 * xlm.Lumen
+	friendbotAmount = 10000 * xlm.Lumen
+	channelFeerate  = 10 * xlm.Millilumen
+	hostFeerate     = 100 * xlm.Stroop
 )
 
 type step struct {
@@ -37,7 +37,9 @@ type step struct {
 	update         *update.Update
 	outOfOrder     bool
 	checkLedger    bool
-	delta          xlm.Amount
+	walletDelta    xlm.Amount
+	hostDelta      xlm.Amount
+	guestDelta     xlm.Amount
 }
 
 // WalletPaySelf executes a do-wallet-pay API action.
@@ -49,7 +51,7 @@ func WalletPaySelf(ctx context.Context, self *Starlightd) error {
 			path:  "/api/do-wallet-pay",
 			body: `{
 				"Dest":"%s",
-				"Amount":1000000000
+				"Amount": 1000000000
 			}`,
 			injectHostAcct: true,
 		},
@@ -65,8 +67,8 @@ func WalletPaySelf(ctx context.Context, self *Starlightd) error {
 }
 
 // CreateChannel executes the API steps for creating a channel.
-func CreateChannel(ctx context.Context, alice, bob *Starlightd) (string, error) {
-	steps := channelCreationSteps(alice, bob, 0, 0)
+func CreateChannel(ctx context.Context, guest, host *Starlightd, channelFundingAmount xlm.Amount) (string, error) {
+	steps := channelCreationSteps(guest, host, 0, 0, channelFundingAmount)
 	var channelID string
 	for _, s := range steps {
 		err := handleStep(ctx, s, &channelID)
@@ -77,9 +79,9 @@ func CreateChannel(ctx context.Context, alice, bob *Starlightd) (string, error) 
 	return channelID, nil
 }
 
-// BobChannelPayAlice executes the API steps for a host-to-guest channel payment.
-func BobChannelPayAlice(ctx context.Context, alice, bob *Starlightd, channelID string) error {
-	steps := bobChannelPayAliceSteps(alice, bob)
+// HostChannelPayGuest executes the API steps for a host-to-guest channel payment.
+func HostChannelPayGuest(ctx context.Context, guest, host *Starlightd, channelID string, payment xlm.Amount) error {
+	steps := hostChannelPayGuestSteps(guest, host, payment)
 	for _, s := range steps {
 		err := handleStep(ctx, s, &channelID)
 		if err != nil {
@@ -89,9 +91,9 @@ func BobChannelPayAlice(ctx context.Context, alice, bob *Starlightd, channelID s
 	return nil
 }
 
-// BobTopUp executes the API steps for a host top-up.
-func BobTopUp(ctx context.Context, alice, bob *Starlightd, channelID string) error {
-	steps := hostTopUpSteps(alice, bob)
+// HostTopUp executes the API steps for a host top-up.
+func HostTopUp(ctx context.Context, guest, host *Starlightd, channelID string, topUpAmount xlm.Amount) error {
+	steps := hostTopUpSteps(guest, host, topUpAmount)
 	for _, s := range steps {
 		err := handleStep(ctx, s, &channelID)
 		if err != nil {
@@ -101,17 +103,17 @@ func BobTopUp(ctx context.Context, alice, bob *Starlightd, channelID string) err
 	return nil
 }
 
-func channelCreationSteps(alice, bob *Starlightd, maxRoundDurMins, finalityDelayMins int) []step {
+func channelCreationSteps(guest, host *Starlightd, maxRoundDurMins, finalityDelayMins int, channelFundingAmount xlm.Amount) []step {
 	// WARNING: this software is not compatible with Stellar mainnet.
 	return []step{
 		{
-			name:  "alice config init",
-			agent: alice,
+			name:  "guest config init",
+			agent: guest,
 			path:  "/api/config-init",
 			// WARNING: this software is not compatible with Stellar mainnet.
 			body: fmt.Sprintf(`
 			{
-				"Username":"alice",
+				"Username":"guest",
 				"Password":"password",
 				"DemoServer":true,
 				"HorizonURL":"%s",
@@ -120,20 +122,20 @@ func channelCreationSteps(alice, bob *Starlightd, maxRoundDurMins, finalityDelay
 				"FinalityDelayMins": %d
 			}`, *HorizonURL, maxRoundDurMins, finalityDelayMins),
 		}, {
-			name:  "alice config init update",
-			agent: alice,
+			name:  "guest config init update",
+			agent: guest,
 			update: &update.Update{
 				Type:      update.InitType,
 				UpdateNum: 1,
 			},
 		}, {
-			name:  "bob config init",
-			agent: bob,
+			name:  "host config init",
+			agent: host,
 			path:  "/api/config-init",
 			// WARNING: this software is not compatible with Stellar mainnet.
 			body: fmt.Sprintf(`
 			{
-				"Username":"bob",
+				"Username":"host",
 				"Password":"password",
 				"DemoServer":true,
 				"HorizonURL":"%s",
@@ -144,205 +146,190 @@ func channelCreationSteps(alice, bob *Starlightd, maxRoundDurMins, finalityDelay
 				"ChannelFeerate":%d
 			}`, *HorizonURL, maxRoundDurMins, finalityDelayMins, hostFeerate, channelFeerate),
 		}, {
-			name:  "bob config init update",
-			agent: bob,
+			name:  "host config init update",
+			agent: host,
 			update: &update.Update{
 				Type:      update.InitType,
 				UpdateNum: 1,
 			},
 		}, {
-			name:  "alice wallet funding update",
-			agent: alice,
+			name:  "guest wallet funding update",
+			agent: guest,
 			update: &update.Update{
 				Type:      update.AccountType,
 				UpdateNum: 2,
 			},
-			delta:       10000*xlm.Lumen - hostFeerate,
+			walletDelta: friendbotAmount - hostFeerate,
 			checkLedger: true,
 		}, {
-			name:  "bob wallet funding update",
-			agent: bob,
+			name:  "host wallet funding update",
+			agent: host,
 			path:  "/api/updates",
 			body:  `{"From": 2}`,
 			update: &update.Update{
 				Type:      update.AccountType,
 				UpdateNum: 2,
 			},
-			delta:       10000*xlm.Lumen - hostFeerate,
+			walletDelta: friendbotAmount - hostFeerate,
 			checkLedger: true,
 		}, {
-			name:  "bob create channel with alice",
-			agent: bob,
+			name:  "host create channel with guest",
+			agent: host,
 			path:  "/api/do-create-channel",
 			body: fmt.Sprintf(`{
-				"GuestAddr": "alice*%s",
-				"HostAmount": 10000000000
-			}`, alice.address),
+				"GuestAddr": "guest*%s",
+				"HostAmount": %d
+			}`, guest.address, channelFundingAmount),
 		}, {
-			name:  "bob channel creation setting up update",
-			agent: bob,
+			name:  "host channel creation setting up update",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.SettingUp,
-					HostAmount:  hostAmount,
-					GuestAmount: 0,
+					State: fsm.SettingUp,
 				},
 			},
 			// Host balance should decrease by:
-			// 1000 Lumen for channel funding amount
+			// channelFundingAmount
 			// 3 * Lumen + 3 * hostFee to create the three accounts
 			// 7 * hostFee in funding tx fees for 7 operations
 			// 0.5*Lumen + 8 * channelFee in initial funding for the escrow account
 			// 1 * Lumen + 1 * channelFee in initial funding for the guest ratchet
 			// 0.5*Lumen + 1 * channelFee in initial funding for the host ratchet account
-			delta: -(1000*xlm.Lumen + 5*xlm.Lumen + 10*hostFeerate + 10*channelFeerate),
+			walletDelta: -(channelFundingAmount + 5*xlm.Lumen + 10*hostFeerate + 10*channelFeerate),
+			// Host amount should increase by channelFundingAmount
+			hostDelta: channelFundingAmount,
 		}, {
-			name:  "bob channel creation channel proposed update",
-			agent: bob,
+			name:  "host channel creation channel proposed update",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.ChannelProposed,
-					HostAmount:  hostAmount,
-					GuestAmount: 0,
+					State: fsm.ChannelProposed,
 				},
 			},
 		}, {
-			name:  "alice channel creation awaiting funding update",
-			agent: alice,
+			name:  "guest channel creation awaiting funding update",
+			agent: guest,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.AwaitingFunding,
-					HostAmount:  hostAmount,
-					GuestAmount: 0,
+					State: fsm.AwaitingFunding,
 				},
 			},
+			hostDelta: channelFundingAmount,
 		}, {
-			name:  "alice channel creation awaiting funding tx update",
-			agent: alice,
+			name:  "guest channel creation awaiting funding tx update",
+			agent: guest,
 			update: &update.Update{
 				Type:    update.ChannelType,
 				InputTx: &worizon.Tx{},
 				Channel: &fsm.Channel{
-					State:       fsm.AwaitingFunding,
-					HostAmount:  hostAmount,
-					GuestAmount: 0,
+					State: fsm.AwaitingFunding,
 				},
 			},
 		}, {
-			name:  "bob channel creation awaiting funding update",
-			agent: bob,
+			name:  "host channel creation awaiting funding update",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.AwaitingFunding,
-					HostAmount:  hostAmount,
-					GuestAmount: 0,
+					State: fsm.AwaitingFunding,
 				},
 			},
 		}, {
-			name:  "alice channel creation open update",
-			agent: alice,
+			name:  "guest channel creation open update",
+			agent: guest,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.Open,
-					HostAmount:  hostAmount,
-					GuestAmount: 0,
+					State: fsm.Open,
 				},
 			},
 		}, {
-			name:  "bob channel creation open update",
-			agent: bob,
+			name:  "host channel creation open update",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.Open,
-					HostAmount:  hostAmount,
-					GuestAmount: 0,
+					State: fsm.Open,
 				},
 			},
 		},
 	}
 }
 
-func bobChannelPayAliceSteps(alice, bob *Starlightd) []step {
+func hostChannelPayGuestSteps(guest, host *Starlightd, payment xlm.Amount) []step {
 	return []step{
 		{
-			name:  "bob channel pay to alice",
-			agent: bob,
+			name:  "host channel pay to guest",
+			agent: host,
 			path:  "/api/do-command",
-			body: `
+			body: fmt.Sprintf(`
 			{
-				"ChannelID": "%s",
+				"ChannelID": "%%s",
 				"Command": {
 					"Name": "ChannelPay",
-					"Amount": 1000,
+					"Amount": %d,
 					"Time": "2018-10-02T10:26:43.511Z"
 				}
-			}`,
+			}`, payment),
 			injectChanID: true,
 		}, {
-			name:  "bob channel pay to alice payment proposed update",
-			agent: bob,
+			name:  "host channel pay to guest payment proposed update",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.PaymentProposed,
-					HostAmount:  hostAmount,
-					GuestAmount: 0,
+					State: fsm.PaymentProposed,
 				},
 			},
 		}, {
-			name:  "bob channel pay to alice payment accept update",
-			agent: alice,
+			name:  "host channel pay to guest payment accept update",
+			agent: guest,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.PaymentAccepted,
-					HostAmount:  hostAmount,
-					GuestAmount: 0,
+					State: fsm.PaymentAccepted,
 				},
 			},
 		}, {
-			name:  "bob channel pay to alice payment bob channel open update",
-			agent: bob,
+			name:  "host channel pay to guest payment host channel open update",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.Open,
-					HostAmount:  hostAmount - 1000*xlm.Stroop,
-					GuestAmount: 1000,
+					State: fsm.Open,
 				},
 			},
+			hostDelta:  -payment,
+			guestDelta: payment,
 		}, {
-			name:  "bob channel pay to alice payment alice channel open update",
-			agent: alice,
+			name:  "host channel pay to guest payment guest channel open update",
+			agent: guest,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.Open,
-					HostAmount:  hostAmount - 1000*xlm.Stroop,
-					GuestAmount: 1000,
+					State: fsm.Open,
 				},
 			},
+			hostDelta:  -payment,
+			guestDelta: payment,
 		},
 	}
 }
 
-func aliceCoopCloseSteps(alice, bob *Starlightd, payment xlm.Amount) []step {
+func guestCoopCloseSteps(guest, host *Starlightd, channelFundingAmount, settleWithGuestAmount xlm.Amount) []step {
 	var guestFee xlm.Amount
-	if payment != 0 {
+	if settleWithGuestAmount != 0 {
 		// Add additional channelFeerate for additional operation cost to
 		// settle with guest
 		guestFee = channelFeerate
 	}
 	return []step{
 		{
-			name:  "alice cooperative close",
-			agent: alice,
+			name:  "guest cooperative close",
+			agent: guest,
 			path:  "/api/do-command",
 			body: `
 				{
@@ -354,96 +341,88 @@ func aliceCoopCloseSteps(alice, bob *Starlightd, payment xlm.Amount) []step {
 				}`,
 			injectChanID: true,
 		}, {
-			name:  "alice cooperative close awaiting close update",
-			agent: alice,
+			name:  "guest cooperative close awaiting close update",
+			agent: guest,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.AwaitingClose,
-					HostAmount:  hostAmount - payment,
-					GuestAmount: payment,
+					State: fsm.AwaitingClose,
 				},
 			},
 		}, {
-			name:  "bob cooperative close awaiting close update",
-			agent: bob,
+			name:  "host cooperative close awaiting close update",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.AwaitingClose,
-					HostAmount:  hostAmount - payment,
-					GuestAmount: payment,
+					State: fsm.AwaitingClose,
 				},
 			},
 		}, {
-			name:  "bob cooperative close channel closed update",
-			agent: bob,
+			name:  "host cooperative close channel closed update",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.Closed,
-					HostAmount:  hostAmount - payment,
-					GuestAmount: payment,
+					State: fsm.Closed,
 				},
 			},
 			outOfOrder: true,
 		}, {
-			name:  "bob cooperative close coop close tx merge escrow account",
-			agent: bob,
+			name:  "host cooperative close coop close tx merge escrow account",
+			agent: host,
 			update: &update.Update{
 				Type:    update.AccountType,
 				InputTx: &worizon.Tx{},
 			},
 			// Balance should increase by:
-			// 1000 Lumen initial funding
+			// channelFundingAmount, initial funding
 			// 1 Lumen minimum escrow account balance
 			// 0.5 Lumen multisig escrow account balance
 			// 8 * channelFeerate initial funding
 			// less 3 * channelFeerate coop close tx fees (one added above if settling with guest)
 			// less payment amount
-			delta: 1000*xlm.Lumen + 1*xlm.Lumen + 500*xlm.Millilumen + 8*channelFeerate - 3*channelFeerate - payment - guestFee,
+			walletDelta: channelFundingAmount + 1*xlm.Lumen + 500*xlm.Millilumen + 8*channelFeerate - 3*channelFeerate - settleWithGuestAmount - guestFee,
 		}, {
-			name:  "bob cooperative close coop close tx merge guest ratchet account",
-			agent: bob,
+			name:  "host cooperative close coop close tx merge guest ratchet account",
+			agent: host,
 			update: &update.Update{
 				Type:    update.AccountType,
 				InputTx: &worizon.Tx{},
 			},
 			// Balance should increase by
 			// 2 Lumens initial funding + channelFeerate
-			delta: 2*xlm.Lumen + channelFeerate,
+			walletDelta: 2*xlm.Lumen + channelFeerate,
 		}, {
-			name:  "bob cooperative close coop close tx merge host ratchet account",
-			agent: bob,
+			name:  "host cooperative close coop close tx merge host ratchet account",
+			agent: host,
 			update: &update.Update{
 				Type:    update.AccountType,
 				InputTx: &worizon.Tx{},
 			},
 			// Balance should increase by
 			// 1.5 Lumens initial funding + channelFeerate
-			delta: 1*xlm.Lumen + 500*xlm.Millilumen + channelFeerate,
+			walletDelta: 1*xlm.Lumen + 500*xlm.Millilumen + channelFeerate,
 			// Account should be up to date with ledger at this point
 			checkLedger: true,
 		}, {
-			name:  "alice cooperative close channel closed update",
-			agent: alice,
+			name:  "guest cooperative close channel closed update",
+			agent: guest,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.Closed,
-					HostAmount:  hostAmount - payment,
-					GuestAmount: payment,
+					State: fsm.Closed,
 				},
 			},
 		},
 	}
 }
 
-func bobForceCloseStepsNoGuestBalance(alice, bob *Starlightd) []step {
+func hostForceCloseStepsNoGuestBalance(guest, host *Starlightd, channelFundingAmount xlm.Amount) []step {
 	return []step{
 		{
-			name:  "bob force close command",
-			agent: bob,
+			name:  "host force close command",
+			agent: host,
 			path:  "/api/do-command",
 			body: `{
 				"ChannelID": "%s",
@@ -453,114 +432,104 @@ func bobForceCloseStepsNoGuestBalance(alice, bob *Starlightd) []step {
 			}`,
 			injectChanID: true,
 		}, {
-			// bob transitions to AwaitingRatchet state,
+			// host transitions to AwaitingRatchet state,
 			// outputs current ratchet tx
-			name:  "bob force close state transition awaiting ratchet",
-			agent: bob,
+			name:  "host force close state transition awaiting ratchet",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.AwaitingRatchet,
-					HostAmount:  hostAmount,
-					GuestAmount: 0,
+					State: fsm.AwaitingRatchet,
 				},
 			},
 		}, {
-			// bob sees current ratchet tx hit the ledger,
+			// host sees current ratchet tx hit the ledger,
 			// transitions to awaiting settlement mintime
-			name:  "bob force close state transition awaiting settlement mintime",
-			agent: bob,
+			name:  "host force close state transition awaiting settlement mintime",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.AwaitingSettlementMintime,
-					HostAmount:  hostAmount,
-					GuestAmount: 0,
+					State: fsm.AwaitingSettlementMintime,
 				},
 			},
 		}, {
-			// alice sees current ratchet tx hit the ledger,
+			// guest sees current ratchet tx hit the ledger,
 			// transitions to closed
-			name:  "alice force close state transition closed",
-			agent: alice,
+			name:  "guest force close state transition closed",
+			agent: guest,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.Closed,
-					HostAmount:  hostAmount,
-					GuestAmount: 0,
+					State: fsm.Closed,
 				},
 			},
 		}, {
-			// bob waits until settlement mintime, then transitions to
+			// host waits until settlement mintime, then transitions to
 			// awaiting settlement
-			name:  "bob force close state transition awaiting settlement",
-			agent: bob,
+			name:  "host force close state transition awaiting settlement",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.AwaitingSettlement,
-					HostAmount:  hostAmount,
-					GuestAmount: 0,
+					State: fsm.AwaitingSettlement,
 				},
 			},
 		}, {
-			// bob sees current settlement tx hit the ledger, transitions to
+			// host sees current settlement tx hit the ledger, transitions to
 			// closed state
-			name:  "bob force close state transition closed",
-			agent: bob,
+			name:  "host force close state transition closed",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.Closed,
-					HostAmount:  hostAmount,
-					GuestAmount: 0,
+					State: fsm.Closed,
 				},
 			},
-			delta:      0,
-			outOfOrder: true,
+			walletDelta: 0,
+			outOfOrder:  true,
 		}, {
-			name:  "bob force close merge escrow account",
-			agent: bob,
+			name:  "host force close merge escrow account",
+			agent: host,
 			update: &update.Update{
 				Type:    update.AccountType,
 				InputTx: &worizon.Tx{},
 			},
 			// Balance should increase by:
-			// 1000 Lumen initial funding
+			// channelFundingAmount, initial funding
 			// 1 Lumen minimum escrow account balance
 			// 0.5 Lumen multisig escrow account balance
 			// 8 * channelFeerate initial funding
 			// less 3 * channelFeerate ratchet / settlement tx fees
-			delta: 1000*xlm.Lumen + 1*xlm.Lumen + 500*xlm.Millilumen + 8*channelFeerate - 3*channelFeerate,
+			walletDelta: channelFundingAmount + 1*xlm.Lumen + 500*xlm.Millilumen + 8*channelFeerate - 3*channelFeerate,
 		}, {
-			name:  "bob force close merge guest ratchet",
-			agent: bob,
+			name:  "host force close merge guest ratchet",
+			agent: host,
 			update: &update.Update{
 				Type:    update.AccountType,
 				InputTx: &worizon.Tx{},
 			},
 			// merge back 2 Lumens guest ratchet balance
-			delta: 2*xlm.Lumen + channelFeerate,
+			walletDelta: 2*xlm.Lumen + channelFeerate,
 		}, {
-			name:  "bob force close merge host ratchet",
-			agent: bob,
+			name:  "host force close merge host ratchet",
+			agent: host,
 			update: &update.Update{
 				Type:    update.AccountType,
 				InputTx: &worizon.Tx{},
 			},
 			// merge back 1.5 Lumens host ratchet balance
-			delta:       1*xlm.Lumen + 500*xlm.Millilumen,
+			walletDelta: 1*xlm.Lumen + 500*xlm.Millilumen,
 			checkLedger: true,
 		},
 	}
 }
 
-func bobForceCloseStepsSettleWithGuest(alice, bob *Starlightd, payment xlm.Amount) []step {
+func hostForceCloseStepsSettleWithGuest(guest, host *Starlightd, channelFundingAmount, payment xlm.Amount) []step {
 	return []step{
 		{
-			name:  "bob force close command",
-			agent: bob,
+			name:  "host force close command",
+			agent: host,
 			path:  "/api/do-command",
 			body: `{
 				"ChannelID": "%s",
@@ -570,298 +539,274 @@ func bobForceCloseStepsSettleWithGuest(alice, bob *Starlightd, payment xlm.Amoun
 			}`,
 			injectChanID: true,
 		}, {
-			// bob sees current ratchet tx hit the ledger,
+			// host sees current ratchet tx hit the ledger,
 			// transitions to awaiting settlement mintime
-			name:  "bob force close state transition awaiting settlement mintime",
-			agent: bob,
+			name:  "host force close state transition awaiting settlement mintime",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.AwaitingSettlementMintime,
-					HostAmount:  hostAmount - payment,
-					GuestAmount: payment,
+					State: fsm.AwaitingSettlementMintime,
 				},
 			},
 		}, {
-			// alice sees current ratchet tx hit the ledger,
+			// guest sees current ratchet tx hit the ledger,
 			// transitions to awaiting settlement mintime
-			name:  "alice force close state transition closed",
-			agent: alice,
+			name:  "guest force close state transition closed",
+			agent: guest,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.AwaitingSettlementMintime,
-					HostAmount:  hostAmount - payment,
-					GuestAmount: payment,
+					State: fsm.AwaitingSettlementMintime,
 				},
 			},
 		}, {
-			// bob waits until settlement mintime, then transitions to
+			// host waits until settlement mintime, then transitions to
 			// awaiting settlement
-			name:  "bob force close state transition awaiting settlement",
-			agent: bob,
+			name:  "host force close state transition awaiting settlement",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.AwaitingSettlement,
-					HostAmount:  hostAmount - payment,
-					GuestAmount: payment,
+					State: fsm.AwaitingSettlement,
 				},
 			},
 		}, {
-			// alice waits until settlement mintime, then transitions to
+			// guest waits until settlement mintime, then transitions to
 			// awaiting settlement
-			name:  "alice force close state transition awaiting settlement",
-			agent: alice,
+			name:  "guest force close state transition awaiting settlement",
+			agent: guest,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.AwaitingSettlement,
-					HostAmount:  hostAmount - payment,
-					GuestAmount: payment,
+					State: fsm.AwaitingSettlement,
 				},
 			},
 		}, {
-			// bob sees current settlement tx hit the ledger, transitions to
+			// host sees current settlement tx hit the ledger, transitions to
 			// closed state
-			name:  "bob force close state transition closed",
-			agent: bob,
+			name:  "host force close state transition closed",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.Closed,
-					HostAmount:  hostAmount - payment,
-					GuestAmount: payment,
+					State: fsm.Closed,
 				},
 			},
 			// state closed update could come before or after merge tx updates
 			outOfOrder: true,
 		}, {
-			// alice sees current settlement tx hit the ledger, transitions to
+			// guest sees current settlement tx hit the ledger, transitions to
 			// closed state
-			name:  "alice force close state transition closed",
-			agent: alice,
+			name:  "guest force close state transition closed",
+			agent: guest,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.Closed,
-					HostAmount:  hostAmount - payment,
-					GuestAmount: payment,
+					State: fsm.Closed,
 				},
 			},
 		}, {
-			name:  "bob force close merge escrow account",
-			agent: bob,
+			name:  "host force close merge escrow account",
+			agent: host,
 			update: &update.Update{
 				Type:    update.AccountType,
 				InputTx: &worizon.Tx{},
 			},
 			// Balance should increase by:
-			// 1000 Lumen initial funding
+			// channelFundingAmount initial funding
 			// 1 Lumen minimum escrow account balance
 			// 0.5 Lumen multisig escrow account balance
 			// 8 * channelFeerate initial funding
 			// less 4 * channelFeerate ratchet / settlement tx fees
-			// less 1000 stroops sent to Alice
-			delta: 1000*xlm.Lumen + 1*xlm.Lumen + 500*xlm.Millilumen + 8*channelFeerate - 4*channelFeerate - payment,
+			// less 1000 stroops sent to Guest
+			walletDelta: channelFundingAmount + 1*xlm.Lumen + 500*xlm.Millilumen + 8*channelFeerate - 4*channelFeerate - payment,
 		}, {
-			name:  "bob force close merge guest ratchet",
-			agent: bob,
+			name:  "host force close merge guest ratchet",
+			agent: host,
 			update: &update.Update{
 				Type:    update.AccountType,
 				InputTx: &worizon.Tx{},
 			},
 			// merge back 2 Lumens guest ratchet balance
-			delta: 2 * xlm.Lumen,
+			walletDelta: 2 * xlm.Lumen,
 		}, {
-			name:  "bob force close merge host ratchet",
-			agent: bob,
+			name:  "host force close merge host ratchet",
+			agent: host,
 			update: &update.Update{
 				Type:    update.AccountType,
 				InputTx: &worizon.Tx{},
 			},
 			// merge back 1.5 Lumens host ratchet balance
-			delta:       1*xlm.Lumen + 500*xlm.Millilumen + channelFeerate,
+			walletDelta: 1*xlm.Lumen + 500*xlm.Millilumen + channelFeerate,
 			checkLedger: true,
 		},
 	}
 }
 
-func hostTopUpSteps(alice, bob *Starlightd) []step {
+func hostTopUpSteps(guest, host *Starlightd, topUpAmount xlm.Amount) []step {
 	return []step{
 		{
-			name:  "bob top-up command",
-			agent: bob,
+			name:  "host top-up command",
+			agent: host,
 			path:  "/api/do-command",
-			body: `{
-				"ChannelID": "%s",
+			body: fmt.Sprintf(`{
+				"ChannelID": "%%s",
 				"Command": {
 					"Name": "TopUp",
-					"Amount":500
+					"Amount":%d
 				}
-			}`,
+			}`, topUpAmount),
 			injectChanID: true,
 		}, {
-			name:  "bob top-up channel update",
-			agent: bob,
+			name:  "host top-up channel update",
+			agent: host,
 			update: &update.Update{
 				Type:    update.ChannelType,
 				InputTx: &worizon.Tx{},
 				Channel: &fsm.Channel{
-					State:       fsm.Open,
-					HostAmount:  hostAmount + 500*xlm.Stroop,
-					GuestAmount: 0,
+					State: fsm.Open,
 				},
 			},
 			// balance decreases by top-up amount + host fee rate
-			delta: -(500*xlm.Stroop + hostFeerate),
+			walletDelta: -(topUpAmount + hostFeerate),
+			hostDelta:   topUpAmount,
 		}, {
-			name:  "alice top-up tx update",
-			agent: alice,
+			name:  "guest top-up tx update",
+			agent: guest,
 			update: &update.Update{
 				Type:    update.ChannelType,
 				InputTx: &worizon.Tx{},
 				Channel: &fsm.Channel{
-					State:       fsm.Open,
-					HostAmount:  hostAmount + 500*xlm.Stroop,
-					GuestAmount: 0,
+					State: fsm.Open,
 				},
 			},
+			hostDelta: topUpAmount,
 		},
 	}
 }
 
-// mergingPaymentSteps sends payments from Alice and Bob that, if one of the agents is not
+// mergingPaymentSteps sends payments from Guest and Host that, if one of the agents is not
 // receiving messages, will eventually create a payment merge state when the agent comes
 // back online.
-func mergingPaymentSteps(alice, bob *Starlightd, hostBalance, guestBalance xlm.Amount) []step {
+func mergingPaymentSteps(guest, host *Starlightd, guestPayment, hostPayment xlm.Amount) []step {
 	return []step{
 		{
-			name:  "alice channel pay bob",
-			agent: alice,
+			name:  "guest channel pay host",
+			agent: guest,
 			path:  "/api/do-command",
-			body: `
+			body: fmt.Sprintf(`
 			{
-				"ChannelID": "%s",
+				"ChannelID": "%%s",
 				"Command": {
 					"Name": "ChannelPay",
-					"Amount": 1000,
+					"Amount": %d,
 					"Time": "2018-10-02T10:26:43.511Z"
 				}
-			}`,
+			}`, guestPayment),
 			injectChanID: true,
 		}, {
-			name:  "bob channel pay alice",
-			agent: bob,
+			name:  "host channel pay guest",
+			agent: host,
 			path:  "/api/do-command",
-			body: `
+			body: fmt.Sprintf(`
 			{
-				"ChannelID": "%s",
+				"ChannelID": "%%s",
 				"Command": {
 					"Name": "ChannelPay",
-					"Amount": 1500,
+					"Amount": %d,
 					"Time": "2018-10-02T10:26:43.511Z"
 				}
-			}`,
+			}`, hostPayment),
 			injectChanID: true,
 		},
 	}
 }
 
-// paymentMergeResolutionSteps represents the state transitions that Alice and Bob go through to merge
-// the conflict payment, sending a merged payment from Bob to Alice.
-func paymentMergeResolutionSteps(alice, bob *Starlightd, hostBalance, guestBalance xlm.Amount) []step {
+// paymentMergeResolutionSteps represents the state transitions that Guest and Host go through to merge
+// the conflict payment, sending a merged payment from Host to Guest.
+func paymentMergeResolutionSteps(guest, host *Starlightd, mergePayment xlm.Amount) []step {
 	return []step{
 		{
-			name:  "bob channel pay alice payment proposed update",
-			agent: bob,
+			name:  "host channel pay guest payment proposed update",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.PaymentProposed,
-					HostAmount:  hostBalance,
-					GuestAmount: guestBalance,
+					State: fsm.PaymentProposed,
 				},
 			},
 		}, {
-			name:  "alice channel pay bob payment proposed update",
-			agent: alice,
+			name:  "guest channel pay host payment proposed update",
+			agent: guest,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.PaymentProposed,
-					HostAmount:  hostBalance,
-					GuestAmount: guestBalance,
+					State: fsm.PaymentProposed,
 				},
 			},
 		}, {
-			name:  "alice channel pay awaiting payment merge update",
-			agent: alice,
+			name:  "guest channel pay awaiting payment merge update",
+			agent: guest,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.AwaitingPaymentMerge,
-					HostAmount:  hostBalance,
-					GuestAmount: guestBalance,
+					State: fsm.AwaitingPaymentMerge,
 				},
 			},
 		}, {
-			name:  "bob channel pay payment proposed upate",
-			agent: bob,
+			name:  "host channel pay payment proposed update",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.PaymentProposed,
-					HostAmount:  hostBalance,
-					GuestAmount: guestBalance,
+					State: fsm.PaymentProposed,
 				},
 			},
 		}, {
-			name:  "alice channel pay payment accepted update",
-			agent: alice,
+			name:  "guest channel pay payment accepted update",
+			agent: guest,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.PaymentAccepted,
-					HostAmount:  hostBalance,
-					GuestAmount: guestBalance,
+					State: fsm.PaymentAccepted,
 				},
 			},
 		}, {
-			name:  "bob channel pay payment complete state open update",
-			agent: bob,
+			name:  "host channel pay payment complete state open update",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.Open,
-					HostAmount:  hostBalance - 500*xlm.Stroop,
-					GuestAmount: guestBalance + 500*xlm.Stroop,
+					State: fsm.Open,
 				},
 			},
+			hostDelta:  -mergePayment,
+			guestDelta: mergePayment,
 		}, {
-			name:  "alice channel pay open update",
-			agent: alice,
+			name:  "guest channel pay open update",
+			agent: guest,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.Open,
-					HostAmount:  hostBalance - 500*xlm.Stroop,
-					GuestAmount: guestBalance + 500*xlm.Stroop,
+					State: fsm.Open,
 				},
 			},
+			hostDelta:  -mergePayment,
+			guestDelta: mergePayment,
 		},
 	}
 }
 
-func logoutSteps(alice, bob *Starlightd) []step {
+func logoutSteps(guest, host *Starlightd) []step {
 	return []step{
 		{
-			name:  "alice logout command",
-			agent: alice,
+			name:  "guest logout command",
+			agent: guest,
 			path:  "/api/logout",
 		}, {
-			name:     "alice logout update",
-			agent:    alice,
+			name:     "guest logout update",
+			agent:    guest,
 			path:     "/api/updates",
 			body:     `{"From":1}`,
 			wantCode: 401,
@@ -869,32 +814,32 @@ func logoutSteps(alice, bob *Starlightd) []step {
 	}
 }
 
-func loginSteps(alice, bob *Starlightd) []step {
+func loginSteps(guest, host *Starlightd) []step {
 	return []step{
 		{
-			name:  "alice login command",
-			agent: alice,
+			name:  "guest login command",
+			agent: guest,
 			path:  "/api/login",
-			body:  `{"Username":"alice","Password":"password"}`,
+			body:  `{"Username":"guest","Password":"password"}`,
 		}, {
-			name:  "alice login update",
-			agent: alice,
+			name:  "guest login update",
+			agent: guest,
 			path:  "/api/updates",
 			body:  `{"From":2}`,
 		},
 	}
 }
 
-func cleanupSteps(alice *httptest.Server, bob *Starlightd, maxRoundDurMins, finalityDelayMins int) []step {
+func cleanupSteps(guest *httptest.Server, host *Starlightd, maxRoundDurMins, finalityDelayMins int, channelFundingAmount xlm.Amount) []step {
 	return []step{
 		{
-			name:  "bob config init",
-			agent: bob,
+			name:  "host config init",
+			agent: host,
 			path:  "/api/config-init",
 			// WARNING: this software is not compatible with Stellar mainnet.
 			body: fmt.Sprintf(`
 			{
-				"Username":"bob",
+				"Username":"host",
 				"Password":"password",
 				"DemoServer":true,
 				"HorizonURL":"%s",
@@ -905,67 +850,63 @@ func cleanupSteps(alice *httptest.Server, bob *Starlightd, maxRoundDurMins, fina
 				"ChannelFeerate":%d
 			}`, *HorizonURL, maxRoundDurMins, finalityDelayMins, hostFeerate, channelFeerate),
 		}, {
-			name:  "bob config init update",
-			agent: bob,
+			name:  "host config init update",
+			agent: host,
 			update: &update.Update{
 				Type:      update.InitType,
 				UpdateNum: 1,
 			},
 		},
 		{
-			name:  "bob wallet funding update",
-			agent: bob,
+			name:  "host wallet funding update",
+			agent: host,
 			path:  "/api/updates",
 			body:  `{"From": 2}`,
 			update: &update.Update{
 				Type:      update.AccountType,
 				UpdateNum: 2,
 			},
-			delta:       10000*xlm.Lumen - hostFeerate,
+			walletDelta: friendbotAmount - hostFeerate,
 			checkLedger: true,
 		}, {
-			name:  "bob create channel with alice",
-			agent: bob,
+			name:  "host create channel with guest",
+			agent: host,
 			path:  "/api/do-create-channel",
 			body: fmt.Sprintf(`{
-				"GuestAddr": "alice*%s",
-				"HostAmount": 10000000000
-			}`, strings.TrimPrefix(alice.URL, "http://")),
+				"GuestAddr": "guest*%s",
+				"HostAmount": %d
+			}`, strings.TrimPrefix(guest.URL, "http://"), channelFundingAmount),
 		}, {
-			name:  "bob channel creation setting up update",
-			agent: bob,
+			name:  "host channel creation setting up update",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.SettingUp,
-					HostAmount:  hostAmount,
-					GuestAmount: 0,
+					State: fsm.SettingUp,
 				},
 			},
 			// Host balance should decrease by:
-			// 1000 Lumen for channel funding amount
+			// channelFundingAmount
 			// 3 * Lumen + 3 * hostFee to create the three accounts
 			// 7 * hostFee in funding tx fees for 7 operations
 			// 0.5*Lumen + 8 * channelFee in initial funding for the escrow account
 			// 1 * Lumen + 1 * channelFee in initial funding for the guest ratchet
 			// 0.5*Lumen + 1 * channelFee in initial funding for the host ratchet account
-			delta: -(1000*xlm.Lumen + 5*xlm.Lumen + 10*hostFeerate + 10*channelFeerate),
+			walletDelta: -(channelFundingAmount + 5*xlm.Lumen + 10*hostFeerate + 10*channelFeerate),
 		},
 		{
-			name:  "bob channel creation channel proposed update",
-			agent: bob,
+			name:  "host channel creation channel proposed update",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.ChannelProposed,
-					HostAmount:  hostAmount,
-					GuestAmount: 0,
+					State: fsm.ChannelProposed,
 				},
 			},
 		},
 		{
-			name:  "bob cleanup command",
-			agent: bob,
+			name:  "host cleanup command",
+			agent: host,
 			path:  "/api/do-command",
 			body: `{
 				"ChannelID": "%s",
@@ -976,60 +917,56 @@ func cleanupSteps(alice *httptest.Server, bob *Starlightd, maxRoundDurMins, fina
 			injectChanID: true,
 		},
 		{
-			name:  "bob cleanup awaiting cleanup update",
-			agent: bob,
+			name:  "host cleanup awaiting cleanup update",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.AwaitingCleanup,
-					HostAmount:  hostAmount,
-					GuestAmount: 0,
+					State: fsm.AwaitingCleanup,
 				},
 			},
 			// Balance should increase by
-			// 1000 Lumen for channel funding amount
+			// channelFundingAmount
 			// 4 * hostFee in (7 ops in returned funding tx - 3 ops in cleanup tx)
 			// 0.5*Lumen + 8 * channelFee in initial funding for the escrow account
 			// 1 * Lumen + 1 * channelFee in initial funding for the guest ratchet
 			// 0.5*Lumen + 1 * channelFee in initial funding for the host ratchet account
-			delta: 1000*xlm.Lumen + 2*xlm.Lumen + 4*hostFeerate + 10*channelFeerate,
+			walletDelta: channelFundingAmount + 2*xlm.Lumen + 4*hostFeerate + 10*channelFeerate,
 		}, {
-			name:  "bob cleanup channel closed update",
-			agent: bob,
+			name:  "host cleanup channel closed update",
+			agent: host,
 			update: &update.Update{
 				Type: update.ChannelType,
 				Channel: &fsm.Channel{
-					State:       fsm.Closed,
-					HostAmount:  hostAmount,
-					GuestAmount: 0,
+					State: fsm.Closed,
 				},
 			},
 			outOfOrder: true,
 		},
 		{
-			name:  "bob cleanup escrow merge tx update",
-			agent: bob,
+			name:  "host cleanup escrow merge tx update",
+			agent: host,
 			update: &update.Update{
 				Type:    update.AccountType,
 				InputTx: &worizon.Tx{},
 			},
-			delta: 1 * xlm.Lumen,
+			walletDelta: 1 * xlm.Lumen,
 		},
 		{
-			name:  "bob cleanup host ratchet merge tx update",
-			agent: bob,
+			name:  "host cleanup host ratchet merge tx update",
+			agent: host,
 			update: &update.Update{
 				Type: update.AccountType,
 			},
-			delta: 1 * xlm.Lumen,
+			walletDelta: 1 * xlm.Lumen,
 		},
 		{
-			name:  "bob cleanup guest ratchet merge tx update",
-			agent: bob,
+			name:  "host cleanup guest ratchet merge tx update",
+			agent: host,
 			update: &update.Update{
 				Type: update.AccountType,
 			},
-			delta: 1 * xlm.Lumen,
+			walletDelta: 1 * xlm.Lumen,
 			// Account should be up to date with ledger at this point
 			checkLedger: true,
 		},
@@ -1057,12 +994,26 @@ func checkUpdate(ctx context.Context, s step, channelID *string) error {
 				s.agent.nextUpdateNum = u.UpdateNum + 1
 			}
 			if found = updateMatches(u, *s.update); found {
-				if s.delta != 0 {
-					newBalance := s.agent.balance + s.delta
+				if s.walletDelta != 0 {
+					newBalance := s.agent.balance + s.walletDelta
 					if uint64(newBalance) != u.Account.Balance {
 						return errors.New(fmt.Sprintf("%s: got balance %s, want %s", s.name, xlm.Amount(u.Account.Balance), newBalance))
 					}
 					s.agent.balance = newBalance
+				}
+				if s.hostDelta != 0 {
+					newHostAmount := s.agent.hostAmount + s.hostDelta
+					if newHostAmount != u.Channel.HostAmount {
+						return errors.New(fmt.Sprintf("%s: got host amount %s, want %s", s.name, u.Channel.HostAmount, newHostAmount))
+					}
+					s.agent.hostAmount = newHostAmount
+				}
+				if s.guestDelta != 0 {
+					newGuestAmount := s.agent.guestAmount + s.guestDelta
+					if newGuestAmount != u.Channel.GuestAmount {
+						return errors.New(fmt.Sprintf("%s: got guest amount %s, want %s", s.name, u.Channel.GuestAmount, newGuestAmount))
+					}
+					s.agent.guestAmount = newGuestAmount
 				}
 				if s.checkLedger {
 					if err = checkAcctBalance(s.agent.wclient, u.Account.ID, s.agent.balance, s.agent.wclient.Now()); err != nil {
@@ -1134,14 +1085,6 @@ func updateMatches(got, want update.Update) bool {
 	}
 	if want.Channel != nil {
 		if got.Channel.State != want.Channel.State {
-			return false
-		}
-		if got.Channel.HostAmount != want.Channel.HostAmount {
-			log.Fatalf("incorrect host amount: got %s, want %s", got.Channel.HostAmount, want.Channel.HostAmount)
-			return false
-		}
-		if got.Channel.GuestAmount != want.Channel.GuestAmount {
-			log.Fatalf("incorrect guest amount: got %s, want %s", got.Channel.GuestAmount, want.Channel.GuestAmount)
 			return false
 		}
 	}

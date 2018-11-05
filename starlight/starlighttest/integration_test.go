@@ -14,8 +14,14 @@ import (
 	"github.com/interstellar/starlight/worizon/xlm"
 )
 
-// itest runs an alice-and-bob integration test.
-func itest(t *testing.T, f func(ctx context.Context, alice, bob *Starlightd)) {
+const (
+	channelFundingAmount = 1000 * xlm.Lumen
+	paymentAmount        = 1000 * xlm.Stroop
+	topUpAmount          = 500 * xlm.Stroop
+)
+
+// itest runs an guest-and-host integration test.
+func itest(t *testing.T, f func(ctx context.Context, guest, host *Starlightd)) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
@@ -28,18 +34,18 @@ func itest(t *testing.T, f func(ctx context.Context, alice, bob *Starlightd)) {
 
 	ctx := context.Background()
 
-	alice := start(ctx, t, testdir, "alice")
-	defer alice.Close()
+	guest := start(ctx, t, testdir, "guest")
+	defer guest.Close()
 
-	bob := start(ctx, t, testdir, "bob")
-	defer bob.Close()
+	host := start(ctx, t, testdir, "host")
+	defer host.Close()
 
-	f(ctx, alice, bob)
+	f(ctx, guest, host)
 }
 
 func TestChannelCreation(t *testing.T) {
-	itest(t, func(ctx context.Context, alice, bob *Starlightd) {
-		steps := channelCreationSteps(alice, bob, 0, 0)
+	itest(t, func(ctx context.Context, guest, host *Starlightd) {
+		steps := channelCreationSteps(guest, host, 0, 0, channelFundingAmount)
 		for _, s := range steps {
 			testStep(ctx, t, s, nil)
 		}
@@ -47,8 +53,8 @@ func TestChannelCreation(t *testing.T) {
 }
 
 func TestChannelOpenCloseNoPayment(t *testing.T) {
-	itest(t, func(ctx context.Context, alice, bob *Starlightd) {
-		steps := append(channelCreationSteps(alice, bob, 0, 0), aliceCoopCloseSteps(alice, bob, 0)...)
+	itest(t, func(ctx context.Context, guest, host *Starlightd) {
+		steps := append(channelCreationSteps(guest, host, 0, 0, channelFundingAmount), guestCoopCloseSteps(guest, host, channelFundingAmount, 0)...)
 		var channelID string
 		for _, step := range steps {
 			testStep(ctx, t, step, &channelID)
@@ -57,8 +63,8 @@ func TestChannelOpenCloseNoPayment(t *testing.T) {
 }
 
 func TestChannelPayment(t *testing.T) {
-	itest(t, func(ctx context.Context, alice, bob *Starlightd) {
-		steps := append(channelCreationSteps(alice, bob, 0, 0), bobChannelPayAliceSteps(alice, bob)...)
+	itest(t, func(ctx context.Context, guest, host *Starlightd) {
+		steps := append(channelCreationSteps(guest, host, 0, 0, channelFundingAmount), hostChannelPayGuestSteps(guest, host, paymentAmount)...)
 		var channelID string
 		for _, step := range steps {
 			testStep(ctx, t, step, &channelID)
@@ -67,9 +73,9 @@ func TestChannelPayment(t *testing.T) {
 }
 
 func TestChannelSettleWithGuestCoopClose(t *testing.T) {
-	itest(t, func(ctx context.Context, alice, bob *Starlightd) {
-		steps := append(channelCreationSteps(alice, bob, 0, 0), bobChannelPayAliceSteps(alice, bob)...)
-		steps = append(steps, aliceCoopCloseSteps(alice, bob, 1000*xlm.Stroop)...)
+	itest(t, func(ctx context.Context, guest, host *Starlightd) {
+		steps := append(channelCreationSteps(guest, host, 0, 0, channelFundingAmount), hostChannelPayGuestSteps(guest, host, paymentAmount)...)
+		steps = append(steps, guestCoopCloseSteps(guest, host, channelFundingAmount, paymentAmount)...)
 		var channelID string
 		for _, step := range steps {
 			testStep(ctx, t, step, &channelID)
@@ -78,15 +84,15 @@ func TestChannelSettleWithGuestCoopClose(t *testing.T) {
 }
 
 func TestDuplicateChannelCreation(t *testing.T) {
-	itest(t, func(ctx context.Context, alice, bob *Starlightd) {
-		steps := append(channelCreationSteps(alice, bob, 0, 0), step{
-			name:  "bob create channel with alice",
-			agent: bob,
+	itest(t, func(ctx context.Context, guest, host *Starlightd) {
+		steps := append(channelCreationSteps(guest, host, 0, 0, channelFundingAmount), step{
+			name:  "host create channel with guest",
+			agent: host,
 			path:  "/api/do-create-channel",
 			body: fmt.Sprintf(`{
-				"GuestAddr": "alice*%s", 
-				"HostAmount": 10000000000
-			}`, alice.address),
+				"GuestAddr": "guest*%s", 
+				"HostAmount": %d
+			}`, guest.address, channelFundingAmount),
 			wantCode: http.StatusBadRequest,
 		})
 		var channelID string
@@ -97,8 +103,8 @@ func TestDuplicateChannelCreation(t *testing.T) {
 }
 
 func TestChannelNoPaymentForceClose(t *testing.T) {
-	itest(t, func(ctx context.Context, alice, bob *Starlightd) {
-		steps := append(channelCreationSteps(alice, bob, 1, 1), bobForceCloseStepsNoGuestBalance(alice, bob)...)
+	itest(t, func(ctx context.Context, guest, host *Starlightd) {
+		steps := append(channelCreationSteps(guest, host, 1, 1, channelFundingAmount), hostForceCloseStepsNoGuestBalance(guest, host, channelFundingAmount)...)
 		var channelID string
 		for _, step := range steps {
 			testStep(ctx, t, step, &channelID)
@@ -107,9 +113,9 @@ func TestChannelNoPaymentForceClose(t *testing.T) {
 }
 
 func TestSettleWithGuestForceClose(t *testing.T) {
-	itest(t, func(ctx context.Context, alice, bob *Starlightd) {
-		steps := append(channelCreationSteps(alice, bob, 1, 1), bobChannelPayAliceSteps(alice, bob)...)
-		steps = append(steps, bobForceCloseStepsSettleWithGuest(alice, bob, 1000*xlm.Stroop)...)
+	itest(t, func(ctx context.Context, guest, host *Starlightd) {
+		steps := append(channelCreationSteps(guest, host, 1, 1, channelFundingAmount), hostChannelPayGuestSteps(guest, host, paymentAmount)...)
+		steps = append(steps, hostForceCloseStepsSettleWithGuest(guest, host, channelFundingAmount, paymentAmount)...)
 		var channelID string
 		for _, step := range steps {
 			testStep(ctx, t, step, &channelID)
@@ -118,8 +124,8 @@ func TestSettleWithGuestForceClose(t *testing.T) {
 }
 
 func TestHostTopUp(t *testing.T) {
-	itest(t, func(ctx context.Context, alice, bob *Starlightd) {
-		steps := append(channelCreationSteps(alice, bob, 0, 0), hostTopUpSteps(alice, bob)...)
+	itest(t, func(ctx context.Context, guest, host *Starlightd) {
+		steps := append(channelCreationSteps(guest, host, 0, 0, channelFundingAmount), hostTopUpSteps(guest, host, topUpAmount)...)
 
 		var channelID string
 		for _, s := range steps {
@@ -129,9 +135,9 @@ func TestHostTopUp(t *testing.T) {
 }
 
 func TestLogoutLogin(t *testing.T) {
-	itest(t, func(ctx context.Context, alice, bob *Starlightd) {
-		steps := append(channelCreationSteps(alice, bob, 0, 0), logoutSteps(alice, bob)...)
-		steps = append(steps, loginSteps(alice, bob)...)
+	itest(t, func(ctx context.Context, guest, host *Starlightd) {
+		steps := append(channelCreationSteps(guest, host, 0, 0, channelFundingAmount), logoutSteps(guest, host)...)
+		steps = append(steps, loginSteps(guest, host)...)
 
 		var channelID string
 		for _, s := range steps {
@@ -155,13 +161,13 @@ func TestCleanup(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	alice := TestServer("alice")
-	defer alice.Close()
+	guest := TestServer("guest")
+	defer guest.Close()
 
-	bob := start(ctx, t, testdir, "bob")
-	defer bob.server.Close()
+	host := start(ctx, t, testdir, "host")
+	defer host.server.Close()
 
-	steps := cleanupSteps(alice, bob, 0, 0)
+	steps := cleanupSteps(guest, host, 0, 0, channelFundingAmount)
 	var channelID string
 	for _, s := range steps {
 		testStep(ctx, t, s, &channelID)
@@ -169,8 +175,8 @@ func TestCleanup(t *testing.T) {
 }
 
 func TestPaymentMerge(t *testing.T) {
-	itest(t, func(ctx context.Context, alice, bob *Starlightd) {
-		steps := append(channelCreationSteps(alice, bob, 0, 0), bobChannelPayAliceSteps(alice, bob)...)
+	itest(t, func(ctx context.Context, guest, host *Starlightd) {
+		steps := append(channelCreationSteps(guest, host, 0, 0, channelFundingAmount), hostChannelPayGuestSteps(guest, host, paymentAmount)...)
 
 		// Create channel and do one payment
 		var channelID string
@@ -178,27 +184,26 @@ func TestPaymentMerge(t *testing.T) {
 			testStep(ctx, t, s, &channelID)
 		}
 
-		address := bob.address
-		bob.server.Close()
+		address := host.address
+		host.server.Close()
 
-		hostBalance := 1000*xlm.Lumen - 1000*xlm.Stroop
-		guestBalance := 1000 * xlm.Stroop
-
-		steps = mergingPaymentSteps(alice, bob, hostBalance, guestBalance)
+		hostPayment := paymentAmount + 1*xlm.Lumen
+		guestPayment := paymentAmount
+		steps = mergingPaymentSteps(guest, host, guestPayment, hostPayment)
 		for _, s := range steps {
 			testStep(ctx, t, s, &channelID)
 		}
 
-		bob.server = httptest.NewUnstartedServer(bob.handler)
+		host.server = httptest.NewUnstartedServer(host.handler)
 		l, err := net.Listen("tcp", address)
 		if err != nil {
 			t.Fatal(err)
 		}
-		bob.server.Listener.Close()
-		bob.server.Listener = l
-		bob.server.Start()
+		host.server.Listener.Close()
+		host.server.Listener = l
+		host.server.Start()
 
-		steps = paymentMergeResolutionSteps(alice, bob, hostBalance, guestBalance)
+		steps = paymentMergeResolutionSteps(guest, host, hostPayment-guestPayment)
 		for _, s := range steps {
 			testStep(ctx, t, s, &channelID)
 		}
