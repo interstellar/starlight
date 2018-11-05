@@ -101,7 +101,7 @@ func BobTopUp(ctx context.Context, alice, bob *Starlightd, channelID string) err
 	return nil
 }
 
-func channelCreationSteps(alice, bob *Starlightd, MaxRoundDurMins, FinalityDelayMins int) []step {
+func channelCreationSteps(alice, bob *Starlightd, maxRoundDurMins, finalityDelayMins int) []step {
 	// WARNING: this software is not compatible with Stellar mainnet.
 	return []step{
 		{
@@ -115,8 +115,10 @@ func channelCreationSteps(alice, bob *Starlightd, MaxRoundDurMins, FinalityDelay
 				"Password":"password",
 				"DemoServer":true,
 				"HorizonURL":"%s",
-				"KeepAlive":false
-			}`, *HorizonURL),
+				"KeepAlive":false,
+				"MaxRoundDurMins": %d,
+				"FinalityDelayMins": %d
+			}`, *HorizonURL, maxRoundDurMins, finalityDelayMins),
 		}, {
 			name:  "alice config init update",
 			agent: alice,
@@ -140,7 +142,7 @@ func channelCreationSteps(alice, bob *Starlightd, MaxRoundDurMins, FinalityDelay
 				"FinalityDelayMins": %d,
 				"HostFeerate": %d,
 				"ChannelFeerate":%d
-			}`, *HorizonURL, MaxRoundDurMins, FinalityDelayMins, hostFeerate, channelFeerate),
+			}`, *HorizonURL, maxRoundDurMins, finalityDelayMins, hostFeerate, channelFeerate),
 		}, {
 			name:  "bob config init update",
 			agent: bob,
@@ -883,7 +885,7 @@ func loginSteps(alice, bob *Starlightd) []step {
 	}
 }
 
-func cleanupSteps(alice *httptest.Server, bob *Starlightd, MaxRoundDurMins, FinalityDelayMins int) []step {
+func cleanupSteps(alice *httptest.Server, bob *Starlightd, maxRoundDurMins, finalityDelayMins int) []step {
 	return []step{
 		{
 			name:  "bob config init",
@@ -901,7 +903,7 @@ func cleanupSteps(alice *httptest.Server, bob *Starlightd, MaxRoundDurMins, Fina
 				"FinalityDelayMins": %d,
 				"HostFeerate": %d,
 				"ChannelFeerate":%d
-			}`, *HorizonURL, MaxRoundDurMins, FinalityDelayMins, hostFeerate, channelFeerate),
+			}`, *HorizonURL, maxRoundDurMins, finalityDelayMins, hostFeerate, channelFeerate),
 		}, {
 			name:  "bob config init update",
 			agent: bob,
