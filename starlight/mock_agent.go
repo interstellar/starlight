@@ -34,7 +34,7 @@ func StartTestnetAgent(ctx context.Context, t *testing.T, dbpath string) (*Agent
 	if err != nil {
 		t.Fatal(err)
 	}
-	return g, &g.wclient
+	return g, g.wclient
 }
 
 func startTestAgent(t *testing.T) *Agent {
@@ -50,7 +50,7 @@ func startTestAgent(t *testing.T) *Agent {
 	if err != nil {
 		t.Fatal(err)
 	}
-	g.wclient = *worizon.NewClient(horizonHTTP{}, &worizontest.FakeHorizonClient{})
+	g.wclient = worizon.NewClient(horizonHTTP{}, &worizontest.FakeHorizonClient{})
 	g.httpclient.Transport = agentHTTP{}
 	return g
 }

@@ -129,7 +129,7 @@ func (t *TbTx) Run(ctx context.Context) error {
 			return err // will retry
 		}
 
-		if !isRetriableSubmitErr(&t.g.wclient, &t.E.Tx, &tr, submitErr) {
+		if !isRetriableSubmitErr(t.g.wclient, &t.E.Tx, &tr, submitErr) {
 			if isWalletTx {
 				err = db.Update(t.g.db, func(root *db.Root) error {
 					walletAddr := root.Agent().PrimaryAcct().Address()

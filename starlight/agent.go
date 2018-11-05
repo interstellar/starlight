@@ -79,7 +79,7 @@ type Agent struct {
 	seed []byte // write-once; synchronized with db.Update
 
 	// Horizon client wrapper.
-	wclient worizon.Client
+	wclient *worizon.Client
 
 	// HTTP client used for agent requests. Treated as immutable state
 	// after agent creation.
