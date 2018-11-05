@@ -576,12 +576,6 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 						root.Agent().PutReady(true)
 					}
 					if op.Body.Destination.Address() == acctID {
-						var txr xdr.TransactionResult
-						err := xdr.SafeUnmarshalBase64(htx.ResultXdr, &txr)
-						if err != nil {
-							return err
-						}
-
 						// Note: account merge amounts are always in lumens.
 						// See https://www.stellar.org/developers/guides/concepts/list-of-operations.html#account-merge.
 
