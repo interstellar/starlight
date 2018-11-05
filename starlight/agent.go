@@ -142,6 +142,7 @@ func StartAgent(ctx context.Context, boltDB *bolt.DB) (*Agent, error) {
 		rootCancel: cancel,
 		wallet:     make(chan struct{}),
 		acctsReady: make(map[string]chan struct{}),
+		wclient:    new(worizon.Client),
 	}
 
 	g.evcond.L = new(sync.Mutex)
