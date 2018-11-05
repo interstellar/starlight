@@ -29,7 +29,7 @@ var (
 type (
 	Ledger             = horizon.Ledger
 	LedgerHandler      = horizon.LedgerHandler
-	Tx                 = horizon.Transaction
+	Transaction        = horizon.Transaction
 	Cursor             = horizon.Cursor
 	TxSuccess          = horizon.TransactionSuccess
 	Account            = horizon.Account
@@ -209,7 +209,7 @@ func (c *Client) startClock() {
 // StreamTxs returns it.
 // If the underlying call to StreamTransactions
 // returns an error, StreamTxs will retry.
-func (c *Client) StreamTxs(ctx context.Context, accountID string, cur Cursor, h func(Tx) error) error {
+func (c *Client) StreamTxs(ctx context.Context, accountID string, cur Cursor, h func(Transaction) error) error {
 	c.mu.Lock()
 	hclient := c.hclient
 	c.mu.Unlock()
@@ -220,7 +220,7 @@ func (c *Client) StreamTxs(ctx context.Context, accountID string, cur Cursor, h 
 
 	return c.streamHorizon(ctx, &cur, func(ctx context.Context, cur *Cursor, backoff *net.Backoff) error {
 		ctx, cancel := context.WithCancel(ctx)
-		return hclient.StreamTransactions(ctx, accountID, cur, func(tx Tx) {
+		return hclient.StreamTransactions(ctx, accountID, cur, func(tx Transaction) {
 			backoff = &net.Backoff{Base: backoff.Base}
 			handlerErr := h(tx)
 			if handlerErr != nil {

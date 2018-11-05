@@ -456,8 +456,8 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 		return
 	}
 
-	err := g.wclient.StreamTxs(g.rootCtx, acctID, cursor, func(htx worizon.Tx) error {
-		InputTx, err := fsm.NewTx(&htx)
+	err := g.wclient.StreamTxs(g.rootCtx, acctID, cursor, func(htx worizon.Transaction) error {
+		InputTx, err := worizon.NewTx(&htx)
 		if err != nil {
 			return err
 		}

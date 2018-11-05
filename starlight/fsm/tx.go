@@ -3,10 +3,8 @@ package fsm
 import (
 	"bytes"
 	"log"
-	"time"
 
 	b "github.com/stellar/go/build"
-	"github.com/stellar/go/clients/horizon"
 	"github.com/stellar/go/keypair"
 	"github.com/stellar/go/network"
 	"github.com/stellar/go/xdr"
@@ -14,51 +12,11 @@ import (
 	"github.com/interstellar/starlight/errors"
 	"github.com/interstellar/starlight/math/checked"
 	"github.com/interstellar/starlight/starlight/key"
+	"github.com/interstellar/starlight/worizon"
 	"github.com/interstellar/starlight/worizon/xlm"
 )
 
-// Tx represents a Stellar transaction,
-// including any associated data relevant to the Starlight protocol,
-// even if that data isn't physically present in the
-// transaction as it appears on the Stellar ledger.
-type Tx struct {
-	Env    *xdr.TransactionEnvelope
-	Result *xdr.TransactionResult
-
-	// The following fields may not be available for failed transactions.
-
-	PT         string // paging token a.k.a. cursor
-	LedgerNum  int32
-	LedgerTime time.Time
-	SeqNum     string
-}
-
-// NewTx produces a Tx from a Horizon Transaction object.
-func NewTx(htx *horizon.Transaction) (*Tx, error) {
-	var env xdr.TransactionEnvelope
-	err := xdr.SafeUnmarshalBase64(htx.EnvelopeXdr, &env)
-	if err != nil {
-		return nil, err
-	}
-
-	var result xdr.TransactionResult
-	err = xdr.SafeUnmarshalBase64(htx.ResultXdr, &result)
-	if err != nil {
-		return nil, err
-	}
-
-	tx := &Tx{
-		Env:        &env,
-		Result:     &result,
-		PT:         htx.PT,
-		LedgerNum:  htx.Ledger,
-		LedgerTime: htx.LedgerCloseTime,
-		SeqNum:     htx.AccountSequence,
-	}
-	return tx, nil
-}
-
-var txHandlerFuncs = []func(*Updater, *Tx, bool) (bool, error){
+var txHandlerFuncs = []func(*Updater, *worizon.Tx, bool) (bool, error){
 	handleCoopCloseTx,
 	handleSettleCleanupTx,
 	handleFundingTx,
@@ -69,7 +27,7 @@ var txHandlerFuncs = []func(*Updater, *Tx, bool) (bool, error){
 	handleTopUpTx,
 }
 
-func handleSetupAccountTx(u *Updater, tx *Tx, success bool) (bool, error) {
+func handleSetupAccountTx(u *Updater, tx *worizon.Tx, success bool) (bool, error) {
 	// ignore the first two SetupAccountTxs
 	if txMatches(tx, u.C.HostAcct,
 		createAccountOp(u.C.HostAcct, u.C.HostRatchetAcct, xlm.Lumen),
@@ -112,7 +70,7 @@ var (
 )
 
 // MatchesFundingTx reports whether a transaction is the funding transaction for the channel.
-func MatchesFundingTx(c *Channel, tx *Tx) bool {
+func MatchesFundingTx(c *Channel, tx *worizon.Tx) bool {
 	return txMatches(tx, c.HostAcct,
 		paymentOp(c.HostAcct, c.EscrowAcct, c.HostAmount+500*xlm.Millilumen+8*c.ChannelFeerate),
 		xdr.Operation{
@@ -188,7 +146,7 @@ func MatchesFundingTx(c *Channel, tx *Tx) bool {
 	)
 }
 
-func handleFundingTx(u *Updater, tx *Tx, success bool) (bool, error) {
+func handleFundingTx(u *Updater, tx *worizon.Tx, success bool) (bool, error) {
 	if !MatchesFundingTx(u.C, tx) {
 		return false, nil
 	}
@@ -210,7 +168,7 @@ func handleFundingTx(u *Updater, tx *Tx, success bool) (bool, error) {
 	return true, err
 }
 
-func handleCoopCloseTx(u *Updater, tx *Tx, success bool) (bool, error) {
+func handleCoopCloseTx(u *Updater, tx *worizon.Tx, success bool) (bool, error) {
 	// if guest has 0 balance,
 	// the coop close is matched by handleSettleWithHostTx
 	if !txMatches(tx, u.C.EscrowAcct,
@@ -232,7 +190,7 @@ func handleCoopCloseTx(u *Updater, tx *Tx, success bool) (bool, error) {
 	return true, err
 }
 
-func handleRatchetTx(u *Updater, ptx *Tx, success bool) (bool, error) {
+func handleRatchetTx(u *Updater, ptx *worizon.Tx, success bool) (bool, error) {
 	tx := ptx.Env.Tx
 
 	for _, role := range []Role{Host, Guest} {
@@ -312,7 +270,7 @@ func handleRatchetTx(u *Updater, ptx *Tx, success bool) (bool, error) {
 	return false, nil
 }
 
-func handleSettleWithGuestTx(u *Updater, ptx *Tx, _ bool) (bool, error) {
+func handleSettleWithGuestTx(u *Updater, ptx *worizon.Tx, _ bool) (bool, error) {
 	tx := ptx.Env.Tx
 
 	if !xdrEqual(tx.SourceAccount, xdr.AccountId(u.C.EscrowAcct)) {
@@ -343,7 +301,7 @@ func handleSettleWithGuestTx(u *Updater, ptx *Tx, _ bool) (bool, error) {
 }
 
 // also handles SettleRound1Tx
-func handleSettleWithHostTx(u *Updater, tx *Tx, _ bool) (bool, error) {
+func handleSettleWithHostTx(u *Updater, tx *worizon.Tx, _ bool) (bool, error) {
 	if !txMatches(tx, u.C.EscrowAcct,
 		mergeOp(u.C.EscrowAcct, u.C.HostAcct),
 		mergeOp(u.C.GuestRatchetAcct, u.C.HostAcct),
@@ -355,7 +313,7 @@ func handleSettleWithHostTx(u *Updater, tx *Tx, _ bool) (bool, error) {
 	return true, err
 }
 
-func handleSettleCleanupTx(u *Updater, tx *Tx, _ bool) (bool, error) {
+func handleSettleCleanupTx(u *Updater, tx *worizon.Tx, _ bool) (bool, error) {
 	if !txMatches(tx, u.C.HostAcct,
 		mergeOp(u.C.EscrowAcct, u.C.HostAcct),
 		mergeOp(u.C.HostRatchetAcct, u.C.HostAcct),
@@ -368,7 +326,7 @@ func handleSettleCleanupTx(u *Updater, tx *Tx, _ bool) (bool, error) {
 }
 
 // this one's different: checks for any and all payment ops in the tx to the escrow acct
-func handleTopUpTx(u *Updater, ptx *Tx, success bool) (bool, error) {
+func handleTopUpTx(u *Updater, ptx *worizon.Tx, success bool) (bool, error) {
 	tx := ptx.Env.Tx
 	var amt int64
 	for index, op := range tx.Operations {
@@ -416,7 +374,7 @@ func handleTopUpTx(u *Updater, ptx *Tx, success bool) (bool, error) {
 	return false, nil
 }
 
-func txMatches(ptx *Tx, src AccountID, ops ...xdr.Operation) bool {
+func txMatches(ptx *worizon.Tx, src AccountID, ops ...xdr.Operation) bool {
 	tx := ptx.Env.Tx
 	if len(tx.Operations) != len(ops) {
 		return false

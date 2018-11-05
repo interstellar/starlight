@@ -9,6 +9,7 @@ import (
 	"github.com/stellar/go/xdr"
 
 	"github.com/interstellar/starlight/errors"
+	"github.com/interstellar/starlight/worizon"
 )
 
 // Updater contains the state necessary to effect a state transition in a channel.
@@ -22,7 +23,7 @@ type Updater struct {
 }
 
 // Tx causes the updater to update its channel in response to a transaction appearing in a Stellar ledger.
-func (u *Updater) Tx(tx *Tx) error {
+func (u *Updater) Tx(tx *worizon.Tx) error {
 	txstr, err := xdr.MarshalBase64(*tx.Env)
 	if err != nil {
 		return err

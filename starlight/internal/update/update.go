@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/interstellar/starlight/starlight/fsm"
+	"github.com/interstellar/starlight/worizon"
 	"github.com/interstellar/starlight/worizon/xlm"
 )
 
@@ -57,7 +58,7 @@ type Update struct {
 	// to show how the channel arrived at its new state.
 	InputCommand    *fsm.Command
 	InputMessage    *fsm.Message
-	InputTx         *fsm.Tx
+	InputTx         *worizon.Tx
 	InputLedgerTime time.Time
 
 	// UpdateLedgerTime is the ledger time of this update.

@@ -224,7 +224,7 @@ func channelCreationSteps(alice, bob *Starlightd, maxRoundDurMins, finalityDelay
 			agent: alice,
 			update: &update.Update{
 				Type:    update.ChannelType,
-				InputTx: &fsm.Tx{},
+				InputTx: &worizon.Tx{},
 				Channel: &fsm.Channel{
 					State:       fsm.AwaitingFunding,
 					HostAmount:  hostAmount,
@@ -392,7 +392,7 @@ func aliceCoopCloseSteps(alice, bob *Starlightd, payment xlm.Amount) []step {
 			agent: bob,
 			update: &update.Update{
 				Type:    update.AccountType,
-				InputTx: &fsm.Tx{},
+				InputTx: &worizon.Tx{},
 			},
 			// Balance should increase by:
 			// 1000 Lumen initial funding
@@ -407,7 +407,7 @@ func aliceCoopCloseSteps(alice, bob *Starlightd, payment xlm.Amount) []step {
 			agent: bob,
 			update: &update.Update{
 				Type:    update.AccountType,
-				InputTx: &fsm.Tx{},
+				InputTx: &worizon.Tx{},
 			},
 			// Balance should increase by
 			// 2 Lumens initial funding + channelFeerate
@@ -417,7 +417,7 @@ func aliceCoopCloseSteps(alice, bob *Starlightd, payment xlm.Amount) []step {
 			agent: bob,
 			update: &update.Update{
 				Type:    update.AccountType,
-				InputTx: &fsm.Tx{},
+				InputTx: &worizon.Tx{},
 			},
 			// Balance should increase by
 			// 1.5 Lumens initial funding + channelFeerate
@@ -524,7 +524,7 @@ func bobForceCloseStepsNoGuestBalance(alice, bob *Starlightd) []step {
 			agent: bob,
 			update: &update.Update{
 				Type:    update.AccountType,
-				InputTx: &fsm.Tx{},
+				InputTx: &worizon.Tx{},
 			},
 			// Balance should increase by:
 			// 1000 Lumen initial funding
@@ -538,7 +538,7 @@ func bobForceCloseStepsNoGuestBalance(alice, bob *Starlightd) []step {
 			agent: bob,
 			update: &update.Update{
 				Type:    update.AccountType,
-				InputTx: &fsm.Tx{},
+				InputTx: &worizon.Tx{},
 			},
 			// merge back 2 Lumens guest ratchet balance
 			delta: 2*xlm.Lumen + channelFeerate,
@@ -547,7 +547,7 @@ func bobForceCloseStepsNoGuestBalance(alice, bob *Starlightd) []step {
 			agent: bob,
 			update: &update.Update{
 				Type:    update.AccountType,
-				InputTx: &fsm.Tx{},
+				InputTx: &worizon.Tx{},
 			},
 			// merge back 1.5 Lumens host ratchet balance
 			delta:       1*xlm.Lumen + 500*xlm.Millilumen,
@@ -654,7 +654,7 @@ func bobForceCloseStepsSettleWithGuest(alice, bob *Starlightd, payment xlm.Amoun
 			agent: bob,
 			update: &update.Update{
 				Type:    update.AccountType,
-				InputTx: &fsm.Tx{},
+				InputTx: &worizon.Tx{},
 			},
 			// Balance should increase by:
 			// 1000 Lumen initial funding
@@ -669,7 +669,7 @@ func bobForceCloseStepsSettleWithGuest(alice, bob *Starlightd, payment xlm.Amoun
 			agent: bob,
 			update: &update.Update{
 				Type:    update.AccountType,
-				InputTx: &fsm.Tx{},
+				InputTx: &worizon.Tx{},
 			},
 			// merge back 2 Lumens guest ratchet balance
 			delta: 2 * xlm.Lumen,
@@ -678,7 +678,7 @@ func bobForceCloseStepsSettleWithGuest(alice, bob *Starlightd, payment xlm.Amoun
 			agent: bob,
 			update: &update.Update{
 				Type:    update.AccountType,
-				InputTx: &fsm.Tx{},
+				InputTx: &worizon.Tx{},
 			},
 			// merge back 1.5 Lumens host ratchet balance
 			delta:       1*xlm.Lumen + 500*xlm.Millilumen + channelFeerate,
@@ -706,7 +706,7 @@ func hostTopUpSteps(alice, bob *Starlightd) []step {
 			agent: bob,
 			update: &update.Update{
 				Type:    update.ChannelType,
-				InputTx: &fsm.Tx{},
+				InputTx: &worizon.Tx{},
 				Channel: &fsm.Channel{
 					State:       fsm.Open,
 					HostAmount:  hostAmount + 500*xlm.Stroop,
@@ -720,7 +720,7 @@ func hostTopUpSteps(alice, bob *Starlightd) []step {
 			agent: alice,
 			update: &update.Update{
 				Type:    update.ChannelType,
-				InputTx: &fsm.Tx{},
+				InputTx: &worizon.Tx{},
 				Channel: &fsm.Channel{
 					State:       fsm.Open,
 					HostAmount:  hostAmount + 500*xlm.Stroop,
@@ -1011,7 +1011,7 @@ func cleanupSteps(alice *httptest.Server, bob *Starlightd, maxRoundDurMins, fina
 			agent: bob,
 			update: &update.Update{
 				Type:    update.AccountType,
-				InputTx: &fsm.Tx{},
+				InputTx: &worizon.Tx{},
 			},
 			delta: 1 * xlm.Lumen,
 		},

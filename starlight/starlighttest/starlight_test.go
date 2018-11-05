@@ -9,6 +9,7 @@ import (
 
 	"github.com/interstellar/starlight/starlight/fsm"
 	"github.com/interstellar/starlight/starlight/internal/update"
+	"github.com/interstellar/starlight/worizon"
 )
 
 func TestAgentRequest(t *testing.T) {
@@ -84,7 +85,7 @@ func TestAgentRequest(t *testing.T) {
 			agent: alice,
 			update: &update.Update{
 				Type:    update.AccountType,
-				InputTx: &fsm.Tx{},
+				InputTx: &worizon.Tx{},
 			},
 		},
 	}

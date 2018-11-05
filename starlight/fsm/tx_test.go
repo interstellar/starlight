@@ -13,6 +13,7 @@ import (
 	"github.com/stellar/go/xdr"
 
 	"github.com/interstellar/starlight/starlight/key"
+	"github.com/interstellar/starlight/worizon"
 	"github.com/interstellar/starlight/worizon/xlm"
 )
 
@@ -170,7 +171,7 @@ func TestHandleRatchetTx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tx := &Tx{
+	tx := &worizon.Tx{
 		Env: txenv.E,
 	}
 	u := &Updater{
@@ -215,7 +216,7 @@ func TestHandleFundingTx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tx := &Tx{
+	tx := &worizon.Tx{
 		Env: txenv.E,
 	}
 	ok, err := handleFundingTx(u, tx, true)
@@ -248,7 +249,7 @@ func TestHandleSettleWithGuestTx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tx := &Tx{
+	tx := &worizon.Tx{
 		Env: txenv.E,
 	}
 	ok, err := handleSettleWithGuestTx(u, tx, true)
@@ -273,7 +274,7 @@ func TestHandleSettleWithHostTx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tx := &Tx{
+	tx := &worizon.Tx{
 		Env: txenv.E,
 	}
 	u := &Updater{
@@ -313,7 +314,7 @@ func TestUpdateFailedSetupAccountTx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tx := &Tx{
+	tx := &worizon.Tx{
 		Env: txenv.E,
 		Result: &xdr.TransactionResult{
 			Result: xdr.TransactionResultResult{
@@ -356,7 +357,7 @@ func TestUpdateFailedFundingTx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tx := &Tx{
+	tx := &worizon.Tx{
 		Env: txenv.E,
 		Result: &xdr.TransactionResult{
 			Result: xdr.TransactionResultResult{
@@ -404,7 +405,7 @@ func TestUpdateFailedRatchetTx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tx := &Tx{
+	tx := &worizon.Tx{
 		Env: txenv.E,
 		Result: &xdr.TransactionResult{
 			Result: xdr.TransactionResultResult{

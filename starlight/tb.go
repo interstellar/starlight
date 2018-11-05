@@ -160,7 +160,7 @@ func (t *TbTx) Run(ctx context.Context) error {
 
 					t.g.putUpdate(root, &Update{
 						Type: update.TxFailureType,
-						InputTx: &fsm.Tx{
+						InputTx: &worizon.Tx{
 							Env:    &t.E,
 							Result: &tr,
 							SeqNum: strconv.FormatUint(uint64(t.E.Tx.SeqNum), 10),
@@ -178,7 +178,7 @@ func (t *TbTx) Run(ctx context.Context) error {
 			// Failed channel tx (not wallet tx).
 			// Hand this transaction to the channel for UpdateFromTx handling
 			// (which is failed-transaction-aware).
-			ftx := &fsm.Tx{
+			ftx := &worizon.Tx{
 				Env:    &t.E,
 				Result: &tr,
 			}

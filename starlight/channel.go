@@ -43,8 +43,8 @@ func (g *Agent) watchEscrowAcct(ctx context.Context, chanID string) {
 		}
 	}
 
-	err := g.wclient.StreamTxs(ctx, chanID, (horizon.Cursor)(c.Cursor), func(htx worizon.Tx) error {
-		ftx, err := fsm.NewTx(&htx)
+	err := g.wclient.StreamTxs(ctx, chanID, (horizon.Cursor)(c.Cursor), func(htx worizon.Transaction) error {
+		ftx, err := worizon.NewTx(&htx)
 		if err != nil {
 			return err
 		}
@@ -60,7 +60,7 @@ func (g *Agent) watchEscrowAcct(ctx context.Context, chanID string) {
 	}
 }
 
-func (g *Agent) preupdateLookups(chanID string, tx *fsm.Tx) error {
+func (g *Agent) preupdateLookups(chanID string, tx *worizon.Tx) error {
 	var c *fsm.Channel
 	err := db.View(g.db, func(root *db.Root) error {
 		c = g.getChannel(root, chanID)
@@ -148,7 +148,7 @@ func (g *Agent) closeAfterFunding(root *db.Root, chanID string) error {
 	})
 }
 
-func updateFromTxCaller(tx *fsm.Tx) func(*db.Root, *fsm.Updater, *Update) error {
+func updateFromTxCaller(tx *worizon.Tx) func(*db.Root, *fsm.Updater, *Update) error {
 	return func(_ *db.Root, updater *fsm.Updater, update *Update) error {
 		update.InputTx = tx
 		return updater.Tx(tx)
