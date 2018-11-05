@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/interstellar/starlight/starlight/fsm"
 	"github.com/interstellar/starlight/starlight/internal/update"
 )
 
@@ -34,7 +35,7 @@ func TestAgentRequest(t *testing.T) {
 			// WARNING: this software is not compatible with Stellar mainnet.
 			body: fmt.Sprintf(`
 			{
-				"Username":"vicki",
+				"Username":"starlight",
 				"Password":"password",
 				"DemoServer":true,
 				"HorizonURL":"%s"
@@ -67,22 +68,23 @@ func TestAgentRequest(t *testing.T) {
 			name:  "check wallet pay update",
 			agent: alice,
 			update: &update.Update{
-				Type:      update.AccountType,
-				UpdateNum: 3,
+				Type: update.AccountType,
+				InputCommand: &fsm.Command{
+					Name: "WalletPay",
+				},
 			},
 		}, {
 			name:  "check wallet pay txsuccess update",
 			agent: alice,
 			update: &update.Update{
-				Type:      update.TxSuccessType,
-				UpdateNum: 4,
+				Type: update.TxSuccessType,
 			},
 		}, {
 			name:  "check wallet payment received account update",
 			agent: alice,
 			update: &update.Update{
-				Type:      update.AccountType,
-				UpdateNum: 5,
+				Type:    update.AccountType,
+				InputTx: &fsm.Tx{},
 			},
 		},
 	}
