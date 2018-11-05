@@ -1,4 +1,4 @@
-package worizon
+package worizontest
 
 import (
 	"context"
@@ -18,15 +18,15 @@ func (c *FakeHorizonClient) Root() (horizon.Root, error) {
 	return horizon.Root{}, nil
 }
 
-func (c *FakeHorizonClient) SubmitTransaction(txeBase64 string) (TxSuccess, error) {
+func (c *FakeHorizonClient) SubmitTransaction(txeBase64 string) (horizon.TransactionSuccess, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.transactionEnvelopes = append(c.transactionEnvelopes, txeBase64)
-	return TxSuccess{}, nil
+	return horizon.TransactionSuccess{}, nil
 }
 
-func (c *FakeHorizonClient) StreamLedgers(ctx context.Context, cursor *Cursor, handler LedgerHandler) error {
-	ledger := Ledger{
+func (c *FakeHorizonClient) StreamLedgers(ctx context.Context, cursor *horizon.Cursor, handler horizon.LedgerHandler) error {
+	ledger := horizon.Ledger{
 		ClosedAt: time.Now(),
 	}
 	handler(ledger)
@@ -35,14 +35,14 @@ func (c *FakeHorizonClient) StreamLedgers(ctx context.Context, cursor *Cursor, h
 
 // Not Implemented
 
-func (c *FakeHorizonClient) LoadAccount(accountID string) (Account, error) {
-	return Account{}, nil
+func (c *FakeHorizonClient) LoadAccount(accountID string) (horizon.Account, error) {
+	return horizon.Account{}, nil
 }
 
 func (c *FakeHorizonClient) SequenceForAccount(accountID string) (xdr.SequenceNumber, error) {
 	return xdr.SequenceNumber(0), nil
 }
 
-func (c *FakeHorizonClient) StreamTransactions(ctx context.Context, accountID string, cursor *Cursor, handler TransactionHandler) error {
+func (c *FakeHorizonClient) StreamTransactions(ctx context.Context, accountID string, cursor *horizon.Cursor, handler horizon.TransactionHandler) error {
 	return nil
 }

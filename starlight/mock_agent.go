@@ -16,6 +16,7 @@ import (
 	"github.com/stellar/go/xdr"
 
 	"github.com/interstellar/starlight/worizon"
+	"github.com/interstellar/starlight/worizon/worizontest"
 )
 
 var testDB = "./testdb"
@@ -49,7 +50,7 @@ func startTestAgent(t *testing.T) *Agent {
 	if err != nil {
 		t.Fatal(err)
 	}
-	g.wclient = *worizon.NewClient(horizonHTTP{}, &worizon.FakeHorizonClient{})
+	g.wclient = *worizon.NewClient(horizonHTTP{}, &worizontest.FakeHorizonClient{})
 	g.httpclient.Transport = agentHTTP{}
 	return g
 }
