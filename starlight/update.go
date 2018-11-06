@@ -1,10 +1,10 @@
 package starlight
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"io"
 	"os"
 
@@ -12,6 +12,7 @@ import (
 
 	"github.com/interstellar/starlight/starlight/db"
 	"github.com/interstellar/starlight/starlight/internal/update"
+	"github.com/interstellar/starlight/starlight/log"
 )
 
 var debug io.Writer = os.Stderr
@@ -72,8 +73,9 @@ func (g *Agent) putUpdate(root *db.Root, ev *Update) {
 	ev.UpdateLedgerTime = g.wclient.Now()
 	root.Agent().Updates().Add(ev, &ev.UpdateNum)
 	root.Tx().OnCommit(g.evcond.Broadcast)
-	json.NewEncoder(debug).Encode(ev)
-	fmt.Fprintln(debug)
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(ev)
+	log.Debug(string(b.Bytes()))
 }
 
 func lastUpdateNum(boltDB *bolt.DB) (n uint64) {

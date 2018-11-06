@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -19,6 +18,7 @@ import (
 	"github.com/interstellar/starlight/starlight/db"
 	"github.com/interstellar/starlight/starlight/fsm"
 	"github.com/interstellar/starlight/starlight/internal/update"
+	"github.com/interstellar/starlight/starlight/log"
 	"github.com/interstellar/starlight/starlight/taskbasket"
 	"github.com/interstellar/starlight/worizon"
 	"github.com/interstellar/starlight/worizon/xlm"
@@ -98,7 +98,7 @@ func (t *TbTx) Run(ctx context.Context) error {
 
 	succ, submitErr := t.g.wclient.SubmitTx(txstr)
 	if submitErr != nil {
-		log.Printf("SubmitTx error (channel %s): %s\ntx: %s", string(t.ChanID), submitErr, txstr)
+		log.Debugf("SubmitTx error (channel %s): %s\ntx: %s", string(t.ChanID), submitErr, txstr)
 
 		var (
 			resultStr string
@@ -109,23 +109,23 @@ func (t *TbTx) Run(ctx context.Context) error {
 		if herr, ok := submitErr.(*horizon.Error); ok {
 			resultStr, err = herr.ResultString()
 			if err != nil {
-				log.Printf("extracting result string from horizon.Error: %s", err)
+				log.Debugf("extracting result string from horizon.Error: %s", err)
 				resultStr = ""
 			}
 		}
 		if resultStr == "" {
 			resultStr = succ.Result
 			if resultStr == "" {
-				log.Print("cannot locate result string from failed SubmitTx call")
+				log.Debugf("cannot locate result string from failed SubmitTx call")
 				return err // will retry
 			}
 		}
 
-		log.Printf("result string: %s", resultStr)
+		log.Debugf("result string: %s", resultStr)
 
 		err = xdr.SafeUnmarshalBase64(resultStr, &tr)
 		if err != nil {
-			log.Printf("unmarshaling TransactionResult: %s", err)
+			log.Debugf("unmarshaling TransactionResult: %s", err)
 			return err // will retry
 		}
 
@@ -169,7 +169,7 @@ func (t *TbTx) Run(ctx context.Context) error {
 					return nil
 				})
 				if err != nil {
-					log.Printf("unreserving wallet funds after unretriable tx failure: %s", err)
+					log.Debugf("unreserving wallet funds after unretriable tx failure: %s", err)
 					t.g.mustDeauthenticate()
 				}
 				return nil // will not retry
@@ -206,17 +206,17 @@ func (m *TbMsg) Run(ctx context.Context) error {
 	// Check if channel has closed
 	exists, err := channelExists(m.g.db, m.Msg.ChannelID)
 	if err != nil {
-		log.Printf("channelExists error: %s", err)
+		log.Debugf("channelExists error: %s", err)
 		return err
 	}
 	if !exists {
-		log.Printf("channel doesn't exist")
+		log.Debugf("channel doesn't exist")
 		return nil
 	}
 	url := strings.TrimRight(m.RemoteURL, "/") + "/starlight/message"
 	err = post(&m.g.httpclient, url, bytes.NewReader(j))
 	if err != nil {
-		log.Printf("error %s sending message to %s", err, url)
+		log.Debugf("error %s sending message to %s", err, url)
 	}
 	return err
 }
@@ -256,11 +256,11 @@ func isRetriableSubmitErr(wclient *worizon.Client, tx *xdr.Transaction, tr *xdr.
 	if _, ok := err.(*horizon.Error); !ok {
 		// TODO(bobg): are there any non-horizon errors that are
 		// non-retriable?
-		log.Printf("error %s not a horizon error", err)
+		log.Debugf("error %s not a horizon error", err)
 		return true
 	}
 
-	log.Printf("tx failed with result code %s", tr.Result.Code)
+	log.Debugf("tx failed with result code %s", tr.Result.Code)
 
 	switch tr.Result.Code {
 	case xdr.TransactionResultCodeTxTooLate:

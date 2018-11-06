@@ -3,12 +3,12 @@ package starlight
 import (
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/interstellar/starlight/errors"
 	"github.com/interstellar/starlight/net/http/httpjson"
 	"github.com/interstellar/starlight/starlight/fsm"
+	"github.com/interstellar/starlight/starlight/log"
 )
 
 // TODO(vniu): refactor i10r.io/net/httperror to avoid
@@ -135,5 +135,5 @@ func (f *formatter) log(req *http.Request, err error) {
 		errorMessage = err.Error()
 	}
 	// TODO(vniu): format the log message with more error details and data
-	log.Printf("request to %s returned internal error %s", req.URL.Path, errorMessage)
+	log.Debugf("request to %s returned internal error %s", req.URL.Path, errorMessage)
 }

@@ -21,24 +21,40 @@ import (
 
 	i10rnet "github.com/interstellar/starlight/net"
 	"github.com/interstellar/starlight/starlight"
+	"github.com/interstellar/starlight/starlight/log"
 	"github.com/interstellar/starlight/starlight/walletrpc"
 )
 
 func main() {
 	listen := flag.String("listen", "localhost:7000", "listen `address` (if no LISTEN_FDS)")
 	dir := flag.String("data", "./starlight-data", "data directory")
+	out := flag.String("out", "", "file to write log output to")
+	verbose := flag.Bool("verbose", false, "print verbose debugging output")
 	flag.Parse()
 
 	err := os.MkdirAll(*dir, 0700)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		log.Info(err)
 		os.Exit(1)
 	}
 
 	db, err := bolt.Open(filepath.Join(*dir, "db"), 0600, nil)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "error opening database:", err)
+		log.Info("error opening database", err)
 		os.Exit(1)
+	}
+
+	if *out != "" {
+		file, err := os.Create(*out)
+		if err != nil {
+			log.Info("error setting log output", err)
+			os.Exit(1)
+		}
+		log.SetOutput(file)
+	}
+
+	if *verbose {
+		log.SetVerbose(*verbose)
 	}
 
 	ctx := context.Background()
@@ -46,7 +62,7 @@ func main() {
 	defer cancel()
 	g, err := starlight.StartAgent(ctx, db)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "error starting agent:", err)
+		log.Infof("error starting agent: %s", err)
 		os.Exit(1)
 	}
 
@@ -57,14 +73,14 @@ func main() {
 
 	serveLn, redirLn, err := systemdListenersOrListen(*listen)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "listen:", err)
+		log.Infof("listen:%s", err)
 		os.Exit(1)
 	}
 	serveLn = &keepAliveListener{serveLn}
 
 	cert, key, err := findCertKey(*dir)
 	if err != nil && !os.IsNotExist(err) {
-		fmt.Fprintln(os.Stderr, err)
+		log.Info(err)
 		os.Exit(1)
 	}
 
@@ -130,7 +146,7 @@ func main() {
 		err = srv.Serve(tls.NewListener(serveLn, tlsConfig))
 	}
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "ListenAndServe:", err)
+		log.Info("ListenAndServe:", err)
 		os.Exit(1)
 	}
 }

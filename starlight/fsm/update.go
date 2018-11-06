@@ -2,13 +2,13 @@ package fsm
 
 import (
 	"encoding/json"
-	"log"
 	"time"
 
 	"github.com/stellar/go/keypair"
 	"github.com/stellar/go/xdr"
 
 	"github.com/interstellar/starlight/errors"
+	"github.com/interstellar/starlight/starlight/log"
 	"github.com/interstellar/starlight/worizon"
 )
 
@@ -28,7 +28,7 @@ func (u *Updater) Tx(tx *worizon.Tx) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("received tx: %s", txstr)
+	log.Debugf("received tx: %s", txstr)
 	success := tx.Result.Result.Code == xdr.TransactionResultCodeTxSuccess
 
 	if tx.PT != "" {
@@ -53,7 +53,7 @@ func (u *Updater) Msg(m *Message) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("received message: %s", string(bytes))
+	log.Debugf("received message: %s", string(bytes))
 	if err := u.verifyMsg(m); err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func (u *Updater) Msg(m *Message) error {
 
 // Cmd causes the updater to update its channel in response to a user command.
 func (u *Updater) Cmd(c *Command) error {
-	log.Printf("received command: %+v", *c)
+	log.Debugf("received command: %+v", *c)
 	c.Time = u.LedgerTime
 	f := commandFuncs[c.Name]
 	return f(c, u)
@@ -100,7 +100,7 @@ func (u *Updater) Time() error {
 	switch u.C.State {
 	case AwaitingFunding:
 		// PreFundTimeout
-		log.Printf("PreFundTimeout...")
+		log.Debug("PreFundTimeout...")
 		if u.C.Role == Guest {
 			return u.transitionTo(Closed)
 		}
@@ -116,7 +116,7 @@ func (u *Updater) Time() error {
 
 	case ChannelProposed:
 		// ChannelProposedTimeout
-		log.Printf("ChannelProposedTimeout...")
+		log.Debug("ChannelProposedTimeout...")
 		if u.C.Role == Host {
 			u.H.Balance += u.C.fundingBalanceAmount() + u.C.fundingFeeAmount() + u.C.fundedAcctsTxFeeAmount()
 			u.H.Seqnum++
@@ -126,12 +126,12 @@ func (u *Updater) Time() error {
 
 	case Open, PaymentProposed, PaymentAccepted, AwaitingClose:
 		// RoundTimeout
-		log.Printf("RoundTimeout...")
+		log.Debug("RoundTimeout...")
 		return u.setForceCloseState()
 
 	case AwaitingSettlementMintime:
 		// SettlementMintimeTimeout
-		log.Printf("SettlementMintimeTimeout...")
+		log.Debug("SettlementMintimeTimeout...")
 		u.transitionTo(AwaitingSettlement)
 	}
 
