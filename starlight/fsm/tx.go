@@ -218,22 +218,19 @@ func handleRatchetTx(u *Updater, ptx *worizon.Tx, success bool) (bool, error) {
 
 		// It's a ratchet tx.
 
+		if !success {
+			// It's my ratchet tx, since we can only detect tx failures for transactions that we submit.
+			// TODO(vniu): add more detailed failure handling for different error cases, such as bump sequence target too low.
+			u.transitionTo(Closed)
+			log.Printf("unrecoverable failure on submitted ratchet tx, channel %s: closing channel immediately and abandoning balance", string(u.C.ID))
+			return true, nil
+		}
+
 		if u.C.Role == role {
-			// It's my ratchet tx.
-			if !success {
-				log.Printf("unexpected failure on submitted ratchet tx, channel %s", string(u.C.ID))
-				return true, errRatchetTxFailed
-			}
 			err := u.transitionTo(AwaitingSettlementMintime)
 			return true, err
 		}
 
-		// It's their ratchet tx.
-		if !success {
-			// Their ratchet tx failed. Publish ours.
-			err := u.setForceCloseState()
-			return true, err
-		}
 		bumpTo := op.Body.BumpSequenceOp.BumpTo
 		switch {
 		case bumpTo < u.C.roundSeqNum()+1:

@@ -268,6 +268,16 @@ func (g *Agent) doUpdateChannel(root *db.Root, chanID string, f func(*db.Root, *
 	g.putUpdate(root, u)
 
 	if c.State == fsm.Closed {
+		// other states
+		switch c.PrevState {
+		case fsm.AwaitingCleanup, fsm.AwaitingClose, fsm.AwaitingSettlement:
+		default:
+			g.putUpdate(root, &Update{
+				Type:    update.WarningType,
+				Warning: "channel close from unrecoverable error",
+				Channel: c,
+			})
+		}
 		// tear down channel
 		err = chans.Bucket().Delete([]byte(chanID))
 		if err != nil {

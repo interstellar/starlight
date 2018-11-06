@@ -173,6 +173,11 @@ func TestHandleRatchetTx(t *testing.T) {
 	}
 	tx := &worizon.Tx{
 		Env: txenv.E,
+		Result: &xdr.TransactionResult{
+			Result: xdr.TransactionResultResult{
+				Code: xdr.TransactionResultCodeTxTooLate,
+			},
+		},
 	}
 	u := &Updater{
 		C:          ch,
@@ -189,8 +194,11 @@ func TestHandleRatchetTx(t *testing.T) {
 	}
 	u.C.Role = Host
 	_, err = handleRatchetTx(u, tx, false)
-	if err != errRatchetTxFailed {
-		t.Fatal("handleRatchetTx succeeded with success==false")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if u.C.State != Closed {
+		t.Fatalf("unexpected state: got %s, expected %s", u.C.State, Closed)
 	}
 }
 
@@ -409,7 +417,7 @@ func TestUpdateFailedRatchetTx(t *testing.T) {
 		Env: txenv.E,
 		Result: &xdr.TransactionResult{
 			Result: xdr.TransactionResultResult{
-				Code: xdr.TransactionResultCodeTxBadSeq,
+				Code: xdr.TransactionResultCodeTxTooLate,
 			},
 		},
 	}
@@ -417,8 +425,8 @@ func TestUpdateFailedRatchetTx(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ch.State != AwaitingRatchet {
-		t.Errorf("unexpected state: got %s, want %s", ch.State, AwaitingRatchet)
+	if ch.State != Closed {
+		t.Errorf("unexpected state: got %s, want %s", ch.State, Closed)
 	}
 }
 
