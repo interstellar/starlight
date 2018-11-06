@@ -120,7 +120,7 @@ func channelCreationSteps(guest, host *Starlightd, maxRoundDurMins, finalityDela
 				"KeepAlive":false,
 				"MaxRoundDurMins": %d,
 				"FinalityDelayMins": %d
-			}`, *HorizonURL, maxRoundDurMins, finalityDelayMins),
+			}`, *horizonURL, maxRoundDurMins, finalityDelayMins),
 		}, {
 			name:  "guest config init update",
 			agent: guest,
@@ -144,7 +144,7 @@ func channelCreationSteps(guest, host *Starlightd, maxRoundDurMins, finalityDela
 				"FinalityDelayMins": %d,
 				"HostFeerate": %d,
 				"ChannelFeerate":%d
-			}`, *HorizonURL, maxRoundDurMins, finalityDelayMins, hostFeerate, channelFeerate),
+			}`, *horizonURL, maxRoundDurMins, finalityDelayMins, hostFeerate, channelFeerate),
 		}, {
 			name:  "host config init update",
 			agent: host,
@@ -848,7 +848,7 @@ func cleanupSteps(guest *httptest.Server, host *Starlightd, maxRoundDurMins, fin
 				"FinalityDelayMins": %d,
 				"HostFeerate": %d,
 				"ChannelFeerate":%d
-			}`, *HorizonURL, maxRoundDurMins, finalityDelayMins, hostFeerate, channelFeerate),
+			}`, *horizonURL, maxRoundDurMins, finalityDelayMins, hostFeerate, channelFeerate),
 		}, {
 			name:  "host config init update",
 			agent: host,

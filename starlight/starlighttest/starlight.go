@@ -62,7 +62,7 @@ func start(ctx context.Context, t *testing.T, testdir, name string) *Starlightd 
 	return s
 }
 
-func TestServer(name string) *httptest.Server {
+func testServer(name string) *httptest.Server {
 	mux := new(http.ServeMux)
 	mux.HandleFunc("/starlight/message", testHandleMsg)
 	mux.HandleFunc("/federation", testHandleFed)

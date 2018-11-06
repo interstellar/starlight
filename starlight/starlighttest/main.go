@@ -3,16 +3,25 @@ package starlighttest
 import (
 	"flag"
 	"os"
-	"testing"
+
+	"github.com/interstellar/starlight/starlight/log"
 )
 
 var (
-	HorizonURL = flag.String("horizon", "https://horizon-testnet.stellar.org/", "horizon URL")
+	horizonURL = flag.String("horizon", "https://horizon-testnet.stellar.org/", "horizon URL")
+	verbose    = flag.Bool("verbose", true, "log verbose debugging output")
+	out        = flag.String("out", "", "filename to store log output")
 )
 
-// TODO(vniu): add logging flags
-func TestMain(m *testing.M) {
+func init() {
 	flag.Parse()
-	result := m.Run()
-	os.Exit(result)
+	log.SetVerbose(*verbose)
+	if *out != "" {
+		file, err := os.Create(*out)
+		if err != nil {
+			log.Info("error setting log output", err)
+			os.Exit(1)
+		}
+		log.SetOutput(file)
+	}
 }

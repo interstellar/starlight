@@ -25,8 +25,6 @@ func itest(t *testing.T, f func(ctx context.Context, guest, host *Starlightd)) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
-	// include all debug output in tests
-	log.SetVerbose(true)
 	log.Infof("running %s", t.Name())
 	testdir, err := ioutil.TempDir("", t.Name())
 	if err != nil {
@@ -163,7 +161,7 @@ func TestCleanup(t *testing.T) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	guest := TestServer("guest")
+	guest := testServer("guest")
 	defer guest.Close()
 
 	host := start(ctx, t, testdir, "host")
