@@ -48,7 +48,7 @@ const View = styled.div`
 interface Props {
   availableBalance: number
   closeModal: () => void
-  createChannel: (recipient: string, initialDeposit: number) => void
+  createChannel: (recipient: string, initialDeposit: number) => Promise<boolean>
   prefill?: { counterparty: string }
   redirect?: (account: string) => void
   username: string

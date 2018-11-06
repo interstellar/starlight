@@ -2,9 +2,13 @@ import configureStore from 'redux-mock-store'
 
 import { CONFIG_INIT, CONFIG_EDIT } from 'state/config'
 import { STATUS_UPDATE, LOGIN_SUCCESS } from 'state/lifecycle'
-import { Starlightd } from 'lib/starlightd'
+import { Starlightd as StarlightdImport } from 'lib/starlightd'
 import { config } from 'state/config'
 import { initialState } from 'state/testHelpers/initialState'
+
+// hack to get around type safety when mocking
+const Starlightd: any = StarlightdImport as any
+Starlightd.client = {}
 
 const mockStore = configureStore()
 
@@ -37,17 +41,14 @@ describe('init', () => {
       Password: 'secret!',
     }
     const store = mockStore()
-    Starlightd.post = jest
+
+    Starlightd.client.configInit = jest
       .fn()
-      .mockImplementation(() => Promise.resolve({ ok: true }))
+      .mockImplementation(() => Promise.resolve({ ok: true, status: 200 }))
 
     await config.init(store.dispatch, params)
 
-    expect(Starlightd.post).toHaveBeenCalledWith(
-      store.dispatch,
-      '/api/config-init',
-      params
-    )
+    expect(Starlightd.client.configInit).toHaveBeenCalledWith(params)
     expect(store.getActions()[0]).toEqual({
       type: CONFIG_INIT,
       Username: 'croaky',
@@ -67,17 +68,15 @@ describe('init', () => {
       Password: 'secret!',
     }
     const store = mockStore()
-    Starlightd.post = jest
-      .fn()
-      .mockImplementation(() => Promise.resolve({ ok: false }))
+    Starlightd.client = {
+      configInit: jest
+        .fn()
+        .mockImplementation(() => Promise.resolve({ ok: false })),
+    }
 
     await config.init(store.dispatch, params)
 
-    expect(Starlightd.post).toHaveBeenCalledWith(
-      store.dispatch,
-      '/api/config-init',
-      params
-    )
+    expect(Starlightd.client.configInit).toHaveBeenCalledWith(params)
     expect(store.getActions()[0]).toEqual({
       type: STATUS_UPDATE,
       IsConfigured: false,
@@ -90,19 +89,17 @@ describe('edit', () => {
   it('when ok, dispatch CONFIG_EDIT', async () => {
     const store = mockStore()
     const params = { HorizonURL: 'boop' }
-    Starlightd.post = jest
-      .fn()
-      .mockImplementation(() => Promise.resolve({ ok: true }))
+    Starlightd.client = {
+      configEdit: jest
+        .fn()
+        .mockImplementation(() => Promise.resolve({ ok: true })),
+    }
 
     await config.edit(store.dispatch, { HorizonURL: params.HorizonURL })
 
-    expect(Starlightd.post).toHaveBeenCalledWith(
-      store.dispatch,
-      '/api/config-edit',
-      {
-        HorizonURL: params.HorizonURL,
-      }
-    )
+    expect(Starlightd.client.configEdit).toHaveBeenCalledWith({
+      HorizonURL: params.HorizonURL,
+    })
     expect(store.getActions()[0]).toEqual({ type: CONFIG_EDIT, ...params })
   })
 })

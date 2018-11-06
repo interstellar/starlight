@@ -1,14 +1,9 @@
-import { post } from 'client/client'
-import { LOGOUT_SUCCESS } from 'state/lifecycle'
+import { Client } from 'client/client'
+
+// this client should only be used for making requests, not for processing updates
+// it does not have any state
+const client = new Client()
 
 export const Starlightd = {
-  post: async (dispatch: any, url = ``, data = {}) => {
-    const response = await post(url, data)
-    if (!response.loggedIn) {
-      dispatch({
-        type: LOGOUT_SUCCESS,
-      })
-    }
-    return response
-  },
+  client,
 }

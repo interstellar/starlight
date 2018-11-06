@@ -4,22 +4,29 @@ import { connect } from 'react-redux'
 
 import { ApplicationState } from 'types/schema'
 import { events } from 'state/events'
-import { Client } from 'client/client'
-import { Update, ClientState } from 'client/types'
-import { LOGOUT_SUCCESS } from 'state/lifecycle'
+import { Starlightd } from 'lib/starlightd'
+import {
+  ClientState,
+  ClientResponse,
+  UpdateHandler,
+  ResponseHandler,
+} from 'client/types'
+import { checkResponse } from 'state/lifecycle'
+
+const client = Starlightd.client
 
 interface Props {
-  handler: (update: Update) => any
+  updateHandler: UpdateHandler
+  responseHandler: ResponseHandler
   clientState: ClientState
   dispatchLogout: () => void
 }
 
 class EventLoop extends React.Component<Props, {}> {
-  private client: Client
-
-  public async componentDidMount() {
-    this.client = new Client(this.props.clientState, this.props.dispatchLogout)
-    this.client.subscribe(this.props.handler)
+  public async componentWillMount() {
+    client.clientState = this.props.clientState
+    client.subscribe(this.props.updateHandler)
+    client.responseHandler = this.props.responseHandler
   }
 
   public render() {
@@ -27,7 +34,8 @@ class EventLoop extends React.Component<Props, {}> {
   }
 
   public async componentWillUnmount() {
-    this.client.unsubscribe()
+    client.responseHandler = undefined
+    client.unsubscribe()
   }
 }
 
@@ -39,11 +47,9 @@ const mapStateToProps = (state: ApplicationState) => {
 
 const mapDispatchToProps = (dispatch: Dispatch) => {
   return {
-    handler: events.getHandler(dispatch),
-    dispatchLogout: () => {
-      dispatch({
-        type: LOGOUT_SUCCESS,
-      })
+    updateHandler: events.getHandler(dispatch),
+    responseHandler: (response: ClientResponse) => {
+      return checkResponse(response, dispatch)
     },
   }
 }

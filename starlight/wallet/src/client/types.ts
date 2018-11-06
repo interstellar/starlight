@@ -7,6 +7,9 @@ export interface ClientState {
   updateNumberForSequenceNumber: { [s: string]: number }
 }
 
+export type UpdateHandler = (event: Update) => void
+export type ResponseHandler = (response: ClientResponse) => ClientResponse
+
 // XDR types
 // skipping some fields we don't need
 
@@ -183,4 +186,11 @@ export interface WalletActivity {
   type: 'walletActivity'
   delta: number // positive or negative
   counterparty: string // either sender or recipient
+}
+
+export interface ClientResponse {
+  body: any
+  ok: boolean
+  status?: number
+  error?: Error
 }

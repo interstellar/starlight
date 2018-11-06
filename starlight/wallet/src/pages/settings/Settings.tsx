@@ -111,11 +111,13 @@ const mapStateToProps = (state: ApplicationState) => {
     HorizonURL: state.config.HorizonURL,
   }
 }
+
 const mapDispatchToProps = (dispatch: Dispatch) => {
   return {
     logout: () => lifecycle.logout(dispatch),
   }
 }
+
 export const ConnectedSettings = connect(
   mapStateToProps,
   mapDispatchToProps

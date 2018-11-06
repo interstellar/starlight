@@ -10,7 +10,7 @@ import { SendPayment } from 'pages/shared/forms/SendPayment'
 const editPasswordFunc = (params: { OldPassword: string; Password: string }) =>
   params
 const editServerFunc = (params: { HorizonURL: string }) => params
-const createChannel = (_1: string, _2: number) => undefined
+const createChannel = async (_1: string, _2: number) => true
 const setFlash = () => undefined
 
 const sendFunc = async (_1: string, _2: number) => {

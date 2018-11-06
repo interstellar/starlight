@@ -1,4 +1,5 @@
 import { Dispatch, Reducer } from 'redux'
+import { ClientResponse } from 'client/types'
 
 import { Credentials } from 'types/types'
 import { LifecycleState } from 'types/schema'
@@ -39,18 +40,19 @@ const reducer: Reducer<LifecycleState> = (state = initialState, action) => {
 
 // Side effects
 const status = async (dispatch: Dispatch) => {
-  const response = await Starlightd.post(dispatch, '/api/status')
-
+  const response = await Starlightd.client.getStatus()
   if (response.ok) {
     dispatch({ type: STATUS_UPDATE, ...response.body })
+  } else {
+    dispatch({ type: STATUS_UPDATE, IsConfigured: false, IsLoggedIn: false })
   }
 }
 
 const login = async (dispatch: Dispatch, params: Credentials) => {
-  const response = await Starlightd.post(dispatch, '/api/login', {
-    username: params.Username,
-    password: params.Password,
-  })
+  const response = await Starlightd.client.login(
+    params.Username,
+    params.Password
+  )
 
   if (response.ok) {
     dispatch({ type: LOGIN_SUCCESS, Username: params.Username })
@@ -62,13 +64,28 @@ const login = async (dispatch: Dispatch, params: Credentials) => {
 }
 
 const logout = async (dispatch: Dispatch) => {
-  const response = await Starlightd.post(dispatch, '/api/logout')
+  const response = await Starlightd.client.logout()
 
   if (response.ok) {
-    dispatch({ type: LOGOUT_SUCCESS })
+    logoutSuccess(dispatch)
   }
 
   return response.ok
+}
+
+const logoutSuccess = (dispatch: Dispatch) => {
+  dispatch({ type: LOGOUT_SUCCESS })
+  Starlightd.client.clearState()
+}
+
+export const checkUnauthorized = (
+  response: ClientResponse,
+  dispatch: Dispatch
+) => {
+  if (response.status && response.status === 401) {
+    logoutSuccess(dispatch)
+  }
+  return response
 }
 
 export const lifecycle = {

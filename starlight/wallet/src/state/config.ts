@@ -43,7 +43,7 @@ export interface InitConfigParams {
 
 // Side effects
 const init = async (dispatch: Dispatch, params: InitConfigParams) => {
-  const response = await Starlightd.post(dispatch, '/api/config-init', params)
+  const response = await Starlightd.client.configInit(params)
 
   const reducerParams = {
     Username: params.Username,
@@ -75,7 +75,7 @@ interface EditParams {
 }
 
 const edit = async (dispatch: Dispatch, params: EditParams) => {
-  const response = await Starlightd.post(dispatch, '/api/config-edit', params)
+  const response = await Starlightd.client.configEdit(params)
 
   if (response.ok) {
     dispatch({ type: CONFIG_EDIT, ...params })

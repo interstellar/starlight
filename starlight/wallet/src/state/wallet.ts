@@ -132,13 +132,10 @@ const send = async (dispatch: Dispatch, recipient: string, amount: number) => {
   if (validAddress(recipient)) {
     const address = recipient
     // look up Stellar account for address
-    const lookupResponse = await Starlightd.post(
-      dispatch,
-      '/api/find-account',
-      {
-        stellar_addr: address,
-      }
-    )
+    const lookupResponse = await Starlightd.client.findAccount(address)
+    if (!lookupResponse.ok) {
+      throw new Error('no account found')
+    }
     const account = lookupResponse.body.AcctID
     // save the reverse mapping from account to address
     // so it can be later displayed as the address
@@ -150,10 +147,7 @@ const send = async (dispatch: Dispatch, recipient: string, amount: number) => {
     recipient = account
   }
 
-  const response = await Starlightd.post(dispatch, '/api/do-wallet-pay', {
-    Dest: recipient,
-    Amount: amount,
-  })
+  const response = await Starlightd.client.walletPay(recipient, amount)
   return response.ok
 }
 

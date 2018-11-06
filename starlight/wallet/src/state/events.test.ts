@@ -42,12 +42,11 @@ describe('fetch', () => {
         },
       ],
       ok: true,
-      loggedIn: true,
     }
 
-    const client = new Client(initialClientState, () => undefined)
-    client.handler = events.getHandler(store.dispatch)
-    await client.handleResponse(response)
+    const client = new Client('', initialClientState)
+    client.updateHandler = events.getHandler(store.dispatch)
+    await client.handleFetchResponse(response)
 
     expect(store.getActions()[0]).toEqual({
       type: UPDATE_CLIENT_STATE,
