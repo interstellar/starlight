@@ -49,8 +49,8 @@ interface Props {
   availableBalance: number
   channels: ChannelsState
   initialRecipient?: string
-  walletPay: (recipient: string, amount: number) => Promise<void>
-  channelPay: (id: string, amount: number) => Promise<void>
+  walletPay: (recipient: string, amount: number) => Promise<boolean>
+  channelPay: (id: string, amount: number) => Promise<boolean>
   closeModal: () => void
   counterpartyAccounts: { [id: string]: string }
   username: string

@@ -21,7 +21,7 @@ const ConfirmationMessage = styled.p`
 
 interface Props {
   closeModal: () => void
-  forceClose: (id: string) => void
+  forceClose: (id: string) => Promise<boolean>
   channel: ChannelState
 }
 

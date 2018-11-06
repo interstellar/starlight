@@ -11,7 +11,7 @@ import {
   UpdateHandler,
   ResponseHandler,
 } from 'client/types'
-import { checkResponse } from 'state/lifecycle'
+import { checkUnauthorized } from 'state/lifecycle'
 
 const client = Starlightd.client
 
@@ -49,7 +49,7 @@ const mapDispatchToProps = (dispatch: Dispatch) => {
   return {
     updateHandler: events.getHandler(dispatch),
     responseHandler: (response: ClientResponse) => {
-      return checkResponse(response, dispatch)
+      return checkUnauthorized(response, dispatch)
     },
   }
 }

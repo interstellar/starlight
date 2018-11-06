@@ -13,11 +13,9 @@ const editServerFunc = (params: { HorizonURL: string }) => params
 const createChannel = async (_1: string, _2: number) => true
 const setFlash = () => undefined
 
-const sendFunc = async (_1: string, _2: number) => {
-  return undefined
-}
+const sendFunc = async (_1: string, _2: number) => true
 const closeModal = () => undefined
-const deposit = (_1: string, _2: number) => undefined
+const deposit = async (_1: string, _2: number) => true
 
 it('renders ChangePassword', () => {
   const tree = renderer

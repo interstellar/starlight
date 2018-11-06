@@ -33,7 +33,7 @@ const ChannelName = styled.div`
 interface Props {
   channel: ChannelState
   availableBalance: number
-  deposit: (id: string, amount: number) => void
+  deposit: (id: string, amount: number) => Promise<boolean>
   closeModal: () => void
 }
 
