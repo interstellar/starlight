@@ -102,6 +102,9 @@ config.node = {
 config.resolve = {
   root: [path.resolve('./src'), path.resolve('./static')],
   extensions: ['', '.js', '.jsx', '.ts', '.tsx'],
+  alias: {
+    'starlight-sdk': path.resolve(process.cwd(), 'starlight-sdk/src'),
+  },
 }
 
 // module.noParse disables parsing for

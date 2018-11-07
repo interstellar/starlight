@@ -10,7 +10,7 @@ import {
   ClientResponse,
   UpdateHandler,
   ResponseHandler,
-} from 'client/types'
+} from 'starlight-sdk'
 import { checkUnauthorized } from 'state/lifecycle'
 
 const client = Starlightd.client

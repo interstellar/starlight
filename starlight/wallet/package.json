@@ -25,6 +25,7 @@
     "connected-react-router": "^4.3.0",
     "lodash": "~4.17.10",
     "moment": "^2.22.2",
+    "node-fetch": "^2.2.1",
     "react": "~16",
     "react-copy-to-clipboard": "^5.0.1",
     "react-dom": "~16",
@@ -95,6 +96,9 @@
     "moduleDirectories": [
       "node_modules",
       "../wallet/src"
-    ]
+    ],
+    "moduleNameMapper": {
+      "starlight-sdk": "<rootDir>/starlight-sdk/src"
+    }
   }
 }

@@ -1,5 +1,5 @@
 import { Dispatch, Reducer } from 'redux'
-import { ClientResponse } from 'client/types'
+import { ClientResponse } from 'starlight-sdk'
 
 import { Credentials } from 'types/types'
 import { LifecycleState } from 'types/schema'

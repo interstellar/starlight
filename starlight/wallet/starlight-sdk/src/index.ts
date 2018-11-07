@@ -1,14 +1,20 @@
-import { Event } from 'types/types'
 import {
   Update,
   ClientState,
   ClientResponse,
   UpdateHandler,
   ResponseHandler,
-} from 'client/types'
-import { getWalletOp, getChannelOps } from 'client/helpers'
+  Event,
+} from './types'
+import { getWalletOp, getChannelOps } from './helpers'
+
+import { URL } from 'url'
+
+require('isomorphic-fetch')
 
 const StrKey = require('stellar-base').StrKey
+
+export { ClientState, UpdateHandler, ResponseHandler, Update }
 
 export const initialClientState: ClientState = {
   addressesForChannelAccount: {},
@@ -62,6 +68,7 @@ export interface ClientResponse {
 export class Client {
   public updateHandler?: UpdateHandler
   public responseHandler?: ResponseHandler
+  private cookie: string
 
   /**
    * Create a Client.
@@ -471,9 +478,15 @@ export class Client {
         credentials: 'same-origin', // include, same-origin, *omit
         headers: {
           'Content-Type': 'application/json; charset=utf-8',
+          Cookie: this.cookie,
         },
         body: JSON.stringify(data), // body data type must match "Content-Type"
       })
+
+      const cookie = response.headers.get('set-cookie')
+      if (cookie) {
+        this.cookie = cookie
+      }
 
       if ((response.headers.get('content-type') || '').includes('json')) {
         return {

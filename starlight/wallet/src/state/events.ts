@@ -2,8 +2,8 @@ import { EventsState } from 'types/schema'
 import { CONFIG_INIT, CONFIG_EDIT } from 'state/config'
 import { CHANNEL_UPDATE } from 'state/channels'
 import { WALLET_UPDATE, ADD_WALLET_ACTIVITY } from 'state/wallet'
-import { Update } from 'client/types'
-import { initialClientState } from 'client/client'
+import { Update } from 'starlight-sdk'
+import { initialClientState } from 'starlight-sdk'
 
 // Actions
 export const TX_SUCCESS = 'events/TX_SUCCESS'

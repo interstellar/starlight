@@ -9,7 +9,7 @@ import {
   ChannelCmdEvent,
   ChannelTimeoutEvent,
   InputTx,
-} from 'types/types'
+} from './types'
 
 const StrKey = require('stellar-base').StrKey
 

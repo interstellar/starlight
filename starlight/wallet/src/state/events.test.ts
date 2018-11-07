@@ -1,6 +1,6 @@
 import configureStore from 'redux-mock-store'
 
-import { initialClientState, Client } from 'client/client'
+import { initialClientState, Client } from 'starlight-sdk'
 import { CONFIG_INIT } from 'state/config'
 import { events, UPDATE_CLIENT_STATE } from 'state/events'
 import { initialState } from 'state/testHelpers/initialState'

@@ -1,5 +1,5 @@
 import { ApplicationState } from 'types/schema'
-import { initialClientState } from 'client/client'
+import { initialClientState } from 'starlight-sdk'
 
 export const initialState: ApplicationState = {
   lifecycle: {

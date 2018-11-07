@@ -1,5 +1,5 @@
 import { ChannelOp, WalletOp } from 'types/types'
-import { ClientState } from 'client/types'
+import { ClientState } from 'starlight-sdk'
 
 export interface ApplicationState {
   config: ConfigState
