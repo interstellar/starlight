@@ -613,13 +613,20 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 
 func (g *Agent) getTestnetFaucetFunds(acctID fsm.AccountID) {
 	// The faucet is not 100% reliable (it often times out),
-	// so this tries five times before giving up.
-	// On failure, it reports the result as an *Update for the
-	// client to consume.
+	// so this tries indefinitely with backoff until success.
 	backoff := &net.Backoff{Base: 100 * time.Millisecond}
 	defer close(g.wallet)
 
-	for i := 0; i < 5; i++ {
+	for counter := 0; ; counter++ {
+		if counter == 1 {
+			db.Update(g.db, func(root *db.Root) error {
+				g.putUpdate(root, &Update{
+					Type:    update.WarningType,
+					Warning: "could not retrieve testnet faucet funds, will retry until successful",
+				})
+				return nil
+			})
+		}
 		resp, err := g.httpclient.Get("https://friendbot.stellar.org/?addr=" + acctID.Address())
 		if err != nil {
 			dur := backoff.Next()
@@ -640,13 +647,7 @@ func (g *Agent) getTestnetFaucetFunds(acctID fsm.AccountID) {
 			} else {
 				warning = fmt.Sprintf("faucet: %s (%s)", v.Detail, v.ResultCodes)
 			}
-			db.Update(g.db, func(root *db.Root) error {
-				g.putUpdate(root, &Update{
-					Type:    update.WarningType,
-					Warning: warning,
-				})
-				return nil
-			})
+			log.Debug(warning)
 			dur := backoff.Next()
 			log.Debugf("Retrieving testnet funds for %s (will retry in %s)", acctID.Address(), dur)
 			time.Sleep(dur)
@@ -654,15 +655,6 @@ func (g *Agent) getTestnetFaucetFunds(acctID fsm.AccountID) {
 		}
 		return
 	}
-	// TODO(vniu): stop the watchWalletAcct goroutine and potentially
-	// exit the agent when getting testnet faucet funds fails.
-	db.Update(g.db, func(root *db.Root) error {
-		g.putUpdate(root, &Update{
-			Type:    update.WarningType,
-			Warning: "could not retrieve testnet faucet funds",
-		})
-		return nil
-	})
 }
 
 // Authenticate authenticates the given user name and password.
