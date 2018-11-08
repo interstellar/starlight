@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: index.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: index.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>"use strict";
+var __awaiter = (this &amp;&amp; this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const helpers_1 = require("./helpers");
+const url_1 = require("url");
+require('isomorphic-fetch');
+const StrKey = require('stellar-base').StrKey;
+exports.initialClientState = {
+    addressesForChannelAccount: {},
+    addressesForCounterpartyAccount: {},
+    updateNumberForSequenceNumber: {},
+    from: 0,
+};
+/**
+ * The Starlight API Client object is the root object for all API interactions.
+ * To interact with Starlight, a Client object must always be instantiated
+ * first.
+ * @class
+ */
+class Client {
+    /**
+     * @typedef Status
+     * @type {object}
+     * @property {boolean} IsConfigured
+     * @property {boolean} IsLoggedIn
+     */
+    /**
+     * @typedef ClientResponse
+     * @template T
+     * @type {object}
+     * @property {string} body - The body of the response.
+     * @property {boolean} ok - Whether the request was successful.
+     * @property {number | undefined} status - Status code from the HTTP response (if any).
+     * @property {error | undefined} error - a JavaScript error, if there was an error making the request.
+     */
+    /**
+     * Create a Client.
+     * @param {string} baseURL - The URL of the Starlight agent.
+     * @param {object} clientState - The client state.
+     */
+    constructor(baseURL, clientState = exports.initialClientState) {
+        this.baseURL = baseURL;
+        this.clientState = clientState;
+    }
+    /**
+     * Resets the client's state to an initial state.
+     */
+    clearState() {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.clientState = exports.initialClientState;
+        });
+    }
+    /**
+     * Restore the client's state from a snapshot.
+     * @param {object} clientState - The client state.
+     */
+    setState(clientState) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.clientState = clientState;
+        });
+    }
+    /**
+     * Configure the instance with a username, password, and horizon URL.
+     *
+     * @async
+     * @param {object} params - The configuration parameters.
+     * @param {string} params.HorizonURL - The Horizon URL (by default, https://horizon-testnet.stellar.org).
+     * @param {string} params.Username - This will be the first part of your Stellar address (as in "alice*stellar.org").
+     * @param {string} params.Password - This will also be used to encrypt the instance's private key in storage.
+     *
+     * @returns {Promise&lt;ClientResponse&lt;Status>>}
+     */
+    configInit(params) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request('/api/config-init', params);
+        });
+    }
+    /**
+     * Edit the instance's configuration.
+     * @param {object} params - The configuration parameters.
+     * @param {string} [params.HorizonURL] - A new Horizon URL.
+     * @param {string} [params.Password] - A new password.
+     * @param {string} [params.OldPassword] - The old password, which must be provided if a new password is provided.
+     *
+     * @returns {Promise&lt;ClientResponse&lt;string>>}
+     */
+    configEdit(params) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request('/api/config-edit', params);
+        });
+    }
+    /**
+     * Attempt to open a channel with a specific counterparty.
+     * @param {string} counterpartyAddress - The Stellar address of your counterparty (e.g., "alice*stellar.org").
+     * @param {number} initialDeposit - The amount (in stroops) you will initially deposit into the channel.
+     *
+     * @returns {Promise&lt;ClientResponse&lt;string>>}
+     */
+    createChannel(counterpartyAddress, initialDeposit) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request('/api/do-create-channel', {
+                GuestAddr: counterpartyAddress,
+                HostAmount: initialDeposit,
+            });
+        });
+    }
+    /**
+     * Cooperatively close a channel.
+     * @param {string} channelID - The channel ID.
+     *
+     * @returns {Promise&lt;ClientResponse&lt;string>>}
+     */
+    close(channelID) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request('/api/do-command', {
+                ChannelID: channelID,
+                Command: {
+                    Name: 'CloseChannel',
+                },
+            });
+        });
+    }
+    /**
+     * Cancel a proposed channel that your counterparty has not yet accepted.
+     * @param {string} channelID - The channel ID.
+     *
+     * @returns {Promise&lt;ClientResponse&lt;string>>}
+     */
+    cancel(channelID) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request('/api/do-command', {
+                ChannelID: channelID,
+                Command: {
+                    Name: 'CleanUp',
+                },
+            });
+        });
+    }
+    /**
+     * Attempt to force close a channel.
+     * @param {string} channelID - The channel ID.
+     *
+     * @returns {Promise&lt;ClientResponse&lt;string>>}
+     */
+    forceClose(channelID) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request('/api/do-command', {
+                ChannelID: channelID,
+                Command: {
+                    Name: 'ForceClose',
+                },
+            });
+        });
+    }
+    /**
+     * Make a payment over a channel.
+     * @param {string} channelID - The channel ID.
+     * @param {number} amount - The amount (in stroops) to be paid.
+     *
+     * @returns {Promise&lt;ClientResponse&lt;string>>}
+     */
+    channelPay(channelID, amount) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request('/api/do-command', {
+                ChannelID: channelID,
+                Command: {
+                    Name: 'ChannelPay',
+                    Amount: amount,
+                },
+            });
+        });
+    }
+    /**
+     * Make a payment on the public network.
+     * @param {string} channelID - The channel ID.
+     * @param {number} amount - The amount (in stroops) to be paid.
+     *
+     * @returns {Promise&lt;ClientResponse&lt;string>>}
+     */
+    walletPay(recipient, amount) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request('/api/do-wallet-pay', {
+                Dest: recipient,
+                Amount: amount,
+            });
+        });
+    }
+    /**
+     * Add more money to a channel you created.
+     * @param {string} channelID - The channel ID.
+     * @param {number} amount - The amount (in stroops) to be deposited.
+     * @returns {Promise&lt;ClientResponse&lt;string>>}
+     */
+    deposit(channelID, amount) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request('/api/do-command', {
+                ChannelID: channelID,
+                Command: {
+                    Name: 'TopUp',
+                    Amount: amount,
+                },
+            });
+        });
+    }
+    /**
+     * Authenticate with a Starlight instance.
+     * This also decrypts the instance's private key,
+     * allowing it to sign transactions and accept channels.
+     * @param {string} username
+     * @param {number} password
+     *
+     * @returns {Promise&lt;ClientResponse&lt;string>>}
+     */
+    login(username, password) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request('/api/login', {
+                username,
+                password,
+            });
+        });
+    }
+    /**
+     * Log out of a Starlight instance.
+     * @param {string} username
+     * @param {number} password
+     *
+     * @returns {Promise&lt;ClientResponse&lt;string>>}
+     */
+    logout() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request('/api/logout');
+        });
+    }
+    /**
+     * Find the account ID (e.g., "G...") corresponding to a Stellar address (e.g., "alice*stellar.org").
+     * @param {string} address
+     *
+     * @returns {Promise&lt;ClientResponse&lt;Status>>} accountID
+     */
+    findAccount(address) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request('/api/find-account', {
+                stellar_addr: address,
+            });
+        });
+    }
+    /**
+     * Get the current status of the instance (whether the instance is configured, and if so, whether the user is logged in).
+     *
+     * @returns {Promise&lt;Status | undefined>}
+     */
+    getStatus() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request('/api/status');
+        });
+    }
+    /**
+     * Subscribe to updates from the Starlight instance.
+     * The first time this is called, the handler will be called with all updates in the instance's history.
+     *
+     * @param {function} updateHandler - A handler function that updates will be passed to.
+     */
+    subscribe(updateHandler) {
+        this.updateHandler = updateHandler;
+        this.loop();
+    }
+    /**
+     * Stop subscribing to updates from the Starlight instance.
+     */
+    unsubscribe() {
+        this.updateHandler = undefined;
+    }
+    /**
+     * This method is only public so it can be used in tests.
+     * @ignore
+     */
+    handleFetchResponse(rawResponse) {
+        const handler = this.updateHandler;
+        const response = this.responseHandler
+            ? this.responseHandler(rawResponse)
+            : rawResponse;
+        if (handler &amp;&amp; response.ok &amp;&amp; response.body.length >= 1) {
+            response.body.forEach((event) => {
+                if (event.Type === 'channel') {
+                    const channel = event.Channel;
+                    const CounterpartyAccount = channel.Role === 'Host' ? channel.GuestAcct : channel.HostAcct;
+                    this.clientState = Object.assign({}, this.clientState, { addressesForCounterpartyAccount: Object.assign({}, this.clientState.addressesForCounterpartyAccount, { [CounterpartyAccount]: channel.CounterpartyAddress }), addressesForChannelAccount: Object.assign({}, this.clientState.addressesForChannelAccount, { [channel.EscrowAcct]: channel.CounterpartyAddress }) });
+                }
+                this.clientState = Object.assign({}, this.clientState, { from: event.UpdateNum + 1 });
+                const update = this.eventToUpdate(event);
+                if (update) {
+                    handler(update);
+                }
+            });
+        }
+        return response.ok;
+    }
+    fetch() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const From = this.clientState.from;
+            const response = yield this.request('/api/updates', { From });
+            return this.handleFetchResponse(response);
+        });
+    }
+    loop() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.updateHandler) {
+                return;
+            }
+            const ok = yield this.fetch();
+            if (!ok) {
+                yield this.backoff(10000);
+            }
+            this.loop();
+        });
+    }
+    backoff(ms) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield new Promise(resolve => setTimeout(resolve, ms));
+        });
+    }
+    eventToUpdate(event) {
+        const clientState = this.clientState;
+        switch (event.Type) {
+            case 'account': {
+                const op = helpers_1.getWalletOp(event, this.clientState.addressesForCounterpartyAccount);
+                if (event.InputTx) {
+                    // check if this is from a channel account
+                    const counterpartyAddress = this.clientState
+                        .addressesForChannelAccount[StrKey.encodeEd25519PublicKey(event.InputTx.Env.Tx.SourceAccount.Ed25519)];
+                    if (counterpartyAddress !== undefined) {
+                        // it's from a channel
+                        // activity is handled elsewhere
+                        return {
+                            Type: 'accountUpdate',
+                            Account: event.Account,
+                            UpdateLedgerTime: event.UpdateLedgerTime,
+                            UpdateNum: event.UpdateNum,
+                            ClientState: clientState,
+                        };
+                    }
+                }
+                return {
+                    Type: 'walletActivityUpdate',
+                    Account: event.Account,
+                    UpdateLedgerTime: event.UpdateLedgerTime,
+                    UpdateNum: event.UpdateNum,
+                    WalletOp: op,
+                    ClientState: clientState,
+                };
+            }
+            case 'channel':
+                // TODO: remove channel account from this mapping when channel is closed
+                const ops = helpers_1.getChannelOps(event);
+                if (ops.length === 0) {
+                    return {
+                        Type: 'channelUpdate',
+                        Account: event.Account,
+                        Channel: event.Channel,
+                        UpdateLedgerTime: event.UpdateLedgerTime,
+                        UpdateNum: event.UpdateNum,
+                        ClientState: clientState,
+                    };
+                }
+                else {
+                    return {
+                        Type: 'channelActivityUpdate',
+                        Account: event.Account,
+                        Channel: event.Channel,
+                        UpdateLedgerTime: event.UpdateLedgerTime,
+                        UpdateNum: event.UpdateNum,
+                        ChannelOp: ops[0],
+                        ClientState: clientState,
+                    };
+                }
+            case 'config':
+                return {
+                    Type: 'configUpdate',
+                    Config: event.Config,
+                    Account: event.Account,
+                    UpdateLedgerTime: event.UpdateLedgerTime,
+                    UpdateNum: event.UpdateNum,
+                    ClientState: clientState,
+                };
+            case 'init':
+                return {
+                    Type: 'initUpdate',
+                    Config: event.Config,
+                    Account: event.Account,
+                    UpdateLedgerTime: event.UpdateLedgerTime,
+                    UpdateNum: event.UpdateNum,
+                    ClientState: clientState,
+                };
+            case 'tx_failed':
+            case 'tx_success':
+                return {
+                    Type: event.Type === 'tx_failed' ? 'txFailureUpdate' : 'txSuccessUpdate',
+                    Tx: event.InputTx,
+                    Account: event.Account,
+                    UpdateLedgerTime: event.UpdateLedgerTime,
+                    UpdateNum: event.UpdateNum,
+                    ClientState: clientState,
+                };
+        }
+    }
+    request(path = '', data = {}) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let urlString;
+            if (this.baseURL) {
+                const url = new url_1.URL(path, this.baseURL);
+                urlString = url.href;
+            }
+            else {
+                urlString = path;
+            }
+            const rawResponse = yield this.post(urlString, data);
+            const response = this.responseHandler
+                ? this.responseHandler(rawResponse)
+                : rawResponse;
+            return response;
+        });
+    }
+    post(url = ``, data = {}) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let response;
+            try {
+                // Default options marked with *
+                response = yield fetch(url, {
+                    method: 'POST',
+                    cache: 'no-cache',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json; charset=utf-8',
+                        Cookie: this.cookie,
+                    },
+                    body: JSON.stringify(data),
+                });
+                const cookie = response.headers.get('set-cookie');
+                if (cookie) {
+                    this.cookie = cookie;
+                }
+                if ((response.headers.get('content-type') || '').includes('json')) {
+                    return {
+                        body: yield response.json(),
+                        ok: response.ok,
+                        status: response.status,
+                    };
+                }
+                else {
+                    return { body: '', ok: response.ok, status: response.status };
+                }
+            }
+            catch (error) {
+                return { body: '', ok: false, error };
+            }
+        });
+    }
+}
+exports.Client = Client;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Client.html">Client</a></li></ul><h3><a href="global.html">Global</a></h3>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Wed Nov 07 2018 19:54:37 GMT-0500 (EST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

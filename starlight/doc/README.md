@@ -1,3 +1,0 @@
-# Starlight Documentation
-
-Requires Graphviz.

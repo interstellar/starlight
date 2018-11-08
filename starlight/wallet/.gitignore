@@ -1,7 +1,0 @@
-.env
-errorShots
-node_modules
-npm-debug.log
-public
-starlight-data*
-dist
