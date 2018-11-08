@@ -40,7 +40,7 @@ func TestAgentRequest(t *testing.T) {
 				"Password":"password",
 				"DemoServer":true,
 				"HorizonURL":"%s"
-			}`, *horizonURL),
+			}`, *HorizonURL),
 		}, {
 			name:  "get init update",
 			agent: alice,

@@ -91,9 +91,33 @@ func HostChannelPayGuest(ctx context.Context, guest, host *Starlightd, channelID
 	return nil
 }
 
+// GuestChannelPayHost executes the API steps for a guest-to-host channel payment.
+func GuestChannelPayHost(ctx context.Context, guest, host *Starlightd, channelID string, payment xlm.Amount) error {
+	steps := guestChannelPayHostSteps(guest, host, payment)
+	for _, s := range steps {
+		err := handleStep(ctx, s, &channelID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // HostTopUp executes the API steps for a host top-up.
 func HostTopUp(ctx context.Context, guest, host *Starlightd, channelID string, topUpAmount xlm.Amount) error {
 	steps := hostTopUpSteps(guest, host, topUpAmount)
+	for _, s := range steps {
+		err := handleStep(ctx, s, &channelID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// GuestCoopClose executes the API steps for a guest cooperative close.
+func GuestCoopClose(ctx context.Context, guest, host *Starlightd, channelID string, channelFundingAmount, settleWithGuestAmount xlm.Amount) error {
+	steps := guestCoopCloseSteps(guest, host, channelFundingAmount, settleWithGuestAmount)
 	for _, s := range steps {
 		err := handleStep(ctx, s, &channelID)
 		if err != nil {
@@ -120,7 +144,7 @@ func channelCreationSteps(guest, host *Starlightd, maxRoundDurMins, finalityDela
 				"KeepAlive":false,
 				"MaxRoundDurMins": %d,
 				"FinalityDelayMins": %d
-			}`, *horizonURL, maxRoundDurMins, finalityDelayMins),
+			}`, *HorizonURL, maxRoundDurMins, finalityDelayMins),
 		}, {
 			name:  "guest config init update",
 			agent: guest,
@@ -144,7 +168,7 @@ func channelCreationSteps(guest, host *Starlightd, maxRoundDurMins, finalityDela
 				"FinalityDelayMins": %d,
 				"HostFeerate": %d,
 				"ChannelFeerate":%d
-			}`, *horizonURL, maxRoundDurMins, finalityDelayMins, hostFeerate, channelFeerate),
+			}`, *HorizonURL, maxRoundDurMins, finalityDelayMins, hostFeerate, channelFeerate),
 		}, {
 			name:  "host config init update",
 			agent: host,
@@ -315,6 +339,66 @@ func hostChannelPayGuestSteps(guest, host *Starlightd, payment xlm.Amount) []ste
 			},
 			hostDelta:  -payment,
 			guestDelta: payment,
+		},
+	}
+}
+
+func guestChannelPayHostSteps(guest, host *Starlightd, payment xlm.Amount) []step {
+	return []step{
+		{
+			name:  "guest channel pay to host",
+			agent: guest,
+			path:  "/api/do-command",
+			body: fmt.Sprintf(`
+			{
+				"ChannelID": "%%s",
+				"Command": {
+					"Name": "ChannelPay",
+					"Amount": %d,
+					"Time": "2018-10-02T10:26:43.511Z"
+				}
+			}`, payment),
+			injectChanID: true,
+		}, {
+			name:  "guest channel pay to host payment proposed update",
+			agent: guest,
+			update: &update.Update{
+				Type: update.ChannelType,
+				Channel: &fsm.Channel{
+					State: fsm.PaymentProposed,
+				},
+			},
+		}, {
+			name:  "guest channel pay to host payment accept update",
+			agent: host,
+			update: &update.Update{
+				Type: update.ChannelType,
+				Channel: &fsm.Channel{
+					State: fsm.PaymentAccepted,
+				},
+			},
+		}, {
+			name:  "guest channel pay to host guest channel open update",
+			agent: guest,
+			update: &update.Update{
+				Type: update.ChannelType,
+				Channel: &fsm.Channel{
+					State: fsm.Open,
+				},
+			},
+			hostDelta:  payment,
+			guestDelta: -payment,
+		}, {
+			name:  "guest channel pay to host payment host channel open update",
+			agent: host,
+			update: &update.Update{
+				Type: update.ChannelType,
+				Channel: &fsm.Channel{
+					State: fsm.Open,
+				},
+			},
+			hostDelta:  payment,
+			guestDelta: -payment,
 		},
 	}
 }
@@ -848,7 +932,7 @@ func cleanupSteps(guest *httptest.Server, host *Starlightd, maxRoundDurMins, fin
 				"FinalityDelayMins": %d,
 				"HostFeerate": %d,
 				"ChannelFeerate":%d
-			}`, *horizonURL, maxRoundDurMins, finalityDelayMins, hostFeerate, channelFeerate),
+			}`, *HorizonURL, maxRoundDurMins, finalityDelayMins, hostFeerate, channelFeerate),
 		}, {
 			name:  "host config init update",
 			agent: host,

@@ -275,7 +275,6 @@ func (c *Client) streamHorizon(ctx context.Context, cur *Cursor, s func(context.
 			case <-ctx.Done():
 			}
 		}()
-
 		streamErr := s(ctx, cur, backoff)
 
 		if origCtx.Err() == nil {

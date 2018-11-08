@@ -8,7 +8,8 @@ import (
 )
 
 var (
-	horizonURL = flag.String("horizon", "https://horizon-testnet.stellar.org/", "horizon URL")
+	// HorizonURL is the testnet Horizon URL used for testing.
+	HorizonURL = flag.String("horizon", "https://horizon-testnet.stellar.org/", "horizon URL")
 	verbose    = flag.Bool("verbose", true, "log verbose debugging output")
 	out        = flag.String("out", "", "filename to store log output")
 )
