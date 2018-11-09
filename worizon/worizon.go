@@ -82,7 +82,7 @@ func NewClient(rt http.RoundTripper, horizon horizonClient) *Client {
 	}
 }
 
-// SetURL sets the URL for c to url.
+// SetURL sets the URL for c to url. It also starts the clock routine.
 //
 // If a non-nil horizon client is provided in NewClient,
 // SetURL has no effect.
@@ -91,9 +91,9 @@ func NewClient(rt http.RoundTripper, horizon horizonClient) *Client {
 // with other methods on Client.
 func (c *Client) SetURL(url string) {
 	c.mu.Lock()
-	defer c.mu.Unlock()
 
 	if c.initHorizon {
+		c.mu.Unlock()
 		return
 	}
 	if c.http == nil {
@@ -109,6 +109,8 @@ func (c *Client) SetURL(url string) {
 	if changed != nil {
 		close(changed)
 	}
+	c.mu.Unlock()
+	c.startClockOnce.Do(c.startClock)
 }
 
 func (c *Client) getHorizonClient(url string) *horizon.Client {
