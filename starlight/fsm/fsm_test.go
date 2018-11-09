@@ -22,7 +22,7 @@ func TestChannelJSON(t *testing.T) {
 	}
 	want := `{"ID":"GDNY5IMBRIESB4YP3LCRZF6Q7TFLVJDU2ZWGIM4Q4BHK7TOKXNDY35PU","Role":"","State":"","PrevState":"",` +
 		`"CounterpartyAddress":"","RemoteURL":"","Passphrase":"Test SDF Network ; September 2015","Cursor":"","BaseSequenceNumber":0,` +
-		`"RoundNumber":1,"CounterpartyMsgIndex":0,"MaxRoundDuration":60000000000,"FinalityDelay":1000000000,"ChannelFeerate":0,"HostFeerate":0,"FundingTime":"2018-09-24T11:02:00Z",` +
+		`"RoundNumber":1,"CounterpartyMsgIndex":0,"LastMsgIndex":0,"MaxRoundDuration":60000000000,"FinalityDelay":1000000000,"ChannelFeerate":0,"HostFeerate":0,"FundingTime":"2018-09-24T11:02:00Z",` +
 		`"FundingTimedOut":false,"FundingTxSeqnum":0,"HostAmount":20000000,"GuestAmount":20000000,"TopUpAmount":0,"PendingAmountSent":10000000,` +
 		`"PendingAmountReceived":0,"PaymentTime":"0001-01-01T00:00:00Z","PendingPaymentTime":"2018-09-24T11:02:30Z",` +
 		`"HostAcct":"GDVIAIZXN2UQ6ZIW5VDQR7XZPAXBTXEETMAV3R676SE2KWO5LSHOEPST","GuestAcct":"GBZQBS5FDR2F3CAIYGFWOGYIZC3QNXVL2HTSLPUVI43PCNYMBOWTIMY6",` +

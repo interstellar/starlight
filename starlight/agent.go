@@ -935,6 +935,8 @@ func (g *Agent) addMsgTask(root *db.Root, c *fsm.Channel, msg *fsm.Message) erro
 	if c.Role == fsm.Guest {
 		g.putMessage(root, c, msg)
 	}
+	c.LastMsgIndex = msg.MsgNum
+	g.putChannel(root, c.ID, c)
 	// TODO(vniu): only add message to taskbasket if role is Host
 	m := &TbMsg{
 		g:         g,

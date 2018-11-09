@@ -52,6 +52,7 @@ type Channel struct {
 	BaseSequenceNumber     xdr.SequenceNumber
 	RoundNumber            uint64
 	CounterpartyMsgIndex   uint64
+	LastMsgIndex           uint64
 	MaxRoundDuration       time.Duration
 	FinalityDelay          time.Duration
 	ChannelFeerate         xlm.Amount
