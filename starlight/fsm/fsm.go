@@ -51,6 +51,7 @@ type Channel struct {
 	Cursor                 string // where we are in watching escrowacct txs on the ledger
 	BaseSequenceNumber     xdr.SequenceNumber
 	RoundNumber            uint64
+	CounterpartyMsgIndex   uint64
 	MaxRoundDuration       time.Duration
 	FinalityDelay          time.Duration
 	ChannelFeerate         xlm.Amount

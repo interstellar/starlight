@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"testing"
 
-	bolt "github.com/coreos/bbolt"
 	"github.com/stellar/go/keypair"
 
 	"github.com/interstellar/starlight/starlight/db"
@@ -108,12 +107,9 @@ func TestAddMsgs(t *testing.T) {
 		RemoteURL: "https://starlight.com",
 		Msg:       *msg,
 	}
-	db.Update(m.g.db, func(root *db.Root) error {
+	err = db.Update(m.g.db, func(root *db.Root) error {
 		root.Agent().Channels().Put([]byte(msg.ChannelID), &fsm.Channel{ID: msg.ChannelID})
-		return nil
-	})
-	err = g.db.Update(func(tx *bolt.Tx) error {
-		return g.addMsgTask(tx, m.RemoteURL, msg)
+		return g.addMsgTask(root, &fsm.Channel{ID: msg.ChannelID, Role: fsm.Host}, msg)
 	})
 	if err != nil {
 		t.Fatal(err)

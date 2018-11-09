@@ -57,6 +57,7 @@ func (u *Updater) Msg(m *Message) error {
 	if err := u.verifyMsg(m); err != nil {
 		return err
 	}
+	u.C.CounterpartyMsgIndex = m.MsgNum
 	switch {
 	case m.ChannelProposeMsg != nil:
 		return u.handleChannelProposeMsg(m)

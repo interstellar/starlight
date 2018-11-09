@@ -931,13 +931,23 @@ func (g *Agent) addTxTask(tx *bolt.Tx, chanID string, e xdr.TransactionEnvelope)
 	return g.tb.AddTx(tx, t)
 }
 
-func (g *Agent) addMsgTask(tx *bolt.Tx, remoteURL string, msg *fsm.Message) error {
+func (g *Agent) addMsgTask(root *db.Root, c *fsm.Channel, msg *fsm.Message) error {
+	if c.Role == fsm.Guest {
+		g.putMessage(root, c, msg)
+	}
+	// TODO(vniu): only add message to taskbasket if role is Host
 	m := &TbMsg{
 		g:         g,
-		RemoteURL: remoteURL,
+		RemoteURL: c.RemoteURL,
 		Msg:       *msg,
 	}
-	return g.tb.AddTx(tx, m)
+	return g.tb.AddTx(root.Tx(), m)
+}
+
+func (g *Agent) putMessage(root *db.Root, c *fsm.Channel, msg *fsm.Message) {
+	// TODO(vniu): remove obsolete messages when new requests come in
+	msgs := root.Agent().Messages().Get([]byte(c.ID))
+	msgs.Messages().Add(msg, &msg.MsgNum)
 }
 
 // DoCloseAccount will merge the agent's wallet account into the

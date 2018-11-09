@@ -11,6 +11,7 @@ import (
 var (
 	_ json.Marshaler = (*fsm.Channel)(nil)
 	_ json.Marshaler = (*fsm.WalletAcct)(nil)
+	_ json.Marshaler = (*fsm.Message)(nil)
 	_ json.Marshaler = (*update.Update)(nil)
 
 	_ encoding.BinaryMarshaler = (*fsm.AccountID)(nil)
@@ -35,10 +36,19 @@ type Agent struct {
 	// are deleted. (Their history is still available in Updates.)
 	Channels map[string]*fsm.Channel
 
+	// Messages persists all of the channel messages.
+	Messages map[string]*Message
+
 	EncryptedSeed    []byte
 	NextKeypathIndex uint32
 	PrimaryAcct      *fsm.AccountID
 	Wallet           *fsm.WalletAcct
+}
+
+// Message represents all of the messages that an agent has sent
+// for a given channel.
+type Message struct {
+	Messages []*fsm.Message
 }
 
 // Config is the db layout for Starlight agent-level configuration.

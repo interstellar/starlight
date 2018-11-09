@@ -20,6 +20,7 @@ const version = 1
 // Message defines a JSON schema for Starlight messages.
 type Message struct {
 	ChannelID string
+	MsgNum    uint64
 	Version   int
 
 	ChannelProposeMsg  *ChannelProposeMsg  `json:",omitempty"`
@@ -32,6 +33,18 @@ type Message struct {
 	// Signature is a signature over the JSON representation of the message
 	// (minus the Signature field itself), made with the sender's key.
 	Signature []byte `json:",omitempty"`
+}
+
+// MarshalJSON implements json.Marshaler. Required for genbolt.
+func (m *Message) MarshalJSON() ([]byte, error) {
+	type t Message
+	return json.Marshal((*t)(m))
+}
+
+// UnmarshalJSON implements json.Unmarshaler. Required for genbolt.
+func (m *Message) UnmarshalJSON(b []byte) error {
+	type t Message
+	return json.Unmarshal(b, (*t)(m))
 }
 
 // ChannelProposeMsg defines a JSON schema for proposal over a Channel.

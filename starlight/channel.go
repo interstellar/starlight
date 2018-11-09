@@ -312,7 +312,7 @@ func (g *Agent) doUpdateChannel(root *db.Root, chanID string, f func(*db.Root, *
 		}
 	}
 	for _, m := range o.msgs {
-		err := g.addMsgTask(root.Tx(), c.RemoteURL, m)
+		err := g.addMsgTask(root, c, m)
 		if err != nil {
 			return err
 		}

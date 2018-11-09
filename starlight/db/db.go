@@ -82,6 +82,28 @@ func (o *Agent) Bucket() *bolt.Bucket {
 	return o.db
 }
 
+// Message is a bucket with a static set of elements.
+//
+// Message represents all of the messages that an agent has sent
+// for a given channel.
+//
+// Accessor methods read and write records
+// and open child buckets.
+type Message struct {
+	db *bolt.Bucket
+}
+
+// Bucket returns o's underlying *bolt.Bucket object.
+// This can be useful to access low-level database functions
+// or other features not exposed by this generated code.
+//
+// Note, if o's transaction is read-only and the underlying
+// bucket has not previously been created in a writable
+// transaction, Bucket returns nil.
+func (o *Message) Bucket() *bolt.Bucket {
+	return o.db
+}
+
 // Config is a bucket with a static set of elements.
 //
 // Config is the db layout for Starlight agent-level configuration.
@@ -152,6 +174,32 @@ func (o *Agent) Updates() *SeqOfUpdateUpdate {
 // represents an empty bucket.
 func (o *Agent) Channels() *MapOfFsmChannel {
 	return &MapOfFsmChannel{bucket(o.db, keyChannels)}
+}
+
+// Messages gets the child bucket with key "Messages" from o.
+//
+// Messages persists all of the channel messages.
+//
+// Messages creates a new bucket if none exists
+// and o's transaction is writable.
+// Regardless, it always returns a non-nil *MapOfMessage;
+// if the bucket doesn't exist
+// and o's transaction is read-only, the returned value
+// represents an empty bucket.
+func (o *Agent) Messages() *MapOfMessage {
+	return &MapOfMessage{bucket(o.db, keyMessages)}
+}
+
+// Messages gets the child bucket with key "Messages" from o.
+//
+// Messages creates a new bucket if none exists
+// and o's transaction is writable.
+// Regardless, it always returns a non-nil *SeqOfFsmMessage;
+// if the bucket doesn't exist
+// and o's transaction is read-only, the returned value
+// represents an empty bucket.
+func (o *Message) Messages() *SeqOfFsmMessage {
+	return &SeqOfFsmMessage{bucket(o.db, keyMessages)}
 }
 
 // Ready reads the record stored under key "Ready".
@@ -420,6 +468,40 @@ func (o *Config) PutKeepAlive(v bool) {
 	put(o.db, keyKeepAlive, rec)
 }
 
+// MapOfMessage is a bucket with arbitrary keys,
+// holding child buckets of type Message.
+type MapOfMessage struct {
+	db *bolt.Bucket
+}
+
+// Bucket returns o's underlying *bolt.Bucket object.
+// This can be useful to access low-level database functions
+// or other features not exposed by this generated code.
+//
+// Note, if o's transaction is read-only and the underlying
+// bucket has not previously been created in a writable
+// transaction, Bucket returns nil.
+func (o *MapOfMessage) Bucket() *bolt.Bucket {
+	return o.db
+}
+
+// Get gets the child bucket with the given key from o.
+//
+// It creates a new bucket if none exists
+// and o's transaction is writable.
+// Regardless, it always returns a non-nil *Message;
+// if the bucket doesn't exist
+// and o's transaction is read-only, the returned value
+// represents an empty bucket.
+func (o *MapOfMessage) Get(key []byte) *Message {
+	return &Message{bucket(o.db, key)}
+}
+
+// GetByString is equivalent to o.Get([]byte(key)).
+func (o *MapOfMessage) GetByString(key string) *Message {
+	return &Message{bucket(o.db, []byte(key))}
+}
+
 // MapOfFsmChannel is a bucket with arbitrary keys,
 // holding records of type *fsm.Channel.
 type MapOfFsmChannel struct {
@@ -472,6 +554,68 @@ func (o *MapOfFsmChannel) Put(key []byte, v *fsm.Channel) {
 // PutByString is equivalent to o.Put([]byte(key), v).
 func (o *MapOfFsmChannel) PutByString(key string, v *fsm.Channel) {
 	o.Put([]byte(key), v)
+}
+
+// SeqOfFsmMessage is a bucket with sequential numeric keys,
+// holding records of type *fsm.Message.
+type SeqOfFsmMessage struct {
+	db *bolt.Bucket
+}
+
+// Bucket returns o's underlying *bolt.Bucket object.
+// This can be useful to access low-level database functions
+// or other features not exposed by this generated code.
+//
+// Note, if o's transaction is read-only and the underlying
+// bucket has not previously been created in a writable
+// transaction, Bucket returns nil.
+func (o *SeqOfFsmMessage) Bucket() *bolt.Bucket {
+	return o.db
+}
+
+// Get reads the record stored in o under sequence number n.
+//
+// If no record has been stored, it returns
+// a pointer to
+// the zero value.
+func (o *SeqOfFsmMessage) Get(n uint64) *fsm.Message {
+	key := make([]byte, 8)
+	binary.BigEndian.PutUint64(key, n)
+	rec := get(o.db, key)
+	v := new(fsm.Message)
+	if rec == nil {
+		return v
+	}
+	err := json.Unmarshal(rec, json.Unmarshaler(v))
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+// Add stores v in o under a new sequence number.
+// It writes the new sequence number to *np
+// before marshaling v. It is okay for
+// np to point to a field inside v, to store
+// the sequence number in the new record.
+func (o *SeqOfFsmMessage) Add(v *fsm.Message, np *uint64) {
+	n, err := o.db.NextSequence()
+	if err != nil {
+		panic(err)
+	}
+	*np = n
+	o.Put(n, v)
+}
+
+// Put stores v in o as a record under sequence number n.
+func (o *SeqOfFsmMessage) Put(n uint64, v *fsm.Message) {
+	key := make([]byte, 8)
+	binary.BigEndian.PutUint64(key, n)
+	rec, err := json.Marshal(json.Marshaler(v))
+	if err != nil {
+		panic(err)
+	}
+	put(o.db, key, rec)
 }
 
 // SeqOfUpdateUpdate is a bucket with sequential numeric keys,
@@ -547,6 +691,7 @@ var (
 	keyHostFeerate       = []byte("HostFeerate")
 	keyKeepAlive         = []byte("KeepAlive")
 	keyMaxRoundDurMins   = []byte("MaxRoundDurMins")
+	keyMessages          = []byte("Messages")
 	keyNextKeypathIndex  = []byte("NextKeypathIndex")
 	keyPrimaryAcct       = []byte("PrimaryAcct")
 	keyPwHash            = []byte("PwHash")
