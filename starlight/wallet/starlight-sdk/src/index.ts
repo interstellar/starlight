@@ -35,23 +35,6 @@ interface EditParams {
   Password?: string
 }
 
-/**
- * @typedef Status
- * @type {object}
- * @property {boolean} IsConfigured
- * @property {boolean} IsLoggedIn
- */
-
-/**
- * @typedef ClientResponse
- * @template T
- * @type {object}
- * @property {string} body - The body of the response.
- * @property {boolean} ok - Whether the request was successful.
- * @property {number | undefined} status - Status code from the HTTP response (if any).
- * @property {error | undefined} error - a JavaScript error, if there was an error making the request.
- */
-
 export interface ClientResponse {
   body: any
   ok: boolean
@@ -69,6 +52,23 @@ export class Client {
   public updateHandler?: UpdateHandler
   public responseHandler?: ResponseHandler
   private cookie: string
+
+  /**
+   * @typedef Status
+   * @type {object}
+   * @property {boolean} IsConfigured
+   * @property {boolean} IsLoggedIn
+   */
+
+  /**
+   * @typedef ClientResponse
+   * @template T
+   * @type {object}
+   * @property {string} body - The body of the response.
+   * @property {boolean} ok - Whether the request was successful.
+   * @property {number | undefined} status - Status code from the HTTP response (if any).
+   * @property {error | undefined} error - a JavaScript error, if there was an error making the request.
+   */
 
   /**
    * Create a Client.
@@ -98,12 +98,13 @@ export class Client {
   /**
    * Configure the instance with a username, password, and horizon URL.
    *
+   * @async
    * @param {object} params - The configuration parameters.
    * @param {string} params.HorizonURL - The Horizon URL (by default, https://horizon-testnet.stellar.org).
    * @param {string} params.Username - This will be the first part of your Stellar address (as in "alice*stellar.org").
    * @param {string} params.Password - This will also be used to encrypt the instance's private key in storage.
    *
-   * @returns {Promise<ClientReponse<string>>}
+   * @returns {Promise<ClientResponse<Status>>}
    */
   public async configInit(params: InitConfigParams) {
     return this.request('/api/config-init', params)
@@ -116,7 +117,7 @@ export class Client {
    * @param {string} [params.Password] - A new password.
    * @param {string} [params.OldPassword] - The old password, which must be provided if a new password is provided.
    *
-   * @returns {Promise<ClientReponse<string>>}
+   * @returns {Promise<ClientResponse<string>>}
    */
   public async configEdit(params: EditParams) {
     return this.request('/api/config-edit', params)
@@ -127,7 +128,7 @@ export class Client {
    * @param {string} counterpartyAddress - The Stellar address of your counterparty (e.g., "alice*stellar.org").
    * @param {number} initialDeposit - The amount (in stroops) you will initially deposit into the channel.
    *
-   * @returns {Promise<ClientReponse<string>>}
+   * @returns {Promise<ClientResponse<string>>}
    */
   public async createChannel(
     counterpartyAddress: string,
@@ -143,7 +144,7 @@ export class Client {
    * Cooperatively close a channel.
    * @param {string} channelID - The channel ID.
    *
-   * @returns {Promise<ClientReponse<string>>}
+   * @returns {Promise<ClientResponse<string>>}
    */
   public async close(channelID: string) {
     return this.request('/api/do-command', {
@@ -158,7 +159,7 @@ export class Client {
    * Cancel a proposed channel that your counterparty has not yet accepted.
    * @param {string} channelID - The channel ID.
    *
-   * @returns {Promise<ClientReponse<string>>}
+   * @returns {Promise<ClientResponse<string>>}
    */
   public async cancel(channelID: string) {
     return this.request('/api/do-command', {
@@ -173,7 +174,7 @@ export class Client {
    * Attempt to force close a channel.
    * @param {string} channelID - The channel ID.
    *
-   * @returns {Promise<ClientReponse<string>>}
+   * @returns {Promise<ClientResponse<string>>}
    */
   public async forceClose(channelID: string) {
     return this.request('/api/do-command', {
@@ -189,7 +190,7 @@ export class Client {
    * @param {string} channelID - The channel ID.
    * @param {number} amount - The amount (in stroops) to be paid.
    *
-   * @returns {Promise<ClientReponse<string>>}
+   * @returns {Promise<ClientResponse<string>>}
    */
   public async channelPay(channelID: string, amount: number) {
     return this.request('/api/do-command', {
@@ -206,7 +207,7 @@ export class Client {
    * @param {string} channelID - The channel ID.
    * @param {number} amount - The amount (in stroops) to be paid.
    *
-   * @returns {Promise<ClientReponse<string>>}
+   * @returns {Promise<ClientResponse<string>>}
    */
   public async walletPay(recipient: string, amount: number) {
     return this.request('/api/do-wallet-pay', {
@@ -219,7 +220,7 @@ export class Client {
    * Add more money to a channel you created.
    * @param {string} channelID - The channel ID.
    * @param {number} amount - The amount (in stroops) to be deposited.
-   * @returns {Promise<ClientReponse<string>>}
+   * @returns {Promise<ClientResponse<string>>}
    */
   public async deposit(channelID: string, amount: number) {
     return this.request('/api/do-command', {
@@ -238,7 +239,7 @@ export class Client {
    * @param {string} username
    * @param {number} password
    *
-   * @returns {Promise<ClientReponse<string>>}
+   * @returns {Promise<ClientResponse<string>>}
    */
   public async login(username: string, password: string) {
     return this.request('/api/login', {
@@ -252,7 +253,7 @@ export class Client {
    * @param {string} username
    * @param {number} password
    *
-   * @returns {Promise<ClientReponse<string>>}
+   * @returns {Promise<ClientResponse<string>>}
    */
   public async logout() {
     return this.request('/api/logout')
@@ -262,7 +263,7 @@ export class Client {
    * Find the account ID (e.g., "G...") corresponding to a Stellar address (e.g., "alice*stellar.org").
    * @param {string} address
    *
-   * @returns {Promise<ClientResponse<status>} accountID
+   * @returns {Promise<ClientResponse<Status>>} accountID
    */
   public async findAccount(address: string): Promise<ClientResponse> {
     return this.request('/api/find-account', {
@@ -281,6 +282,7 @@ export class Client {
 
   /**
    * Subscribe to updates from the Starlight instance.
+   * The first time this is called, the handler will be called with all updates in the instance's history.
    *
    * @param {function} updateHandler - A handler function that updates will be passed to.
    */

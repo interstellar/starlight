@@ -10,7 +10,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "strictNullChecks": true,
-    "target": "es5",
+    "target": "es2015",
     "types": ["node"],
     "module": "commonjs",
     "moduleResolution": "node",

@@ -5,7 +5,8 @@
   "author": "Lightyear Corporation",
   "license": "Apache-2.0",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "docs": "npm run build && jsdoc -c jsdoc.conf.json -d ./docs -R README.md"
   },
   "dependencies": {
     "isomorphic-fetch": "^2.2.1",
@@ -14,7 +15,8 @@
   "main": "dist/index",
   "types": "dist/index.d.ts",
   "devDependencies": {
-    "@types/node": "^10.12.2"
+    "@types/node": "^10.12.2",
+    "jsdoc": "^3.5.5"
   },
   "moduleDirectories": [
     "node_modules",
