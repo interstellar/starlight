@@ -82,8 +82,8 @@ func createTestChannel() (*Channel, error) {
 
 func createTestHost() *WalletAcct {
 	return &WalletAcct{
-		Balance: 10 * xlm.Lumen,
-		Seqnum:  xdr.SequenceNumber(5),
+		NativeBalance: 10 * xlm.Lumen,
+		Seqnum:        xdr.SequenceNumber(5),
 	}
 }
 
@@ -334,8 +334,8 @@ func TestUpdateFailedSetupAccountTx(t *testing.T) {
 	if err != nil {
 		t.Errorf("error updating from failed tx: got %s, want nil", err)
 	}
-	if h.Balance != 11*xlm.Lumen {
-		t.Errorf("error unreserving host balance: got %s, want %s", h.Balance, 11*xlm.Lumen)
+	if h.NativeBalance != 11*xlm.Lumen {
+		t.Errorf("error unreserving host balance: got %s, want %s", h.NativeBalance, 11*xlm.Lumen)
 	}
 }
 
@@ -377,8 +377,8 @@ func TestUpdateFailedFundingTx(t *testing.T) {
 	if err != nil {
 		t.Errorf("error updating from failed tx: got %s, want nil", err)
 	}
-	if h.Balance != original.Balance+u.C.totalFundingTxAmount() {
-		t.Errorf("error unreserving host balance: got %s, want %s", h.Balance, original.Balance+u.C.totalFundingTxAmount())
+	if h.NativeBalance != original.NativeBalance+u.C.totalFundingTxAmount() {
+		t.Errorf("error unreserving host balance: got %s, want %s", h.NativeBalance, original.NativeBalance+u.C.totalFundingTxAmount())
 	}
 	if h.Seqnum != original.Seqnum+1 {
 		t.Errorf("error incrementing host seqnum: got %d, want %d", h.Seqnum, original.Seqnum+1)

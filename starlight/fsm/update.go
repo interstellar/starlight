@@ -110,7 +110,7 @@ func (u *Updater) Time() error {
 		// We should only recover the balance of the funding tx,
 		// since both the setup and funding txes have been published.
 		// TODO(debnil): test for expected balances.
-		u.H.Balance += u.C.fundingBalanceAmount()
+		u.H.NativeBalance += u.C.fundingBalanceAmount()
 
 		u.C.FundingTimedOut = true
 		return u.transitionTo(AwaitingCleanup)
@@ -119,7 +119,7 @@ func (u *Updater) Time() error {
 		// ChannelProposedTimeout
 		log.Debug("ChannelProposedTimeout...")
 		if u.C.Role == Host {
-			u.H.Balance += u.C.fundingBalanceAmount() + u.C.fundingFeeAmount() + u.C.fundedAcctsTxFeeAmount()
+			u.H.NativeBalance += u.C.fundingBalanceAmount() + u.C.fundingFeeAmount() + u.C.fundedAcctsTxFeeAmount()
 			u.H.Seqnum++
 			return u.transitionTo(AwaitingCleanup)
 		}

@@ -66,7 +66,7 @@ func (g *Agent) Updates(a, b uint64) []*Update {
 func (g *Agent) putUpdate(root *db.Root, ev *Update) {
 	if ev.Account == nil {
 		ev.Account = &update.Account{
-			Balance: uint64(root.Agent().Wallet().Balance),
+			Balance: uint64(root.Agent().Wallet().NativeBalance),
 			ID:      root.Agent().PrimaryAcct().Address(),
 		}
 	}

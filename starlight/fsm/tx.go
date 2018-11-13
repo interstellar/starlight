@@ -44,7 +44,7 @@ func handleSetupAccountTx(u *Updater, tx *worizon.Tx, success bool) (bool, error
 
 	if !success {
 		// unreserve the HostAccount's one lumen
-		u.H.Balance += xlm.Lumen
+		u.H.NativeBalance += xlm.Lumen
 	}
 
 	if u.C.Role == Guest && u.C.State == AwaitingFunding {
@@ -156,7 +156,7 @@ func handleFundingTx(u *Updater, tx *worizon.Tx, success bool) (bool, error) {
 	if !success {
 		if u.C.Role == Host {
 			// Host gets back total funding tx-related amount.
-			u.H.Balance += u.C.totalFundingTxAmount()
+			u.H.NativeBalance += u.C.totalFundingTxAmount()
 			u.H.Seqnum++
 			err := u.transitionTo(AwaitingCleanup)
 			return true, err

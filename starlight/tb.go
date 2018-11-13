@@ -154,7 +154,7 @@ func (t *TbTx) Run(ctx context.Context) error {
 
 					if delta != 0 {
 						w := root.Agent().Wallet()
-						w.Balance += xlm.Amount(delta)
+						w.NativeBalance += xlm.Amount(delta)
 						root.Agent().PutWallet(w)
 					}
 

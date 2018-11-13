@@ -51,7 +51,7 @@ func cleanUpFn(_ *Command, u *Updater) error {
 	}
 	// Get back funds associated with funding tx.
 	// Setup balances are added back in processing MergeOps.
-	u.H.Balance += u.C.totalFundingTxAmount()
+	u.H.NativeBalance += u.C.totalFundingTxAmount()
 	u.H.Seqnum++
 	return u.transitionTo(AwaitingCleanup)
 }
@@ -73,13 +73,13 @@ func topUpFn(c *Command, u *Updater) error {
 	if u.C.TopUpAmount != 0 {
 		return errTopUpInProgress
 	}
-	if c.Amount > u.H.Balance {
+	if c.Amount > u.H.NativeBalance {
 		return errors.Wrapf(ErrInsufficientFunds, "balance %d", u.C.HostAmount)
 	}
 	u.C.TopUpAmount = c.Amount
 
-	u.H.Balance -= c.Amount
-	u.H.Balance -= u.C.HostFeerate
+	u.H.NativeBalance -= c.Amount
+	u.H.NativeBalance -= u.C.HostFeerate
 
 	u.H.Seqnum++
 	return u.transitionTo(Open)

@@ -300,10 +300,10 @@ func (g *Agent) ConfigInit(c *Config, hostURL string) error {
 
 		// TODO(vniu): add tests for setting wallet address
 		w := &fsm.WalletAcct{
-			Balance: xlm.Amount(0),
-			Seqnum:  0,
-			Cursor:  "",
-			Address: c.Username + "*" + hostURL,
+			NativeBalance: xlm.Amount(0),
+			Seqnum:        0,
+			Cursor:        "",
+			Address:       c.Username + "*" + hostURL,
 		}
 		root.Agent().PutWallet(w)
 		// WARNING: this software is not compatible with Stellar mainnet.
@@ -497,7 +497,7 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 					seqnum := xdr.SequenceNumber(uint64(htx.Ledger) << 32)
 
 					w := root.Agent().Wallet()
-					w.Balance = xlm.Amount(createAccount.StartingBalance) - xlm.Amount(root.Agent().Config().HostFeerate())
+					w.NativeBalance = xlm.Amount(createAccount.StartingBalance) - xlm.Amount(root.Agent().Config().HostFeerate())
 					w.Seqnum = seqnum + 1
 					w.Cursor = htx.PT
 					root.Agent().PutWallet(w)
@@ -505,7 +505,7 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 						Type: update.AccountType,
 						Account: &update.Account{
 							ID:      acctID,
-							Balance: uint64(w.Balance),
+							Balance: uint64(w.NativeBalance),
 						},
 						InputTx: InputTx,
 						OpIndex: index,
@@ -544,14 +544,14 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 						continue
 					}
 					w := root.Agent().Wallet()
-					w.Balance += xlm.Amount(payment.Amount)
+					w.NativeBalance += xlm.Amount(payment.Amount)
 					w.Cursor = htx.PT
 					root.Agent().PutWallet(w)
 					g.putUpdate(root, &Update{
 						Type: update.AccountType,
 						Account: &update.Account{
 							ID:      acctID,
-							Balance: uint64(w.Balance),
+							Balance: uint64(w.NativeBalance),
 						},
 						InputTx: InputTx,
 						OpIndex: index,
@@ -585,7 +585,7 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 						mergeAmount := *(*InputTx.Result.Result.Results)[index].Tr.AccountMergeResult.SourceAccountBalance
 
 						w := root.Agent().Wallet()
-						w.Balance += xlm.Amount(mergeAmount)
+						w.NativeBalance += xlm.Amount(mergeAmount)
 						w.Cursor = htx.PT
 						root.Agent().PutWallet(w)
 
@@ -593,7 +593,7 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 							Type: update.AccountType,
 							Account: &update.Account{
 								ID:      acctID,
-								Balance: uint64(w.Balance),
+								Balance: uint64(w.NativeBalance),
 							},
 							InputTx: InputTx,
 							OpIndex: index,
@@ -841,11 +841,11 @@ func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount) (*fs
 		if err != nil {
 			return errors.Wrap(err, "setting host address")
 		}
-		newBalance := w.Balance - ch.SetupAndFundingReserveAmount()
+		newBalance := w.NativeBalance - ch.SetupAndFundingReserveAmount()
 		if newBalance < 0 {
-			return errors.Wrap(errInsufficientBalance, w.Balance.String())
+			return errors.Wrap(errInsufficientBalance, w.NativeBalance.String())
 		}
-		w.Balance = newBalance
+		w.NativeBalance = newBalance
 		g.putChannel(root, channelID, ch)
 		root.Agent().PutWallet(w)
 
@@ -875,12 +875,12 @@ func (g *Agent) DoWalletPay(dest string, amount xlm.Amount) error {
 			return errors.New("agent in closing state: cannot process new commands")
 		}
 		w := root.Agent().Wallet()
-		if w.Balance <= amount+xlm.Amount(root.Agent().Config().HostFeerate()) {
+		if w.NativeBalance <= amount+xlm.Amount(root.Agent().Config().HostFeerate()) {
 			return errInsufficientBalance
 		}
 
-		w.Balance -= amount
-		w.Balance -= xlm.Amount(root.Agent().Config().HostFeerate())
+		w.NativeBalance -= amount
+		w.NativeBalance -= xlm.Amount(root.Agent().Config().HostFeerate())
 		w.Seqnum++
 		root.Agent().PutWallet(w)
 		hostAcct := root.Agent().PrimaryAcct()
@@ -907,7 +907,7 @@ func (g *Agent) DoWalletPay(dest string, amount xlm.Amount) error {
 			Type: update.AccountType,
 			Account: &update.Account{
 				ID:      hostAcct.Address(),
-				Balance: uint64(w.Balance),
+				Balance: uint64(w.NativeBalance),
 			},
 			InputCommand: &fsm.Command{
 				Name:      fsm.Pay,

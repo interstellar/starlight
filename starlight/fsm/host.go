@@ -8,14 +8,23 @@ import (
 	"github.com/interstellar/starlight/worizon/xlm"
 )
 
+// Balance represents the point-in-time state of a
+// non-XLM Asset in the WalletAcct.
+type Balance struct {
+	Asset   xdr.Asset
+	Amount  int64
+	Pending bool
+}
+
 // WalletAcct represents the point-in-time state of the
 // channel's wallet account, passed to the FSM for state
 // transitions that access or update host-level data.
 type WalletAcct struct {
-	Balance xlm.Amount
-	Seqnum  xdr.SequenceNumber
-	Address string // Stellar federation address
-	Cursor  string
+	NativeBalance xlm.Amount
+	Seqnum        xdr.SequenceNumber
+	Address       string // Stellar federation address
+	Cursor        string
+	Balances      []Balance
 }
 
 // MarshalJSON implements json.Marshaler. Required for genbolt.

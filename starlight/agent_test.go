@@ -374,7 +374,7 @@ func TestAgentCreateChannel(t *testing.T) {
 			agentFunc: func(g *Agent) {
 				db.Update(g.db, func(root *db.Root) error {
 					h := root.Agent().Wallet()
-					h.Balance = xlm.Amount(2 * xlm.Lumen)
+					h.NativeBalance = xlm.Amount(2 * xlm.Lumen)
 					root.Agent().PutWallet(h)
 					return nil
 				})
@@ -402,7 +402,7 @@ func TestAgentCreateChannel(t *testing.T) {
 			err = db.Update(g.db, func(root *db.Root) error {
 				h := root.Agent().Wallet()
 				h.Seqnum = 1
-				h.Balance = 50 * xlm.Lumen
+				h.NativeBalance = 50 * xlm.Lumen
 				root.Agent().PutWallet(h)
 				return nil
 			})
@@ -439,7 +439,7 @@ func TestShutdown(t *testing.T) {
 	err = db.Update(g.db, func(root *db.Root) error {
 		h := root.Agent().Wallet()
 		h.Seqnum = 1
-		h.Balance = 50 * xlm.Lumen
+		h.NativeBalance = 50 * xlm.Lumen
 		root.Agent().PutWallet(h)
 		return nil
 	})
