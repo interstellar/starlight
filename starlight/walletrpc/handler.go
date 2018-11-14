@@ -54,6 +54,8 @@ func Handler(g *starlight.Agent) http.Handler {
 	mux.Handle("/api/do-close-account", wt.auth(wt.doCloseAccount))
 	mux.Handle("/api/do-command", wt.auth(wt.doCommand))
 	mux.Handle("/api/find-account", wt.auth(wt.findAccount))
+	// TODO(vniu): authenticate requests to the messages endpoint
+	mux.HandleFunc("/api/messages", wt.messages)
 	mux.HandleFunc("/api/login", wt.login)
 	mux.HandleFunc("/api/config-init", wt.configInit)
 	mux.HandleFunc("/api/status", wt.status)
@@ -102,6 +104,7 @@ func (wt *wallet) updates(w http.ResponseWriter, req *http.Request) {
 	defer cancel()
 
 	wt.agent.WaitUpdate(ctx, v.From)
+	// return max 100 updates at a time
 	ev := wt.agent.Updates(v.From, v.From+100)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(ev)
@@ -229,6 +232,31 @@ func (wt *wallet) findAccount(w http.ResponseWriter, req *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
+}
+
+func (wt *wallet) messages(w http.ResponseWriter, req *http.Request) {
+	var v struct {
+		ChannelID string `json:"channel_id"`
+		From      uint64
+	}
+	err := json.NewDecoder(req.Body).Decode(&v)
+	if err != nil {
+		starlight.WriteError(req, w, errors.Sub(starlight.ErrUnmarshaling, err))
+		return
+	}
+
+	ctx := req.Context()
+
+	// must be lower than the global write timeout (15s)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	wt.agent.WaitMsg(ctx, v.ChannelID, v.From)
+	// return max 100 messages at a time
+	msgs := wt.agent.Messages(v.ChannelID, v.From, v.From+100)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(msgs)
+	return
 }
 
 func (wt *wallet) status(w http.ResponseWriter, req *http.Request) {

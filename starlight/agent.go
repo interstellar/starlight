@@ -23,6 +23,7 @@ import (
 	"github.com/interstellar/starlight/net"
 	"github.com/interstellar/starlight/starlight/db"
 	"github.com/interstellar/starlight/starlight/fsm"
+	"github.com/interstellar/starlight/starlight/internal/message"
 	"github.com/interstellar/starlight/starlight/internal/update"
 	"github.com/interstellar/starlight/starlight/key"
 	"github.com/interstellar/starlight/starlight/log"
@@ -951,9 +952,57 @@ func (g *Agent) addMsgTask(root *db.Root, c *fsm.Channel, msg *fsm.Message) erro
 }
 
 func (g *Agent) putMessage(root *db.Root, c *fsm.Channel, msg *fsm.Message) {
-	// TODO(vniu): remove obsolete messages when new requests come in
-	msgs := root.Agent().Messages().Get([]byte(c.ID))
-	msgs.Messages().Add(msg, &msg.MsgNum)
+	m := root.Agent().Messages().Get([]byte(c.ID))
+	if m == nil {
+		m = new(message.Message)
+	}
+	m.Add(msg, &msg.MsgNum)
+	root.Agent().Messages().Put([]byte(c.ID), m)
+	root.Tx().OnCommit(g.evcond.Broadcast)
+}
+
+// Messages returns all messages sent by the agent on
+// channel chanID in the half-open interval [a, b).
+// The returned slice will have length less than b-a
+// if a or b is out of range.
+func (g *Agent) Messages(chanID string, a, b uint64) []*fsm.Message {
+	msgs := make([]*fsm.Message, 0)
+	err := db.View(g.db, func(root *db.Root) error {
+		m := root.Agent().Messages().GetByString(chanID)
+		msgs = append(msgs, m.From(a, b)...)
+		return nil
+	})
+	if err != nil {
+		panic(err) // only errors here are bugs
+	}
+	return msgs
+}
+
+// WaitMsg blocks until a message with number i is available for the
+// channel chanID
+func (g *Agent) WaitMsg(ctx context.Context, chanID string, i uint64) {
+	go func() {
+		<-ctx.Done()
+		g.evcond.Broadcast()
+	}()
+	g.evcond.L.Lock()
+	defer g.evcond.L.Unlock()
+	for lastMsgNum(g.db, chanID) < i && ctx.Err() == nil {
+		g.evcond.Wait()
+	}
+}
+
+func lastMsgNum(boltDB *bolt.DB, chanID string) (n uint64) {
+	err := db.View(boltDB, func(root *db.Root) error {
+		if m := root.Agent().Messages().GetByString(chanID); m != nil {
+			n = m.LastSeqNum()
+		}
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+	return n
 }
 
 // DoCloseAccount will merge the agent's wallet account into the
