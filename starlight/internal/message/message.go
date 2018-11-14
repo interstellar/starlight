@@ -10,14 +10,14 @@ import (
 // per channel.
 type Message struct {
 	Messages   []*fsm.Message
-	lastSeqNum uint64
+	LastSeqNum uint64
 }
 
 // Add appends the latest sent message to the Message object,
 // updating the latest sequence number
 func (m *Message) Add(msg *fsm.Message, num *uint64) {
-	m.lastSeqNum++
-	*num = m.lastSeqNum
+	m.LastSeqNum++
+	*num = m.LastSeqNum
 	m.Messages = append(m.Messages, msg)
 }
 
@@ -31,11 +31,6 @@ func (m *Message) From(a, b uint64) []*fsm.Message {
 		}
 	}
 	return msgs
-}
-
-// LastSeqNum returns the sequence number of the last message stored.
-func (m *Message) LastSeqNum() uint64 {
-	return m.lastSeqNum
 }
 
 // MarshalJSON implements json.Marshaler. Required for genbolt.

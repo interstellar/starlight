@@ -995,7 +995,7 @@ func (g *Agent) WaitMsg(ctx context.Context, chanID string, i uint64) {
 func lastMsgNum(boltDB *bolt.DB, chanID string) (n uint64) {
 	err := db.View(boltDB, func(root *db.Root) error {
 		if m := root.Agent().Messages().GetByString(chanID); m != nil {
-			n = m.LastSeqNum()
+			n = m.LastSeqNum
 		}
 		return nil
 	})
