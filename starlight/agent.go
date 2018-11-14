@@ -160,6 +160,12 @@ func (g *Agent) start(root *db.Root) error {
 	if !g.isReadyConfigured(root) {
 		return nil
 	}
+	if g.isReadyFunded(root) {
+		close(g.wallet)
+	} else {
+		primaryAcct := *root.Agent().PrimaryAcct()
+		g.allez(func() { g.getTestnetFaucetFunds(primaryAcct) }, "getTestnetFaucetFunds")
+	}
 
 	// WARNING: this software is not compatible with Stellar mainnet.
 	g.wclient.SetURL(root.Agent().Config().HorizonURL())
@@ -325,8 +331,6 @@ func (g *Agent) ConfigInit(c *Config, hostURL string) error {
 				Balance: 0,
 			},
 		})
-
-		g.allez(func() { g.getTestnetFaucetFunds(primaryAcct) }, "getTestnetFaucetFunds")
 
 		return g.start(root)
 	})
