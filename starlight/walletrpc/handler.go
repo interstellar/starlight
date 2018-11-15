@@ -53,6 +53,7 @@ func Handler(g *starlight.Agent) http.Handler {
 	mux.Handle("/api/do-wallet-pay", wt.auth(wt.doWalletPay))
 	mux.Handle("/api/do-close-account", wt.auth(wt.doCloseAccount))
 	mux.Handle("/api/do-command", wt.auth(wt.doCommand))
+	mux.Handle("/api/do-add-asset", wt.auth(wt.doAddAsset))
 	mux.Handle("/api/find-account", wt.auth(wt.findAccount))
 	// TODO(vniu): authenticate requests to the messages endpoint
 	mux.HandleFunc("/api/messages", wt.messages)
@@ -234,6 +235,22 @@ func (wt *wallet) findAccount(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(result)
 }
 
+func (wt *wallet) doAddAsset(w http.ResponseWriter, req *http.Request) {
+	var v struct {
+		AssetCode string
+		Issuer    string
+	}
+	err := json.NewDecoder(req.Body).Decode(&v)
+	if err != nil {
+		starlight.WriteError(req, w, errors.Sub(starlight.ErrUnmarshaling, err))
+		return
+	}
+	err = wt.agent.AddAsset(v.AssetCode, v.Issuer)
+	if err != nil {
+		starlight.WriteError(req, w, err)
+	}
+}
+
 func (wt *wallet) messages(w http.ResponseWriter, req *http.Request) {
 	var v struct {
 		ChannelID string `json:"channel_id"`
@@ -244,7 +261,6 @@ func (wt *wallet) messages(w http.ResponseWriter, req *http.Request) {
 		starlight.WriteError(req, w, errors.Sub(starlight.ErrUnmarshaling, err))
 		return
 	}
-
 	ctx := req.Context()
 
 	// must be lower than the global write timeout (15s)

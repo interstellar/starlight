@@ -65,7 +65,9 @@ func init() {
 	errorFormatter.add(errNoCommandSpecified, 400, "no command specified", false)
 	errorFormatter.add(errEmptyAddress, 400, "no address specified", false)
 	errorFormatter.add(errEmptyAmount, 400, "no amount specified", false)
+	errorFormatter.add(errEmptyAsset, 400, "no asset specified", false)
 	errorFormatter.add(errInsufficientBalance, 400, "insufficient balance", true)
+	errorFormatter.add(errEmptyIssuer, 400, "no issuer specified", false)
 	errorFormatter.add(errAcctsSame, 400, "same host and guest accounts", false)
 	errorFormatter.add(errNotFunded, 500, "agent not yet funded", true)
 	errorFormatter.add(errInvalidAddress, 400, "invalid address", false)
@@ -78,6 +80,7 @@ func init() {
 
 	// Configuration
 	errorFormatter.add(errAlreadyConfigured, 400, "already configured", false)
+	errorFormatter.add(errInvalidAsset, 400, "invalid asset", false)
 	errorFormatter.add(errInvalidInput, 400, "invalid input", false)
 	errorFormatter.add(errInvalidPassword, 400, "invalid password", false)
 	errorFormatter.add(errInvalidUsername, 400, "invalid username", false)

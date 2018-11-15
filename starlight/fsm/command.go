@@ -12,6 +12,7 @@ type CommandName string
 
 // User commands.
 const (
+	AddAsset      CommandName = "AddAsset"
 	CreateChannel CommandName = "CreateChannel"
 	CleanUp       CommandName = "CleanUp"
 	CloseChannel  CommandName = "CloseChannel"
@@ -27,6 +28,8 @@ type Command struct {
 	Amount    xlm.Amount // for TopUp, ChannelPay, or Pay
 	Time      time.Time
 	Recipient string // for Pay
+	AssetCode string // for AddAsset
+	Issuer    string // for AddAsset
 }
 
 var commandFuncs = map[CommandName]func(*Command, *Updater) error{

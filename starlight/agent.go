@@ -311,6 +311,7 @@ func (g *Agent) ConfigInit(c *Config, hostURL string) error {
 			Seqnum:        0,
 			Cursor:        "",
 			Address:       c.Username + "*" + hostURL,
+			Balances:      map[string]fsm.Balance{},
 		}
 		root.Agent().PutWallet(w)
 		// WARNING: this software is not compatible with Stellar mainnet.
@@ -426,6 +427,70 @@ func (g *Agent) ConfigEdit(c *Config) error {
 			},
 		})
 		return nil
+	})
+}
+
+// AddAsset creates a trustline for a non-native Asset.
+func (g *Agent) AddAsset(assetCode, issuer string) error {
+	if assetCode == "" {
+		return errEmptyAsset
+	}
+	if issuer == "" {
+		return errEmptyIssuer
+	}
+	return db.Update(g.db, func(root *db.Root) error {
+		if !root.Agent().Ready() {
+			return errors.New("agent in closing state: cannot process new commands")
+		}
+		w := root.Agent().Wallet()
+		var issuerAccountID xdr.AccountId
+		err := issuerAccountID.SetAddress(issuer)
+		if err != nil {
+			return errors.Sub(errInvalidAddress, err)
+		}
+		var asset xdr.Asset
+		err = asset.SetCredit(assetCode, issuerAccountID)
+		if err != nil {
+			return errors.Sub(errInvalidAsset, err)
+		}
+		w.Balances[asset.String()] = fsm.Balance{
+			Asset:   asset,
+			Amount:  0,
+			Pending: true,
+		}
+		w.Seqnum++
+		root.Agent().PutWallet(w)
+
+		btx, err := b.Transaction(
+			b.Network{Passphrase: g.passphrase(root)},
+			b.SourceAccount{AddressOrSeed: w.Address},
+			b.Sequence{Sequence: uint64(w.Seqnum)},
+			b.Trust(assetCode, issuer, asset),
+		)
+		if err != nil {
+			return err
+		}
+		k := key.DeriveAccountPrimary(g.seed)
+		env, err := btx.Sign(k.Seed())
+		if err != nil {
+			return err
+		}
+		time := g.wclient.Now()
+		g.putUpdate(root, &Update{
+			Type: update.AccountType,
+			Account: &update.Account{
+				ID:       w.Address,
+				Balances: w.Balances,
+			},
+			InputCommand: &fsm.Command{
+				Name:      fsm.AddAsset,
+				Time:      time,
+				AssetCode: assetCode,
+				Issuer:    issuer,
+			},
+			PendingSequence: strconv.FormatInt(int64(w.Seqnum), 10),
+		})
+		return g.addTxTask(root.Tx(), walletBucket, *env.E)
 	})
 }
 
@@ -604,6 +669,39 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 							OpIndex: index,
 						})
 					}
+				case xdr.OperationTypeChangeTrust:
+					// AddAsset and RemoveAsset both have this operation.
+					_, ok := op.Body.GetChangeTrustOp()
+					if !ok {
+						return errors.New("change trust op failed")
+					}
+					asset := op.Body.ChangeTrustOp.Line
+					assetStr := asset.String()
+					w := root.Agent().Wallet()
+					if currBalance, ok := w.Balances[assetStr]; ok {
+						if currBalance.Pending { // AddAsset
+							currBalance.Pending = false
+							w.Balances[assetStr] = currBalance
+						} else { // RemoveAsset
+							// TODO(debnil): Implement RemoveAsset operation handling.
+						}
+					} else {
+						w.Balances[assetStr] = fsm.Balance{
+							Asset:   asset,
+							Pending: false,
+						}
+					}
+					root.Agent().PutWallet(w)
+					g.putUpdate(root, &Update{
+						Type: update.AccountType,
+						Account: &update.Account{
+							ID:       acctID,
+							Balance:  uint64(w.NativeBalance),
+							Balances: w.Balances,
+						},
+						InputTx: InputTx,
+						OpIndex: index,
+					})
 				}
 			}
 			return nil

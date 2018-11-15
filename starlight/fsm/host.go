@@ -12,7 +12,7 @@ import (
 // non-XLM Asset in the WalletAcct.
 type Balance struct {
 	Asset   xdr.Asset
-	Amount  int64
+	Amount  uint64
 	Pending bool
 }
 
@@ -24,7 +24,7 @@ type WalletAcct struct {
 	Seqnum        xdr.SequenceNumber
 	Address       string // Stellar federation address
 	Cursor        string
-	Balances      []Balance
+	Balances      map[string]Balance
 }
 
 // MarshalJSON implements json.Marshaler. Required for genbolt.

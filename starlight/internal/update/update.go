@@ -77,9 +77,11 @@ type Update struct {
 }
 
 // Account is the identity and balance of a Stellar account, for use in updates.
+// TODO(debnil): Change Balance to NativeBalance later; will break front-end.
 type Account struct {
-	Balance uint64
-	ID      string
+	Balance  uint64
+	ID       string
+	Balances map[string]fsm.Balance
 }
 
 // Config has user-facing, primary options for the Starlight agent
