@@ -8,6 +8,7 @@ import (
 // Defines errors returned by the agent.
 var (
 	errAcctsSame         = errors.New("same host and guest acct address")
+	errAgentClosing      = errors.New("agent in closing state: cannot process new commands")
 	errAlreadyConfigured = errors.New("already configured")
 	errBadAddress        = errors.New("bad address")
 	errBadHTTPStatus     = errors.New("bad http status")

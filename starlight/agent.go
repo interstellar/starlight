@@ -440,7 +440,7 @@ func (g *Agent) AddAsset(assetCode, issuer string) error {
 	}
 	return db.Update(g.db, func(root *db.Root) error {
 		if !root.Agent().Ready() {
-			return errors.New("agent in closing state: cannot process new commands")
+			return errAgentClosing
 		}
 		w := root.Agent().Wallet()
 		var issuerAccountID xdr.AccountId
@@ -871,7 +871,7 @@ func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount) (*fs
 	var ch *fsm.Channel
 	err = db.Update(g.db, func(root *db.Root) error {
 		if !root.Agent().Ready() {
-			return errors.New("agent in closing state: cannot process new commands")
+			return errAgentClosing
 		}
 		if !g.isReadyFunded(root) {
 			return errNotFunded
@@ -975,7 +975,7 @@ func (g *Agent) DoWalletPay(dest string, amount xlm.Amount) error {
 	}
 	return db.Update(g.db, func(root *db.Root) error {
 		if !root.Agent().Ready() {
-			return errors.New("agent in closing state: cannot process new commands")
+			return errAgentClosing
 		}
 		w := root.Agent().Wallet()
 		if w.NativeBalance <= amount+xlm.Amount(root.Agent().Config().HostFeerate()) {
@@ -1113,7 +1113,7 @@ func lastMsgNum(boltDB *bolt.DB, chanID string) (n uint64) {
 func (g *Agent) DoCloseAccount(dest string) error {
 	return db.Update(g.db, func(root *db.Root) error {
 		if !root.Agent().Ready() {
-			return errors.New("agent in closing state: cannot process new commands")
+			return errAgentClosing
 		}
 		var chanIDs []string
 		chans := root.Agent().Channels()
@@ -1165,7 +1165,7 @@ func (g *Agent) DoCommand(channelID string, c *fsm.Command) error {
 	}
 	return g.updateChannel(channelID, func(root *db.Root, updater *fsm.Updater, update *Update) error {
 		if !root.Agent().Ready() {
-			return errors.New("agent in closing state: cannot process new commands")
+			return errAgentClosing
 		}
 		update.InputCommand = c
 		return updater.Cmd(c)
@@ -1225,6 +1225,9 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 		chanID, err := g.checkChannelUnique(propose.HostAcct.Address(), propose.GuestAcct.Address())
 		if err != nil {
 			err = db.Update(g.db, func(root *db.Root) error {
+				if !root.Agent().Ready() {
+					return errAgentClosing
+				}
 				chans := root.Agent().Channels()
 				c := chans.Get(chanID)
 				switch c.State {

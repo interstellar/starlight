@@ -61,6 +61,7 @@ func init() {
 	errorFormatter.add(errDecoding, 500, "decoding error", true)
 
 	// Commands
+	errorFormatter.add(errAgentClosing, 400, "agent closing", false)
 	errorFormatter.add(errNoChannelSpecified, 400, "no channel specified", false)
 	errorFormatter.add(errNoCommandSpecified, 400, "no command specified", false)
 	errorFormatter.add(errEmptyAddress, 400, "no address specified", false)
