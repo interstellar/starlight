@@ -465,7 +465,7 @@ func (g *Agent) AddAsset(assetCode, issuer string) error {
 			b.Network{Passphrase: g.passphrase(root)},
 			b.SourceAccount{AddressOrSeed: w.Address},
 			b.Sequence{Sequence: uint64(w.Seqnum)},
-			b.Trust(assetCode, issuer, asset),
+			b.Trust(assetCode, issuer),
 		)
 		if err != nil {
 			return err
@@ -484,6 +484,69 @@ func (g *Agent) AddAsset(assetCode, issuer string) error {
 			},
 			InputCommand: &fsm.Command{
 				Name:      fsm.AddAsset,
+				Time:      time,
+				AssetCode: assetCode,
+				Issuer:    issuer,
+			},
+			PendingSequence: strconv.FormatInt(int64(w.Seqnum), 10),
+		})
+		return g.addTxTask(root.Tx(), walletBucket, *env.E)
+	})
+}
+
+// RemoveAsset deletes a trustline for a non-native Asset.
+func (g *Agent) RemoveAsset(assetCode, issuer string) error {
+	if assetCode == "" {
+		return errEmptyAsset
+	}
+	if issuer == "" {
+		return errEmptyIssuer
+	}
+	return db.Update(g.db, func(root *db.Root) error {
+		if !root.Agent().Ready() {
+			return errAgentClosing
+		}
+		w := root.Agent().Wallet()
+		w.Seqnum++
+		root.Agent().PutWallet(w)
+
+		var issuerAccountID xdr.AccountId
+		err := issuerAccountID.SetAddress(issuer)
+		if err != nil {
+			return errors.Sub(errInvalidAddress, err)
+		}
+		var asset xdr.Asset
+		err = asset.SetCredit(assetCode, issuerAccountID)
+		if err != nil {
+			return errors.Sub(errInvalidAsset, err)
+		}
+		if _, ok := w.Balances[asset.String()]; !ok {
+			return errInvalidAsset
+		}
+
+		btx, err := b.Transaction(
+			b.Network{Passphrase: g.passphrase(root)},
+			b.SourceAccount{AddressOrSeed: w.Address},
+			b.Sequence{Sequence: uint64(w.Seqnum)},
+			b.RemoveTrust(assetCode, issuer),
+		)
+		if err != nil {
+			return err
+		}
+		k := key.DeriveAccountPrimary(g.seed)
+		env, err := btx.Sign(k.Seed())
+		if err != nil {
+			return err
+		}
+		time := g.wclient.Now()
+		g.putUpdate(root, &Update{
+			Type: update.AccountType,
+			Account: &update.Account{
+				ID:       w.Address,
+				Balances: w.Balances,
+			},
+			InputCommand: &fsm.Command{
+				Name:      fsm.RemoveAsset,
 				Time:      time,
 				AssetCode: assetCode,
 				Issuer:    issuer,
@@ -671,23 +734,19 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 					}
 				case xdr.OperationTypeChangeTrust:
 					// AddAsset and RemoveAsset both have this operation.
-					_, ok := op.Body.GetChangeTrustOp()
+					changeTrustOp, ok := op.Body.GetChangeTrustOp()
 					if !ok {
 						return errors.New("change trust op failed")
 					}
-					asset := op.Body.ChangeTrustOp.Line
-					assetStr := asset.String()
 					w := root.Agent().Wallet()
-					if currBalance, ok := w.Balances[assetStr]; ok {
-						if currBalance.Pending { // AddAsset
-							currBalance.Pending = false
-							w.Balances[assetStr] = currBalance
-						} else { // RemoveAsset
-							// TODO(debnil): Implement RemoveAsset operation handling.
-						}
-					} else {
-						w.Balances[assetStr] = fsm.Balance{
-							Asset:   asset,
+					if op.SourceAccount.Address() != w.Address {
+						continue
+					}
+					if changeTrustOp.Limit == 0 { // RemoveAsset
+						delete(w.Balances, changeTrustOp.Line.String())
+					} else { // AddAsset
+						w.Balances[changeTrustOp.Line.String()] = fsm.Balance{
+							Asset:   changeTrustOp.Line,
 							Pending: false,
 						}
 					}

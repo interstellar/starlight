@@ -251,6 +251,22 @@ func (wt *wallet) doAddAsset(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func (wt *wallet) doRemoveAsset(w http.ResponseWriter, req *http.Request) {
+	var v struct {
+		AssetCode string
+		Issuer    string
+	}
+	err := json.NewDecoder(req.Body).Decode(&v)
+	if err != nil {
+		starlight.WriteError(req, w, errors.Sub(starlight.ErrUnmarshaling, err))
+		return
+	}
+	err = wt.agent.RemoveAsset(v.AssetCode, v.Issuer)
+	if err != nil {
+		starlight.WriteError(req, w, err)
+	}
+}
+
 func (wt *wallet) messages(w http.ResponseWriter, req *http.Request) {
 	var v struct {
 		ChannelID string `json:"channel_id"`
