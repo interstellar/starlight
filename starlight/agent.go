@@ -672,19 +672,25 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 					if payment.Destination.Address() != acctID {
 						continue
 					}
-					// Ignore payments that are not in lumens
-					if payment.Asset.Type != xdr.AssetTypeAssetTypeNative {
-						continue
-					}
 					w := root.Agent().Wallet()
-					w.NativeBalance += xlm.Amount(payment.Amount)
+					if payment.Asset.Type != xdr.AssetTypeAssetTypeNative { // non-Native assets.
+						if currBalance, ok := w.Balances[payment.Asset.String()]; ok {
+							currBalance.Amount += uint64(payment.Amount)
+							w.Balances[payment.Asset.String()] = currBalance
+						} else {
+							return errors.Wrap(errInvalidAsset, "wallet watch payment")
+						}
+					} else {
+						w.NativeBalance += xlm.Amount(payment.Amount)
+					}
 					w.Cursor = htx.PT
 					root.Agent().PutWallet(w)
 					g.putUpdate(root, &Update{
 						Type: update.AccountType,
 						Account: &update.Account{
-							ID:      acctID,
-							Balance: uint64(w.NativeBalance),
+							ID:       acctID,
+							Balance:  uint64(w.NativeBalance),
+							Balances: w.Balances,
 						},
 						InputTx: InputTx,
 						OpIndex: index,
