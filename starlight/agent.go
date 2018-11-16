@@ -1096,10 +1096,10 @@ func (g *Agent) addTxTask(tx *bolt.Tx, chanID string, e xdr.TransactionEnvelope)
 func (g *Agent) addMsgTask(root *db.Root, c *fsm.Channel, msg *fsm.Message) error {
 	if c.Role == fsm.Guest {
 		g.putMessage(root, c, msg)
+		c.LastMsgIndex = msg.MsgNum
+		g.putChannel(root, c.ID, c)
+		return nil
 	}
-	c.LastMsgIndex = msg.MsgNum
-	g.putChannel(root, c.ID, c)
-	// TODO(vniu): only add message to taskbasket if role is Host
 	m := &TbMsg{
 		g:         g,
 		RemoteURL: c.RemoteURL,

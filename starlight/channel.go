@@ -2,8 +2,11 @@ package starlight
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/stellar/go/clients/horizon"
@@ -57,6 +60,79 @@ func (g *Agent) watchEscrowAcct(ctx context.Context, chanID string) {
 	if err != nil {
 		log.Debugf("updating channel %s from tx: %s", string(chanID), err)
 		g.mustDeauthenticate()
+	}
+}
+
+// pollGuestMessages is a goroutine run by the Host for each channel, sending
+// requests to the Guest's public URL to get the messages it wants to send to
+// the Host.
+func (g *Agent) pollGuestMessages(ctx context.Context, chanID string) error {
+	var acctReady <-chan struct{}
+
+	var remoteURL string
+	var from uint64
+	db.View(g.db, func(root *db.Root) error {
+		c := g.getChannel(root, chanID)
+		remoteURL = c.RemoteURL
+		from = c.CounterpartyMsgIndex + 1
+		acctReady = g.acctsReady[chanID]
+		return nil
+	})
+
+	if acctReady != nil {
+		select {
+		case <-acctReady:
+			break
+		case <-ctx.Done():
+			return nil
+		}
+	}
+
+	for {
+		if ctx.Err() != nil {
+			log.Debugf("context canceled, keepAlive(%s) exiting", chanID)
+			return nil
+		}
+
+		body := fmt.Sprintf(`
+		{
+			"channel_id":"%s",
+			"From":%d
+		}`, chanID, from)
+		url := strings.TrimRight(remoteURL, "/") + "/api/messages"
+		req, err := http.NewRequest("POST", url, strings.NewReader(body))
+		if err != nil {
+			log.Debug("unexpected error building request", err)
+			continue
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req = req.WithContext(ctx)
+		resp, err := g.httpclient.Do(req)
+		if err != nil {
+			log.Debug("unexpected error requesting messages", err)
+			continue
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode/100 != 2 {
+			log.Debugf("unexpected bad status %s", resp.Status)
+			continue
+		}
+
+		var messages []*fsm.Message
+		err = json.NewDecoder(resp.Body).Decode(&messages)
+		if err != nil {
+			log.Debug("unexpected error decoding messages", err)
+			continue
+		}
+
+		for _, msg := range messages {
+			g.updateChannel(msg.ChannelID, func(root *db.Root, updater *fsm.Updater, update *Update) error {
+				from = msg.MsgNum + 1
+				update.InputMessage = msg
+				return updater.Msg(msg)
+			})
+		}
 	}
 }
 
@@ -345,6 +421,9 @@ func (g *Agent) watchChannel(root *db.Root, chanID string) {
 
 	root.Tx().OnCommit(func() {
 		g.allez(func() { g.watchEscrowAcct(ctx, chanID) }, fmt.Sprintf("watchEscrowAcct(%s)", chanID))
+		if c.Role == fsm.Host {
+			g.allez(func() { g.pollGuestMessages(ctx, chanID) }, fmt.Sprintf("pollGuestMessages(%s)", chanID))
+		}
 		if keepAlive {
 			g.allez(func() { g.keepAlive(ctx, chanID) }, fmt.Sprintf("keepAlive(%s)", chanID))
 		}
