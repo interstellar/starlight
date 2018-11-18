@@ -673,15 +673,15 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 						continue
 					}
 					w := root.Agent().Wallet()
-					if payment.Asset.Type != xdr.AssetTypeAssetTypeNative { // non-Native assets.
+					if payment.Asset.Type == xdr.AssetTypeAssetTypeNative {
+						w.NativeBalance += xlm.Amount(payment.Amount)
+					} else { // non-Native assets.
 						if currBalance, ok := w.Balances[payment.Asset.String()]; ok {
 							currBalance.Amount += uint64(payment.Amount)
 							w.Balances[payment.Asset.String()] = currBalance
 						} else {
 							return errors.Wrap(errInvalidAsset, "wallet watch payment")
 						}
-					} else {
-						w.NativeBalance += xlm.Amount(payment.Amount)
 					}
 					w.Cursor = htx.PT
 					root.Agent().PutWallet(w)
