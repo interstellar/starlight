@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/interstellar/starlight/starlight"
 	"github.com/interstellar/starlight/starlight/fsm"
@@ -67,9 +68,17 @@ func testServer(name string) *httptest.Server {
 	mux.HandleFunc("/starlight/message", testHandleMsg)
 	mux.HandleFunc("/federation", testHandleFed)
 	mux.HandleFunc("/.well-known/stellar.toml", testHandleTOML)
+	mux.HandleFunc("/api/messages", testPollMessages)
 	handler := logWrapper(mux, name)
 	server := httptest.NewServer(handler)
 	return server
+}
+
+func testPollMessages(w http.ResponseWriter, req *http.Request) {
+	time.Sleep(8 * time.Second)
+	var msgs []*fsm.Message
+	json.NewEncoder(w).Encode(msgs)
+	return
 }
 
 func testHandleMsg(w http.ResponseWriter, req *http.Request) {

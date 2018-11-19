@@ -940,8 +940,7 @@ func cleanupSteps(guest *httptest.Server, host *Starlightd, maxRoundDurMins, fin
 				Type:      update.InitType,
 				UpdateNum: 1,
 			},
-		},
-		{
+		}, {
 			name:  "host wallet funding update",
 			agent: host,
 			path:  "/api/updates",
@@ -977,8 +976,7 @@ func cleanupSteps(guest *httptest.Server, host *Starlightd, maxRoundDurMins, fin
 			// 1 * Lumen + 1 * channelFee in initial funding for the guest ratchet
 			// 0.5*Lumen + 1 * channelFee in initial funding for the host ratchet account
 			walletDelta: -(channelFundingAmount + 5*xlm.Lumen + 10*hostFeerate + 10*channelFeerate),
-		},
-		{
+		}, {
 			name:  "host channel creation channel proposed update",
 			agent: host,
 			update: &update.Update{
@@ -987,8 +985,7 @@ func cleanupSteps(guest *httptest.Server, host *Starlightd, maxRoundDurMins, fin
 					State: fsm.ChannelProposed,
 				},
 			},
-		},
-		{
+		}, {
 			name:  "host cleanup command",
 			agent: host,
 			path:  "/api/do-command",
@@ -999,8 +996,7 @@ func cleanupSteps(guest *httptest.Server, host *Starlightd, maxRoundDurMins, fin
 				}
 			}`,
 			injectChanID: true,
-		},
-		{
+		}, {
 			name:  "host cleanup awaiting cleanup update",
 			agent: host,
 			update: &update.Update{
@@ -1026,8 +1022,7 @@ func cleanupSteps(guest *httptest.Server, host *Starlightd, maxRoundDurMins, fin
 				},
 			},
 			outOfOrder: true,
-		},
-		{
+		}, {
 			name:  "host cleanup escrow merge tx update",
 			agent: host,
 			update: &update.Update{
@@ -1035,16 +1030,14 @@ func cleanupSteps(guest *httptest.Server, host *Starlightd, maxRoundDurMins, fin
 				InputTx: &worizon.Tx{},
 			},
 			walletDelta: 1 * xlm.Lumen,
-		},
-		{
+		}, {
 			name:  "host cleanup host ratchet merge tx update",
 			agent: host,
 			update: &update.Update{
 				Type: update.AccountType,
 			},
 			walletDelta: 1 * xlm.Lumen,
-		},
-		{
+		}, {
 			name:  "host cleanup guest ratchet merge tx update",
 			agent: host,
 			update: &update.Update{
