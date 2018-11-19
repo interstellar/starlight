@@ -78,6 +78,7 @@ func init() {
 	errorFormatter.add(errChannelExistsRetriable, 400, "channel already exists, in setting up state", true)
 	errorFormatter.add(errInvalidChannelID, 400, "invalid channel ID", false)
 	errorFormatter.add(errFetchingAccounts, 400, "error fetching sequence numbers for accounts", false)
+	errorFormatter.add(errRemoteGuestMessage, 400, "received RPC message from guest", false)
 
 	// Configuration
 	errorFormatter.add(errAlreadyConfigured, 400, "already configured", false)

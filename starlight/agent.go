@@ -1282,49 +1282,16 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 		WriteError(req, w, errors.Sub(errNoChannelSpecified, err))
 		return
 	}
-	var guestSeqNum, hostSeqNum, baseSeqNum xdr.SequenceNumber
-	var escrowAcct xdr.AccountId
-	var starlightURL, hostAccount string
+	var (
+		guestSeqNum, hostSeqNum, baseSeqNum xdr.SequenceNumber
+		escrowAcct                          xdr.AccountId
+		starlightURL, hostAccount           string
+	)
 	if m.ChannelProposeMsg != nil {
 		propose := m.ChannelProposeMsg
 		chanID, err := g.checkChannelUnique(propose.HostAcct.Address(), propose.GuestAcct.Address())
 		if err != nil {
-			err = db.Update(g.db, func(root *db.Root) error {
-				if !root.Agent().Ready() {
-					return errAgentClosing
-				}
-				chans := root.Agent().Channels()
-				c := chans.Get(chanID)
-				switch c.State {
-				case fsm.SettingUp:
-					log.Infof("%s proposed a channel: agent is currently in SettingUp state proposing a channel to the same counterparty. Conflict will be resolved once the channel moves into ChannelProposed state", propose.HostAcct.Address())
-					return errors.Wrapf(errChannelExistsRetriable, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
-				case fsm.ChannelProposed:
-					// Decide whether or not to clean up your channel, then either clean up or return non-retriable error.
-					if propose.HostAmount < c.HostAmount {
-						log.Infof("%s proposed a channel: the channel proposed by this agent takes precedence, returning a non-retriable error", propose.HostAcct.Address())
-						return errors.Wrapf(errExists, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
-					}
-					if propose.HostAmount == c.HostAmount {
-						// Tie-break by string comparison to avoid force closing
-						if propose.HostAcct.Address() < c.HostAcct.Address() {
-							log.Infof("%s proposed a channel: the channel proposed by this agent takes precedence, returning a non-retriable error", propose.HostAcct.Address())
-							return errors.Wrapf(errExists, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
-						}
-					}
-					log.Infof("%s proposed a channel: cleaning up this agent's proposed channel before accepting", propose.HostAcct.Address())
-					go g.DoCommand(string(chanID), &fsm.Command{
-						Name: "CleanUp",
-					})
-					return errors.Wrapf(errChannelExistsRetriable, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
-				case fsm.AwaitingCleanup:
-					// Channel in cleanup process: counterparty should retry until cleanup is complete
-					return errors.Wrapf(errChannelExistsRetriable, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
-				default:
-					// Channel is already open or in some payment state: reject the proposed channel
-					return errors.Wrapf(errExists, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
-				}
-			})
+			err = g.resolveChannelCreateConflict(chanID, propose)
 			if err != nil {
 				WriteError(req, w, err)
 			}
@@ -1355,6 +1322,12 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
+	// Drop received RPC messages if agent is the Host. Only Hosts should send messages through RPC, the
+	// Guest's messages are retrieved through the Host sending long-polling HTTP requests to /api/messages
+	if g.channelRole(m.ChannelID) == fsm.Host {
+		WriteError(req, w, errRemoteGuestMessage)
+		return
+	}
 	err = g.updateChannel(m.ChannelID, func(root *db.Root, updater *fsm.Updater, update *Update) error {
 		if m.ChannelProposeMsg != nil {
 			maxRoundDur := time.Minute * time.Duration(root.Agent().Config().MaxRoundDurMins())
@@ -1381,6 +1354,55 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 		WriteError(req, w, err)
 	}
 	return
+}
+
+func (g *Agent) resolveChannelCreateConflict(chanID []byte, propose *fsm.ChannelProposeMsg) error {
+	return db.Update(g.db, func(root *db.Root) error {
+		if !root.Agent().Ready() {
+			return errAgentClosing
+		}
+		chans := root.Agent().Channels()
+		c := chans.Get(chanID)
+		switch c.State {
+		case fsm.SettingUp:
+			log.Infof("%s proposed a channel: agent is currently in SettingUp state proposing a channel to the same counterparty. Conflict will be resolved once the channel moves into ChannelProposed state", propose.HostAcct.Address())
+			return errors.Wrapf(errChannelExistsRetriable, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
+		case fsm.ChannelProposed:
+			// Decide whether or not to clean up your channel, then either clean up or return non-retriable error.
+			if propose.HostAmount < c.HostAmount {
+				log.Infof("%s proposed a channel: the channel proposed by this agent takes precedence, returning a non-retriable error", propose.HostAcct.Address())
+				return errors.Wrapf(errExists, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
+			}
+			if propose.HostAmount == c.HostAmount {
+				// Tie-break by string comparison to avoid force closing
+				if propose.HostAcct.Address() < c.HostAcct.Address() {
+					log.Infof("%s proposed a channel: the channel proposed by this agent takes precedence, returning a non-retriable error", propose.HostAcct.Address())
+					return errors.Wrapf(errExists, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
+				}
+			}
+			log.Infof("%s proposed a channel: cleaning up this agent's proposed channel before accepting", propose.HostAcct.Address())
+			go g.DoCommand(string(chanID), &fsm.Command{
+				Name: "CleanUp",
+			})
+			return errors.Wrapf(errChannelExistsRetriable, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
+		case fsm.AwaitingCleanup:
+			// Channel in cleanup process: counterparty should retry until cleanup is complete
+			return errors.Wrapf(errChannelExistsRetriable, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
+		default:
+			// Channel is already open or in some payment state: reject the proposed channel
+			return errors.Wrapf(errExists, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
+		}
+	})
+}
+
+func (g *Agent) channelRole(chanID string) (role fsm.Role) {
+	db.View(g.db, func(root *db.Root) error {
+		chans := root.Agent().Channels()
+		c := chans.Get([]byte(chanID))
+		role = c.Role
+		return nil
+	})
+	return role
 }
 
 func (g *Agent) handleFed(w http.ResponseWriter, req *http.Request) {

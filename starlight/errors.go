@@ -37,6 +37,7 @@ var (
 	errNotConfigured          = errors.New("not configured")
 	errNotFunded              = errors.New("primary acct not funded")
 	errPasswordsDontMatch     = errors.New("old password doesn't match")
+	errRemoteGuestMessage     = errors.New("received RPC message from guest")
 )
 
 // WriteError formats an error with the correct message and status from
