@@ -1,16 +1,47 @@
 #!/usr/bin/env bash
-set -ex 
+set -e
+
+git fetch
+if [ "$(git rev-parse HEAD)" != "$(git rev-parse @{u})" ]; then
+    echo "branch is not up-to-date with upstream. 'git pull' to update your local branch."
+    exit 1
+fi
+
+latest=$(git describe --abbrev=0 --tags)
+
+parts=(${latest//./ })
+major=${parts[0]}
+minor=${parts[1]}
+patch=${parts[2]}
+
+version=${major}.$((minor+1)).0
+echo $version
 
 dir=releases
-mkdir $dir
+mkdir -p $dir
 cd $dir
 
-GOOS=linux GOARCH=amd64 go build -o starlightd i10r.io/cmd/starlightd
-tar -czf starlightd-linux-amd64.tar.gz starlightd
-rm starlightd
-GOOS=darwin GOARCH=amd64 go build -o starlightd i10r.io/cmd/starlightd
-tar -czf starlightd-darwin-amd64.tar.gz starlightd
-rm starlightd
-GOOS=windows GOARCH=amd64 go build -o starlightd.exe i10r.io/cmd/starlightd
-zip starlightd-windows-amd64.zip starlightd.exe
-rm starlightd.exe
+platforms=("linux/amd64" "darwin/amd64" "windows/amd64")
+for platform in "${platforms[@]}"
+do
+    platform_split=(${platform//\// })
+    GOOS=${platform_split[0]}
+    GOARCH=${platform_split[1]}
+    output="starlightd"
+    echo "building starlightd for $GOOS/$GOARCH..."
+    if [ $GOOS = "windows" ]; then
+        GOOS=$GOOS GOARCH=$GOARCH go build -o starlightd.exe github.com/interstellar/starlight/cmd/starlightd
+        zip starlightd-$GOOS-$GOARCH-$version.zip starlightd.exe
+        rm starlightd.exe
+        echo "starlightd-$GOOS-$GOARCH-$version.zip done"
+    else
+        GOOS=$GOOS GOARCH=$GOARCH go build -o $output github.com/interstellar/starlight/cmd/starlightd
+        tar -czf starlightd-$GOOS-$GOARCH-$version.tar.gz starlightd
+        rm starlightd
+        echo "starlightd-$GOOS-$GOARCH-$version.tar.gz done"
+    fi
+done
+
+# create new tag with specified message
+git tag -a $version
+echo "created tag: $(git rev-parse HEAD) as $version"
