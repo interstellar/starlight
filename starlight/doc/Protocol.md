@@ -54,7 +54,7 @@ You can learn more about the relevant features of the Stellar protocol
   - [Channel state diagram](#channel-state-diagram)
   - [Node states](#node-states)
   - [Accounts](#accounts)
-  - [Computed Values](#computed-values)
+  - [Computed values](#computed-values)
   - [Messages](#messages)
   - [Transactions](#transactions)
   - [User commands](#user-commands)
@@ -76,6 +76,13 @@ The agent listens for commands from the user,
 monitors the Stellar network for relevant transactions,
 sends and receives RPC messages to and from other users’ Starlight agents,
 and triggers time-based events.
+
+For an agent to be a Guest on a channel,
+its agent must have a publicly accessible URL or IP address.
+Host does not need to have a publicly accessible server.
+Host sends messages to Guest using HTTP `POST` requests.
+To receive messages from Guest,
+Host must send long-polling `GET` requests to Guest.
 
 The Host’s agent sets up a channel by creating various Stellar accounts as described below.
 The Host is also responsible for funding the channel with:
@@ -334,7 +341,9 @@ for `HostAccount` as well as `HostEscrowPubKey`,
 and `SecondThrowawayPubKey`,
 and publishes it to the network.
 In addition to adding funds to `EscrowAccount`,
-this transaction adds `GuestEscrowPubKey` as a co-signer on `EscrowAccount` and `GuestRatchetAccount`,
+this transaction adds `GuestEscrowPubKey`
+(which is defined to be `GuestAccountKey`)
+as a co-signer on `EscrowAccount` and `GuestRatchetAccount`,
 sets `HostEscrowPubKey` as the sole signer on `HostRatchetAccount` and a co-signer on `GuestRatchetAccount`,
 and adds an additional minimum balance to `HostRatchetAccount` and `GuestRatchetAccount`.
 
@@ -1135,7 +1144,7 @@ go in the `Body`.
 This number will be incremented with each incompatible change to the protocol.
 Later versions of the software may be able to understand messages with older version numbers,
 but are not guaranteed to.
-The current `Version` number is 1.
+The current `Version` number is 2.
 
 When any message is sent,
 the agent sets the `Version` number to its current protocol version number.
@@ -1148,21 +1157,19 @@ it ignores the message.
 `MessageSignature` is how a party authenticates that the message was sent by their channel counterparty.
 It is a signature on the serialized message (with the `MessageSignature` field excluded).
 It should be a signature from the public key of the message's sender.
-Specifically, that public key is `HostEscrowPubKey` if the message's sender is the `Host` on that channel,
-and `GuestEscrowPubKey` if the sender is the `Guest` on that channel.
+Specifically, that public key is `HostAccountKey` if the message's sender is the `Host` on that channel,
+and `GuestAccountKey` if the sender is the `Guest` on that channel.
 
 When any message is received,
 before taking the message-specific validation steps described below,
 the recipient looks up the channel using the `ChannelID` from the message `Body`
 and looks up their counterparty's public key,
-which is either `HostEscrowPubKey` or `GuestEscrowPubKey`,
+which is either `HostAccountKey` or `GuestAccountKey`,
 depending on their counterparty's role in the channel.
 (If the message is a
 [ChannelProposeMsg](#channelproposemsg),
 no channel will exist yet.
-They should instead use the `ChannelID` itself,
-which is the same as the `HostEscrowPubKey`,
-as the counterparty's public key.)
+They should instead determine `HostAccountKey` from the `HostAccount` in the message itself.)
 The recipient validates that `MessageSignature` is a valid signature from that public key for the message.
 If it is not,
 or if the message is not a
@@ -1183,9 +1190,7 @@ the recipient ignores the message.
 7. `Feerate`
 8. `HostAmount`
 9. `FundingTime`
-10. `HostAddress`
-    (the Host’s
-    [Stellar federation address](https://www.stellar.org/developers/guides/concepts/federation.html#stellar-addresses))
+10. `HostAccount`
 
 #### Handling
 
@@ -1220,7 +1225,7 @@ the agent who receives it checks that the following conditions are true:
   the channel must be in a
   [Start](#start)
   state).
-- the agent does not already have a channel where `HostAddress` is the counterparty.
+- the agent does not already have a channel where `HostAccount` is the counterparty.
 - `GuestEscrowPubKey` is the agent’s own public key.
 - There exist accounts on the ledger with account IDs:
   - `ChannelID`
