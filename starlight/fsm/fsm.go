@@ -45,7 +45,7 @@ type Channel struct {
 	ID                     string
 	Role                   Role
 	State, PrevState       State
-	CounterpartyAddress    string // Stellar federation address of counterparty
+	CounterpartyAddress    string // either the Guest's federation address, or the Host's public key address
 	RemoteURL              string
 	Passphrase             string
 	Cursor                 string // where we are in watching escrowacct txs on the ledger

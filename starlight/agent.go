@@ -1332,11 +1332,8 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 		WriteError(req, w, errors.Sub(errNoChannelSpecified, err))
 		return
 	}
-	var (
-		guestSeqNum, hostSeqNum, baseSeqNum xdr.SequenceNumber
-		escrowAcct                          xdr.AccountId
-		starlightURL, hostAccount           string
-	)
+	var guestSeqNum, hostSeqNum, baseSeqNum xdr.SequenceNumber
+	var escrowAcct xdr.AccountId
 	if m.ChannelProposeMsg != nil {
 		propose := m.ChannelProposeMsg
 		chanID, err := g.checkChannelUnique(propose.HostAcct.Address(), propose.GuestAcct.Address())
@@ -1355,20 +1352,6 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 		baseSeqNum, guestSeqNum, hostSeqNum, err = g.getSequenceNumbers(m.ChannelID, propose.GuestRatchetAcct, propose.HostRatchetAcct)
 		if err != nil {
 			WriteError(req, w, errors.Sub(errFetchingAccounts, err))
-			return
-		}
-		hostAccount, starlightURL, err = g.FindAccount(m.ChannelProposeMsg.CounterpartyAddress)
-		if starlightURL == "" {
-			WriteError(req, w, err)
-			return
-		}
-		if err != nil {
-			WriteError(req, w, errors.Wrap(err, "counterparty starlight URL not found"))
-			return
-		}
-		if hostAccount != m.ChannelProposeMsg.HostAcct.Address() {
-			WriteError(req, w, errors.Wrapf(errBadRequest, "host acct %s doesn't match acct %s retrieved from federation address %s",
-				m.ChannelProposeMsg.HostAcct.Address(), hostAccount, m.ChannelProposeMsg.CounterpartyAddress))
 			return
 		}
 	}
@@ -1390,11 +1373,11 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 			}
 			updater.C.Role = fsm.Guest
 			updater.C.EscrowAcct = fsm.AccountID(escrowAcct)
+			updater.C.HostAcct = m.ChannelProposeMsg.HostAcct
 			updater.C.GuestAcct = *root.Agent().PrimaryAcct()
 			updater.C.GuestRatchetAcctSeqNum = guestSeqNum
 			updater.C.HostRatchetAcctSeqNum = hostSeqNum
 			updater.C.BaseSequenceNumber = baseSeqNum
-			updater.C.RemoteURL = starlightURL
 		}
 		update.InputMessage = m
 		return updater.Msg(m)

@@ -106,7 +106,7 @@ func createPaymentCompleteMsg(seed []byte, ch *Channel) (*Message, error) {
 		Version: version,
 		MsgNum:  ch.LastMsgIndex + 1,
 	}
-	return m.signMsg(seed, ch.KeyIndex)
+	return m.signMsg(seed)
 }
 
 func sendPaymentCompleteMsg(seed []byte, ch *Channel, o Outputter) error {
@@ -156,22 +156,21 @@ func createChannelProposeMsg(seed []byte, ch *Channel, h *WalletAcct) (*Message,
 	m := &Message{
 		ChannelID: ch.ID,
 		ChannelProposeMsg: &ChannelProposeMsg{
-			HostAcct:            ch.HostAcct, // TODO(bobg): spec wants the federation address, can it be derived from this?
-			GuestAcct:           ch.GuestAcct,
-			HostRatchetAcct:     ch.HostRatchetAcct,
-			GuestRatchetAcct:    ch.GuestRatchetAcct,
-			MaxRoundDuration:    ch.MaxRoundDuration,
-			FinalityDelay:       ch.FinalityDelay,
-			HostAmount:          ch.HostAmount,
-			FundingTime:         ch.FundingTime,
-			BaseSequenceNumber:  xdr.SequenceNumber(ch.BaseSequenceNumber),
-			Feerate:             ch.ChannelFeerate,
-			CounterpartyAddress: h.Address,
+			HostAcct:           ch.HostAcct,
+			GuestAcct:          ch.GuestAcct,
+			HostRatchetAcct:    ch.HostRatchetAcct,
+			GuestRatchetAcct:   ch.GuestRatchetAcct,
+			MaxRoundDuration:   ch.MaxRoundDuration,
+			FinalityDelay:      ch.FinalityDelay,
+			HostAmount:         ch.HostAmount,
+			FundingTime:        ch.FundingTime,
+			BaseSequenceNumber: xdr.SequenceNumber(ch.BaseSequenceNumber),
+			Feerate:            ch.ChannelFeerate,
 		},
 		Version: version,
 		MsgNum:  ch.LastMsgIndex + 1,
 	}
-	return m.signMsg(seed, ch.KeyIndex)
+	return m.signMsg(seed)
 }
 
 func sendChannelProposeMsg(seed []byte, ch *Channel, o Outputter, h *WalletAcct) error {
@@ -235,7 +234,7 @@ func createPaymentProposeMsg(seed []byte, ch *Channel) (*Message, error) {
 		Version: version,
 		MsgNum:  ch.LastMsgIndex + 1,
 	}
-	return m.signMsg(seed, ch.KeyIndex)
+	return m.signMsg(seed)
 }
 
 func sendPaymentProposeMsg(seed []byte, ch *Channel, o Outputter) error {
@@ -300,7 +299,7 @@ func createPaymentAcceptMsg(seed []byte, ch *Channel) (*Message, error) {
 		Version: version,
 		MsgNum:  ch.LastMsgIndex + 1,
 	}
-	return m.signMsg(seed, ch.KeyIndex)
+	return m.signMsg(seed)
 }
 
 func sendPaymentAcceptMsg(seed []byte, ch *Channel, o Outputter) error {
@@ -338,7 +337,7 @@ func createChannelAcceptMsg(seed []byte, ch *Channel, ledgerTime time.Time) (*Me
 		Version: version,
 		MsgNum:  ch.LastMsgIndex + 1,
 	}
-	return m.signMsg(seed, ch.KeyIndex)
+	return m.signMsg(seed)
 }
 
 func sendChannelAcceptMsg(seed []byte, ch *Channel, o Outputter, ledgerTime time.Time) error {
@@ -367,7 +366,7 @@ func createCloseMsg(seed []byte, ch *Channel) (*Message, error) {
 		Version: version,
 		MsgNum:  ch.LastMsgIndex + 1,
 	}
-	return m.signMsg(seed, ch.KeyIndex)
+	return m.signMsg(seed)
 }
 
 func sendCloseMsg(seed []byte, ch *Channel, o Outputter) error {

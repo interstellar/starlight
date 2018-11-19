@@ -15,7 +15,7 @@ import (
 )
 
 // version denotes the current Starlight protocol version.
-const version = 1
+const version = 2
 
 // Message defines a JSON schema for Starlight messages.
 type Message struct {
@@ -49,17 +49,16 @@ func (m *Message) UnmarshalJSON(b []byte) error {
 
 // ChannelProposeMsg defines a JSON schema for proposal over a Channel.
 type ChannelProposeMsg struct {
-	HostAcct            AccountID
-	GuestAcct           AccountID
-	HostRatchetAcct     AccountID
-	GuestRatchetAcct    AccountID
-	MaxRoundDuration    time.Duration
-	FinalityDelay       time.Duration
-	BaseSequenceNumber  xdr.SequenceNumber
-	HostAmount          xlm.Amount
-	Feerate             xlm.Amount
-	FundingTime         time.Time
-	CounterpartyAddress string
+	HostAcct           AccountID
+	GuestAcct          AccountID
+	HostRatchetAcct    AccountID
+	GuestRatchetAcct   AccountID
+	MaxRoundDuration   time.Duration
+	FinalityDelay      time.Duration
+	BaseSequenceNumber xdr.SequenceNumber
+	HostAmount         xlm.Amount
+	Feerate            xlm.Amount
+	FundingTime        time.Time
 }
 
 // ChannelAcceptMsg contains Signatures for Guest accepting a proposal.
@@ -266,8 +265,7 @@ func (u *Updater) handleChannelProposeMsg(m *Message) error {
 		GuestRatchetAcctSeqNum: u.C.GuestRatchetAcctSeqNum,
 		KeyIndex:               key.PrimaryAccountIndex,
 		Passphrase:             u.Passphrase,
-		CounterpartyAddress:    propose.CounterpartyAddress,
-		RemoteURL:              u.C.RemoteURL,
+		CounterpartyAddress:    propose.HostAcct.Address(),
 		ChannelFeerate:         propose.Feerate,
 	}
 
@@ -492,7 +490,7 @@ func (m *Message) bytesToSign() ([]byte, error) {
 	return json.Marshal(msgcopy)
 }
 
-func (m *Message) signMsg(seed []byte, i uint32) (*Message, error) {
+func (m *Message) signMsg(seed []byte) (*Message, error) {
 	if seed == nil {
 		return nil, errNoSeed
 	}
@@ -500,7 +498,7 @@ func (m *Message) signMsg(seed []byte, i uint32) (*Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	kp := key.DeriveAccount(seed, i)
+	kp := key.DeriveAccountPrimary(seed)
 	m.Signature, err = kp.Sign(bytes)
 	return m, err
 }

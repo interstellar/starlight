@@ -151,7 +151,7 @@ func (u *Updater) verifyMsg(m *Message) error {
 	)
 	switch u.C.Role {
 	case Guest:
-		kp, err = keypair.Parse(u.C.EscrowAcct.Address())
+		kp, err = keypair.Parse(u.C.HostAcct.Address())
 		if err != nil {
 			return err
 		}
