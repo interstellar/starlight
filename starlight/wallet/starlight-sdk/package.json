@@ -1,6 +1,6 @@
 {
   "name": "starlight-sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "SDK for interacting with a Starlight instance.",
   "author": "Lightyear Corporation",
   "license": "Apache-2.0",
