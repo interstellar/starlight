@@ -242,8 +242,35 @@ func (c *Client) streamLedgers(ctx context.Context, cur *Cursor, h func(l Ledger
 		return errUninitialized
 	}
 
+	timer := time.NewTimer(time.Minute)
+
+	var timerMu sync.Mutex
+
+	go func() {
+		for {
+			select {
+			case <-timer.C:
+				log.Println("warning: no data returned from worizon streamLedgers in >1m")
+				timerMu.Lock()
+				if !timer.Stop() {
+					<-timer.C
+				}
+				timer.Reset(time.Minute)
+				timerMu.Unlock()
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
 	return c.streamHorizon(ctx, cur, func(ctx context.Context, cur *Cursor, backoff *net.Backoff) error {
 		return hclient.StreamLedgers(ctx, cur, func(l Ledger) {
+			timerMu.Lock()
+			if !timer.Stop() {
+				<-timer.C
+			}
+			timer.Reset(time.Minute)
+			timerMu.Unlock()
 			backoff = &net.Backoff{Base: backoff.Base}
 			h(l)
 			*cur = Cursor(l.PT)
