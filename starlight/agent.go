@@ -1031,36 +1031,83 @@ func (g *Agent) DoCreateChannel(guestFedAddr string, hostAmount xlm.Amount) (*fs
 }
 
 // DoWalletPay implements the wallet-pay command.
-func (g *Agent) DoWalletPay(dest string, amount xlm.Amount) error {
+func (g *Agent) DoWalletPay(dest string, amount uint64, assetCode, issuer string) error {
 	if dest == "" {
 		return errEmptyAddress
 	}
 	if amount == 0 {
 		return errEmptyAmount
 	}
+	if assetCode == "" && issuer != "" {
+		return errEmptyAsset
+	}
+	if assetCode != "" && issuer == "" {
+		return errEmptyIssuer
+	}
 	return db.Update(g.db, func(root *db.Root) error {
 		if !root.Agent().Ready() {
 			return errAgentClosing
 		}
+		var (
+			paymentOp b.PaymentBuilder
+			assetStr  string
+		)
 		w := root.Agent().Wallet()
-		if w.NativeBalance <= amount+xlm.Amount(root.Agent().Config().HostFeerate()) {
-			return errInsufficientBalance
+		hostAcct := root.Agent().PrimaryAcct()
+		hostFeerate := xlm.Amount(root.Agent().Config().HostFeerate())
+		if assetCode != "" && issuer != "" {
+			var issuerAccountID xdr.AccountId
+			err := issuerAccountID.SetAddress(issuer)
+			if err != nil {
+				return errors.Wrap(errors.Sub(err, errInvalidAddress), "invalid issuer account")
+			}
+			var asset xdr.Asset
+			err = asset.SetCredit(assetCode, issuerAccountID)
+			if err != nil {
+				return errors.Sub(err, errInvalidAsset)
+			}
+			assetStr = asset.String()
+			if currBalance, ok := w.Balances[assetStr]; ok {
+				if w.NativeBalance <= hostFeerate {
+					return errors.Wrap(errInsufficientBalance, "XLM balance for host fee")
+				}
+				if currBalance.Amount <= amount {
+					return errors.Wrap(errInsufficientBalance, "asset amount for payment")
+				}
+				w.NativeBalance -= hostFeerate
+				currBalance.Amount -= amount
+				w.Balances[assetStr] = currBalance
+				paymentOp = b.Payment(
+					b.SourceAccount{AddressOrSeed: hostAcct.Address()},
+					b.Destination{AddressOrSeed: dest},
+					b.CreditAmount{
+						Code:   assetCode,
+						Issuer: issuer,
+						Amount: string(amount),
+					},
+				)
+			} else {
+				return errors.Wrap(errInvalidAsset, fmt.Sprintf("no trustline exists for asset %s, issuer %s", assetCode, issuer))
+			}
+		} else {
+			if w.NativeBalance <= xlm.Amount(amount)+hostFeerate {
+				return errors.Wrap(errInsufficientBalance, "XLM amount for payment and fees")
+			}
+			w.NativeBalance -= (xlm.Amount(amount) + hostFeerate)
+			paymentOp = b.Payment(
+				b.SourceAccount{AddressOrSeed: hostAcct.Address()},
+				b.Destination{AddressOrSeed: dest},
+				b.NativeAmount{Amount: xlm.Amount(amount).HorizonString()},
+			)
 		}
-
-		w.NativeBalance -= amount
-		w.NativeBalance -= xlm.Amount(root.Agent().Config().HostFeerate())
 		w.Seqnum++
 		root.Agent().PutWallet(w)
-		hostAcct := root.Agent().PrimaryAcct()
+
 		btx, err := b.Transaction(
 			b.Network{Passphrase: g.passphrase(root)},
 			b.SourceAccount{AddressOrSeed: hostAcct.Address()},
 			b.Sequence{Sequence: uint64(w.Seqnum)},
-			b.Payment(
-				b.SourceAccount{AddressOrSeed: hostAcct.Address()},
-				b.Destination{AddressOrSeed: dest},
-				b.NativeAmount{Amount: amount.HorizonString()},
-			),
+			paymentOp,
 		)
 		if err != nil {
 			return err
@@ -1077,11 +1124,14 @@ func (g *Agent) DoWalletPay(dest string, amount xlm.Amount) error {
 				ID:      hostAcct.Address(),
 				Balance: uint64(w.NativeBalance),
 			},
+			// TODO (debnil): Make Command.Amount uint, not XLM.
 			InputCommand: &fsm.Command{
 				Name:      fsm.Pay,
-				Amount:    amount,
+				Amount:    xlm.Amount(amount),
 				Recipient: dest,
 				Time:      time,
+				AssetCode: assetCode,
+				Issuer:    issuer,
 			},
 			InputLedgerTime: time,
 			PendingSequence: strconv.FormatInt(int64(w.Seqnum), 10),

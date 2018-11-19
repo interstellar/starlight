@@ -165,16 +165,17 @@ func (wt *wallet) doCreateChannel(w http.ResponseWriter, req *http.Request) {
 
 func (wt *wallet) doWalletPay(w http.ResponseWriter, req *http.Request) {
 	var v struct {
-		Dest   string
-		Amount uint64
+		Dest      string
+		Amount    uint64
+		AssetCode string
+		Issuer    string
 	}
 	err := json.NewDecoder(req.Body).Decode(&v)
 	if err != nil {
 		starlight.WriteError(req, w, errors.Sub(starlight.ErrUnmarshaling, err))
 		return
 	}
-	xlmAmount := xlm.Amount(v.Amount)
-	err = wt.agent.DoWalletPay(v.Dest, xlmAmount)
+	err = wt.agent.DoWalletPay(v.Dest, v.Amount, v.AssetCode, v.Issuer)
 	if err != nil {
 		starlight.WriteError(req, w, err)
 	}
