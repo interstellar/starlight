@@ -1332,8 +1332,11 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 		WriteError(req, w, errors.Sub(errNoChannelSpecified, err))
 		return
 	}
-	var guestSeqNum, hostSeqNum, baseSeqNum xdr.SequenceNumber
-	var escrowAcct xdr.AccountId
+	var (
+		guestSeqNum, hostSeqNum, baseSeqNum xdr.SequenceNumber
+		escrowAcct                          xdr.AccountId
+		hostAccount                         string
+	)
 	if m.ChannelProposeMsg != nil {
 		propose := m.ChannelProposeMsg
 		chanID, err := g.checkChannelUnique(propose.HostAcct.Address(), propose.GuestAcct.Address())
@@ -1354,16 +1357,16 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 			WriteError(req, w, errors.Sub(errFetchingAccounts, err))
 			return
 		}
+		hostAccount, _, err = g.FindAccount(propose.HostAcct.Address())
+		if err != nil {
+			hostAccount = ""
+		}
 	}
 	// Drop received RPC messages if agent is the Host. Only Hosts should send messages through RPC, the
 	// Guest's messages are retrieved through the Host sending long-polling HTTP requests to /api/messages
 	if g.channelRole(m.ChannelID) == fsm.Host {
 		WriteError(req, w, errRemoteGuestMessage)
 		return
-	}
-	hostAccount, _, err := g.FindAccount(m.ChannelProposeMsg.HostAcct.Address())
-	if err != nil {
-		hostAccount = ""
 	}
 	err = g.updateChannel(m.ChannelID, func(root *db.Root, updater *fsm.Updater, update *Update) error {
 		if m.ChannelProposeMsg != nil {
