@@ -18,13 +18,21 @@ import (
 // FindAccount looks up the account ID and Starlight URL
 // for the Stellar account named by target.
 //
-// The target must be a valid Stellar address, e.g.
+// The target must be a Stellar address in the form of a
+// federation address, e.g.
 //
-//   kr*mywallet.example.com
+// kr*mywallet.example.com
 //
-// It will use the Stellar TOML file
-// and the Stellar federation server protocol
-// to look up the additional info.
+// Or a valid Stellar account ID.
+//
+// If given a federation account, FindAccount will use the
+// Stellar TOML file and the Stellar federation server protocol
+// to look up the additional info, returning the account ID
+// and Starlight URL.
+//
+// If given an Account ID, FindAccount will look up the account's
+// home domain, returning the account's federation address and
+// Starlight URL.
 func (g *Agent) FindAccount(target string) (accountID, starlightURL string, err error) {
 	var host string
 	federation := true

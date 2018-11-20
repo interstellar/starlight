@@ -265,7 +265,7 @@ func (u *Updater) handleChannelProposeMsg(m *Message) error {
 		GuestRatchetAcctSeqNum: u.C.GuestRatchetAcctSeqNum,
 		KeyIndex:               key.PrimaryAccountIndex,
 		Passphrase:             u.Passphrase,
-		CounterpartyAddress:    propose.HostAcct.Address(),
+		CounterpartyAddress:    u.C.CounterpartyAddress,
 		ChannelFeerate:         propose.Feerate,
 	}
 

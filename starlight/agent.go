@@ -1361,6 +1361,10 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 		WriteError(req, w, errRemoteGuestMessage)
 		return
 	}
+	hostAccount, _, err := g.FindAccount(m.ChannelProposeMsg.HostAcct.Address())
+	if err != nil {
+		hostAccount = ""
+	}
 	err = g.updateChannel(m.ChannelID, func(root *db.Root, updater *fsm.Updater, update *Update) error {
 		if m.ChannelProposeMsg != nil {
 			maxRoundDur := time.Minute * time.Duration(root.Agent().Config().MaxRoundDurMins())
@@ -1370,6 +1374,11 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 			}
 			if m.ChannelProposeMsg.FinalityDelay != finalityDelay {
 				return errors.Wrapf(errBadRequest, "channel proposed with finality delay %s, want %s", m.ChannelProposeMsg.FinalityDelay, finalityDelay)
+			}
+			if hostAccount != "" {
+				updater.C.CounterpartyAddress = hostAccount
+			} else {
+				updater.C.CounterpartyAddress = m.ChannelProposeMsg.HostAcct.Address()
 			}
 			updater.C.Role = fsm.Guest
 			updater.C.EscrowAcct = fsm.AccountID(escrowAcct)
