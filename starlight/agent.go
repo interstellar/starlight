@@ -668,20 +668,43 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 					g.addTxTask(root.Tx(), walletBucket, *env.E)
 
 				case xdr.OperationTypePayment:
-					payment := op.Body.PaymentOp
-					if payment.Destination.Address() != acctID {
+					paymentOp := op.Body.PaymentOp
+					if paymentOp.Destination.Address() != acctID {
 						continue
 					}
 					w := root.Agent().Wallet()
-					if payment.Asset.Type == xdr.AssetTypeAssetTypeNative {
-						w.NativeBalance += xlm.Amount(payment.Amount)
-					} else { // non-Native assets.
-						if currBalance, ok := w.Balances[payment.Asset.String()]; ok {
-							currBalance.Amount += uint64(payment.Amount)
-							w.Balances[payment.Asset.String()] = currBalance
-						} else {
-							return errors.Wrap(errInvalidAsset, "wallet watch payment")
+					var asset xdr.Asset
+					switch paymentOp.Asset.Type {
+					case xdr.AssetTypeAssetTypeNative:
+						w.NativeBalance += xlm.Amount(paymentOp.Amount)
+					case xdr.AssetTypeAssetTypeCreditAlphanum4:
+						if shortAsset, ok := paymentOp.Asset.GetAlphaNum4(); ok {
+							err = asset.SetCredit(string(shortAsset.AssetCode[:]), shortAsset.Issuer)
+							if err != nil {
+								return errors.Sub(err, errInvalidAsset)
+							}
 						}
+					case xdr.AssetTypeAssetTypeCreditAlphanum12:
+						if longAsset, ok := paymentOp.Asset.GetAlphaNum12(); ok {
+							err = asset.SetCredit(string(longAsset.AssetCode[:]), longAsset.Issuer)
+							if err != nil {
+								return errors.Sub(err, errInvalidAsset)
+							}
+						}
+					}
+					if asset.Type != xdr.AssetTypeAssetTypeNative {
+						assetStr := asset.String()
+						var currBalance fsm.Balance
+						if currBalance, ok := w.Balances[assetStr]; ok {
+							currBalance.Amount += uint64(paymentOp.Amount)
+						} else {
+							currBalance = fsm.Balance{
+								Asset:   asset,
+								Amount:  uint64(paymentOp.Amount),
+								Pending: false,
+							}
+						}
+						w.Balances[assetStr] = currBalance
 					}
 					w.Cursor = htx.PT
 					root.Agent().PutWallet(w)
