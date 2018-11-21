@@ -127,7 +127,10 @@ type Config struct {
 	KeepAlive *bool `json:",omitempty"`
 }
 
-const tbBucket = "tasks"
+const (
+	tbBucket    = "tasks"
+	baseReserve = 500 * xlm.Millilumen
+)
 
 // StartAgent starts an agent
 // using the bucket "agent" in db for storage
@@ -443,6 +446,10 @@ func (g *Agent) AddAsset(assetCode, issuer string) error {
 			return errAgentClosing
 		}
 		w := root.Agent().Wallet()
+		hostFeerate := xlm.Amount(root.Agent().Config().HostFeerate())
+		if w.NativeBalance < (hostFeerate + baseReserve) {
+			return errors.Wrap(errInsufficientBalance, "fees and reserve to add non-native asset")
+		}
 		var issuerAccountID xdr.AccountId
 		err := issuerAccountID.SetAddress(issuer)
 		if err != nil {
@@ -458,6 +465,8 @@ func (g *Agent) AddAsset(assetCode, issuer string) error {
 			Amount:  0,
 			Pending: true,
 		}
+		w.NativeBalance -= (baseReserve + hostFeerate)
+		w.Reserve += baseReserve
 		w.Seqnum++
 		root.Agent().PutWallet(w)
 
@@ -507,6 +516,11 @@ func (g *Agent) RemoveAsset(assetCode, issuer string) error {
 			return errAgentClosing
 		}
 		w := root.Agent().Wallet()
+		hostFeerate := xlm.Amount(root.Agent().Config().HostFeerate())
+		if w.NativeBalance < hostFeerate {
+			return errors.Wrap(errInsufficientBalance, "fees to remove non-native asset")
+		}
+		w.NativeBalance -= hostFeerate
 		w.Seqnum++
 		root.Agent().PutWallet(w)
 
@@ -630,7 +644,9 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 					seqnum := xdr.SequenceNumber(uint64(htx.Ledger) << 32)
 
 					w := root.Agent().Wallet()
-					w.NativeBalance = xlm.Amount(createAccount.StartingBalance) - xlm.Amount(root.Agent().Config().HostFeerate())
+					hostFeerate := root.Agent().Config().HostFeerate()
+					w.NativeBalance = xlm.Amount(createAccount.StartingBalance) - xlm.Amount(hostFeerate) - 2*baseReserve
+					w.Reserve = 2 * baseReserve
 					w.Seqnum = seqnum + 1
 					w.Cursor = htx.PT
 					root.Agent().PutWallet(w)
@@ -648,7 +664,7 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 					domain := w.Address[strings.Index(w.Address, "*")+1:]
 					tx, err := b.Transaction(
 						b.Network{Passphrase: g.passphrase(root)},
-						b.BaseFee{Amount: uint64(root.Agent().Config().HostFeerate())},
+						b.BaseFee{Amount: uint64(hostFeerate)},
 						b.SourceAccount{AddressOrSeed: acctID},
 						b.Sequence{Sequence: uint64(w.Seqnum)},
 						b.SetOptions(
@@ -773,6 +789,8 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 					}
 					if changeTrustOp.Limit == 0 { // RemoveAsset
 						delete(w.Balances, changeTrustOp.Line.String())
+						w.NativeBalance += baseReserve // unreserve base reserve
+						w.Reserve -= baseReserve
 					} else { // AddAsset
 						w.Balances[changeTrustOp.Line.String()] = fsm.Balance{
 							Asset:   changeTrustOp.Line,

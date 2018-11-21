@@ -21,6 +21,7 @@ type Balance struct {
 // transitions that access or update host-level data.
 type WalletAcct struct {
 	NativeBalance xlm.Amount
+	Reserve       xlm.Amount
 	Seqnum        xdr.SequenceNumber
 	Address       string // Stellar federation address
 	Cursor        string
