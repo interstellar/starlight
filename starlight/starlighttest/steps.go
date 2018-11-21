@@ -24,6 +24,7 @@ const (
 	friendbotAmount = 10000 * xlm.Lumen
 	channelFeerate  = 10 * xlm.Millilumen
 	hostFeerate     = 100 * xlm.Stroop
+	baseReserve     = 500 * xlm.Millilumen
 )
 
 type step struct {
@@ -40,6 +41,7 @@ type step struct {
 	walletDelta    xlm.Amount
 	hostDelta      xlm.Amount
 	guestDelta     xlm.Amount
+	reserveDelta   xlm.Amount
 }
 
 // WalletPaySelf executes a do-wallet-pay API action.
@@ -183,8 +185,9 @@ func channelCreationSteps(guest, host *Starlightd, maxRoundDurMins, finalityDela
 				Type:      update.AccountType,
 				UpdateNum: 2,
 			},
-			walletDelta: friendbotAmount - hostFeerate,
-			checkLedger: true,
+			walletDelta:  friendbotAmount - hostFeerate - 2*baseReserve,
+			reserveDelta: 2 * baseReserve,
+			checkLedger:  true,
 		}, {
 			name:  "host wallet funding update",
 			agent: host,
@@ -194,8 +197,9 @@ func channelCreationSteps(guest, host *Starlightd, maxRoundDurMins, finalityDela
 				Type:      update.AccountType,
 				UpdateNum: 2,
 			},
-			walletDelta: friendbotAmount - hostFeerate,
-			checkLedger: true,
+			walletDelta:  friendbotAmount - hostFeerate - 2*baseReserve,
+			reserveDelta: 2 * baseReserve,
+			checkLedger:  true,
 		}, {
 			name:  "host create channel with guest",
 			agent: host,
@@ -949,8 +953,9 @@ func cleanupSteps(guest *httptest.Server, host *Starlightd, maxRoundDurMins, fin
 				Type:      update.AccountType,
 				UpdateNum: 2,
 			},
-			walletDelta: friendbotAmount - hostFeerate,
-			checkLedger: true,
+			walletDelta:  friendbotAmount - hostFeerate - 2*baseReserve,
+			reserveDelta: 2 * baseReserve,
+			checkLedger:  true,
 		}, {
 			name:  "host create channel with guest",
 			agent: host,
@@ -1092,8 +1097,15 @@ func checkUpdate(ctx context.Context, s step, channelID *string) error {
 					}
 					s.agent.guestAmount = newGuestAmount
 				}
+				if s.reserveDelta != 0 {
+					newReserve := s.agent.reserve + s.reserveDelta
+					if uint64(newReserve) != u.Account.Reserve {
+						return errors.New(fmt.Sprintf("%s: got reserve %s, want %s", s.name, xlm.Amount(u.Account.Reserve), newReserve))
+					}
+					s.agent.reserve = newReserve
+				}
 				if s.checkLedger {
-					if err = checkAcctBalance(s.agent.wclient, u.Account.ID, s.agent.balance, s.agent.wclient.Now()); err != nil {
+					if err = checkAcctBalance(s.agent.wclient, u.Account.ID, s.agent.balance+s.agent.reserve, s.agent.wclient.Now()); err != nil {
 						return errors.Wrapf(err, "step %s", s.name)
 					}
 				}

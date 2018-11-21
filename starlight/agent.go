@@ -653,8 +653,10 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 					g.putUpdate(root, &Update{
 						Type: update.AccountType,
 						Account: &update.Account{
-							ID:      acctID,
-							Balance: uint64(w.NativeBalance),
+							ID:       acctID,
+							Balance:  uint64(w.NativeBalance),
+							Balances: w.Balances,
+							Reserve:  uint64(w.Reserve),
 						},
 						InputTx: InputTx,
 						OpIndex: index,
@@ -730,6 +732,7 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 							ID:       acctID,
 							Balance:  uint64(w.NativeBalance),
 							Balances: w.Balances,
+							Reserve:  uint64(w.Reserve),
 						},
 						InputTx: InputTx,
 						OpIndex: index,
@@ -770,8 +773,10 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 						g.putUpdate(root, &Update{
 							Type: update.AccountType,
 							Account: &update.Account{
-								ID:      acctID,
-								Balance: uint64(w.NativeBalance),
+								ID:       acctID,
+								Balance:  uint64(w.NativeBalance),
+								Balances: w.Balances,
+								Reserve:  uint64(w.Reserve),
 							},
 							InputTx: InputTx,
 							OpIndex: index,
@@ -804,6 +809,7 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 							ID:       acctID,
 							Balance:  uint64(w.NativeBalance),
 							Balances: w.Balances,
+							Reserve:  uint64(w.Reserve),
 						},
 						InputTx: InputTx,
 						OpIndex: index,
@@ -1162,8 +1168,10 @@ func (g *Agent) DoWalletPay(dest string, amount uint64, assetCode, issuer string
 		g.putUpdate(root, &Update{
 			Type: update.AccountType,
 			Account: &update.Account{
-				ID:      hostAcct.Address(),
-				Balance: uint64(w.NativeBalance),
+				ID:       hostAcct.Address(),
+				Balance:  uint64(w.NativeBalance),
+				Balances: w.Balances,
+				Reserve:  uint64(w.Reserve),
 			},
 			// TODO (debnil): Make Command.Amount uint, not XLM.
 			InputCommand: &fsm.Command{

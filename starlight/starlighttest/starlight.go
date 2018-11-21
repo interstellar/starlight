@@ -32,6 +32,7 @@ type Starlightd struct {
 	balance       xlm.Amount
 	hostAmount    xlm.Amount
 	guestAmount   xlm.Amount
+	reserve       xlm.Amount
 }
 
 // StartServer starts a Startlightd instance.

@@ -218,8 +218,9 @@ func TestConfigEdit(t *testing.T) {
 			FinalityDelayMins: newFinalityDelayMins,
 		},
 		Account: &update.Account{
-			Balance: 0,
-			ID:      acctID,
+			ID:       acctID,
+			Balance:  0,
+			Balances: make(map[string]fsm.Balance),
 		},
 	}}
 	if len(gotUpdates) != len(wantUpdates) {
