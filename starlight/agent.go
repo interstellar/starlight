@@ -460,10 +460,16 @@ func (g *Agent) AddAsset(assetCode, issuer string) error {
 		if err != nil {
 			return errors.Sub(errInvalidAsset, err)
 		}
+		account, err := g.wclient.LoadAccount(issuer)
+		if err != nil {
+			return errors.Wrap(errFetchingAccounts, "issuer account in adding asset")
+		}
+		authorized := !(account.Flags.AuthRequired)
 		w.Balances[asset.String()] = fsm.Balance{
-			Asset:   asset,
-			Amount:  0,
-			Pending: true,
+			Asset:      asset,
+			Amount:     0,
+			Pending:    true,
+			Authorized: authorized,
 		}
 		w.NativeBalance -= (baseReserve + hostFeerate)
 		w.Reserve += baseReserve
@@ -764,7 +770,6 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 						// If the tx is successful and InputTx.Env.Tx.Operations[index] is an account merge,
 						// we can depend on (*InputTx.Result.Result.Results)[index].Tr being present and having an AccountMergeResult.
 						mergeAmount := *(*InputTx.Result.Result.Results)[index].Tr.AccountMergeResult.SourceAccountBalance
-
 						w := root.Agent().Wallet()
 						w.NativeBalance += xlm.Amount(mergeAmount)
 						w.Cursor = htx.PT
@@ -810,6 +815,52 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 							Balance:  uint64(w.NativeBalance),
 							Balances: w.Balances,
 							Reserve:  uint64(w.Reserve),
+						},
+						InputTx: InputTx,
+						OpIndex: index,
+					})
+				case xdr.OperationTypeAllowTrust:
+					allowTrustOp := op.Body.AllowTrustOp
+					if allowTrustOp.Trustor.Address() != acctID {
+						continue
+					}
+					var asset xdr.Asset
+					switch allowTrustOp.Asset.Type {
+					case xdr.AssetTypeAssetTypeCreditAlphanum4:
+						assetCode, _ := allowTrustOp.Asset.GetAssetCode4()
+						err = asset.SetCredit(string(assetCode[:]), *op.SourceAccount)
+						if err != nil {
+							return errors.Sub(err, errInvalidAsset)
+						}
+					case xdr.AssetTypeAssetTypeCreditAlphanum12:
+						assetCode, _ := allowTrustOp.Asset.GetAssetCode12()
+						err = asset.SetCredit(string(assetCode[:]), *op.SourceAccount)
+						if err != nil {
+							return errors.Sub(err, errInvalidAsset)
+						}
+					default:
+						return errors.New("no native trustline allowed")
+					}
+					w := root.Agent().Wallet()
+					assetStr := asset.String()
+					var currBalance fsm.Balance
+					if currBalance, ok := w.Balances[assetStr]; ok {
+						currBalance.Authorized = allowTrustOp.Authorize
+					} else {
+						currBalance = fsm.Balance{
+							Asset:      asset,
+							Pending:    false,
+							Authorized: allowTrustOp.Authorize,
+						}
+					}
+					w.Balances[asset.String()] = currBalance
+					root.Agent().PutWallet(w)
+					g.putUpdate(root, &Update{
+						Type: update.AccountType,
+						Account: &update.Account{
+							ID:       acctID,
+							Balance:  uint64(w.NativeBalance),
+							Balances: w.Balances,
 						},
 						InputTx: InputTx,
 						OpIndex: index,
@@ -1115,6 +1166,9 @@ func (g *Agent) DoWalletPay(dest string, amount uint64, assetCode, issuer string
 			}
 			assetStr = asset.String()
 			if currBalance, ok := w.Balances[assetStr]; ok {
+				if !currBalance.Authorized {
+					return errors.New(fmt.Sprintf("unauthorized trustline for %s", assetStr))
+				}
 				if w.NativeBalance <= hostFeerate {
 					return errors.Wrap(errInsufficientBalance, "XLM balance for host fee")
 				}

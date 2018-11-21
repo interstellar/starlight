@@ -11,9 +11,10 @@ import (
 // Balance represents the point-in-time state of a
 // non-XLM Asset in the WalletAcct.
 type Balance struct {
-	Asset   xdr.Asset
-	Amount  uint64
-	Pending bool
+	Asset      xdr.Asset
+	Amount     uint64
+	Pending    bool
+	Authorized bool
 }
 
 // WalletAcct represents the point-in-time state of the
