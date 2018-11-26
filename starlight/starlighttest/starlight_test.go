@@ -38,8 +38,8 @@ func TestAgentRequest(t *testing.T) {
 			{
 				"Username":"starlight",
 				"Password":"password",
-				"DemoServer":true,
-				"HorizonURL":"%s"
+				"HorizonURL":"%s",
+				"Public":true
 			}`, *HorizonURL),
 		}, {
 			name:  "get init update",

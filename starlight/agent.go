@@ -125,6 +125,13 @@ type Config struct {
 	// KeepAlive, if set, indicates whether or not the agent will
 	// send 0-value keep-alive payments on its channels
 	KeepAlive *bool `json:",omitempty"`
+
+	// Public indicates whether the agent is running on a
+	// publicly-accessible URL. If the agent is public, then it is
+	// able to propose and receive incoming channel requests.
+	// Private agents can only propose channels
+	// and see incoming messages on their local network.
+	Public bool
 }
 
 const (
@@ -307,6 +314,7 @@ func (g *Agent) ConfigInit(c *Config, hostURL string) error {
 		root.Agent().Config().PutChannelFeerate(int64(c.ChannelFeerate))
 		root.Agent().Config().PutHostFeerate(int64(c.HostFeerate))
 		root.Agent().Config().PutKeepAlive(*c.KeepAlive)
+		root.Agent().Config().PutPublic(c.Public)
 
 		// TODO(vniu): add tests for setting wallet address
 		w := &fsm.WalletAcct{
@@ -667,29 +675,30 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 						InputTx: InputTx,
 						OpIndex: index,
 					})
-					// TODO(vniu): don't publish funding update until home-domain
-					// account has been set.
-					domain := w.Address[strings.Index(w.Address, "*")+1:]
-					tx, err := b.Transaction(
-						b.Network{Passphrase: g.passphrase(root)},
-						b.BaseFee{Amount: uint64(hostFeerate)},
-						b.SourceAccount{AddressOrSeed: acctID},
-						b.Sequence{Sequence: uint64(w.Seqnum)},
-						b.SetOptions(
+					if root.Agent().Config().Public() {
+						// Set account home domain
+						domain := w.Address[strings.Index(w.Address, "*")+1:]
+						tx, err := b.Transaction(
+							b.Network{Passphrase: g.passphrase(root)},
+							b.BaseFee{Amount: uint64(hostFeerate)},
 							b.SourceAccount{AddressOrSeed: acctID},
-							b.HomeDomain(domain),
-						),
-					)
-					if err != nil {
-						return errors.Wrap(err, "building home domain tx")
+							b.Sequence{Sequence: uint64(w.Seqnum)},
+							b.SetOptions(
+								b.SourceAccount{AddressOrSeed: acctID},
+								b.HomeDomain(domain),
+							),
+						)
+						if err != nil {
+							return errors.Wrap(err, "building home domain tx")
+						}
+						k := key.DeriveAccountPrimary(g.seed)
+						env, err := tx.Sign(k.Seed())
+						if err != nil {
+							return err
+						}
+						// create transaction to set options
+						g.addTxTask(root.Tx(), walletBucket, *env.E)
 					}
-					k := key.DeriveAccountPrimary(g.seed)
-					env, err := tx.Sign(k.Seed())
-					if err != nil {
-						return err
-					}
-					// create transaction to set options
-					g.addTxTask(root.Tx(), walletBucket, *env.E)
 
 				case xdr.OperationTypePayment:
 					paymentOp := op.Body.PaymentOp

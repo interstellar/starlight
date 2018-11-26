@@ -433,6 +433,23 @@ func (o *Config) PutKeepAlive(v bool) {
 	put(o.db, keyKeepAlive, rec)
 }
 
+// Public reads the record stored under key "Public".
+// If no record has been stored, Public returns
+// the zero value.
+func (o *Config) Public() bool {
+	rec := get(o.db, keyPublic)
+	return len(rec) > 0 && rec[0] != 0
+}
+
+// PutPublic stores v as a record under the key "Public".
+func (o *Config) PutPublic(v bool) {
+	rec := make([]byte, 1)
+	if v {
+		rec[0] = 1
+	}
+	put(o.db, keyPublic, rec)
+}
+
 // MapOfFsmChannel is a bucket with arbitrary keys,
 // holding records of type *fsm.Channel.
 type MapOfFsmChannel struct {
@@ -617,6 +634,7 @@ var (
 	keyMessages          = []byte("Messages")
 	keyNextKeypathIndex  = []byte("NextKeypathIndex")
 	keyPrimaryAcct       = []byte("PrimaryAcct")
+	keyPublic            = []byte("Public")
 	keyPwHash            = []byte("PwHash")
 	keyPwType            = []byte("PwType")
 	keyReady             = []byte("Ready")

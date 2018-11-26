@@ -61,4 +61,5 @@ type Config struct {
 	HostFeerate       int64
 
 	KeepAlive bool
+	Public    bool
 }

@@ -141,11 +141,11 @@ func channelCreationSteps(guest, host *Starlightd, maxRoundDurMins, finalityDela
 			{
 				"Username":"guest",
 				"Password":"password",
-				"DemoServer":true,
 				"HorizonURL":"%s",
 				"KeepAlive":false,
 				"MaxRoundDurMins": %d,
-				"FinalityDelayMins": %d
+				"FinalityDelayMins": %d,
+				"Public":true
 			}`, *HorizonURL, maxRoundDurMins, finalityDelayMins),
 		}, {
 			name:  "guest config init update",
@@ -163,13 +163,13 @@ func channelCreationSteps(guest, host *Starlightd, maxRoundDurMins, finalityDela
 			{
 				"Username":"host",
 				"Password":"password",
-				"DemoServer":true,
 				"HorizonURL":"%s",
 				"KeepAlive":false,
 				"MaxRoundDurMins": %d,
 				"FinalityDelayMins": %d,
 				"HostFeerate": %d,
-				"ChannelFeerate":%d
+				"ChannelFeerate":%d,
+				"Public":true
 			}`, *HorizonURL, maxRoundDurMins, finalityDelayMins, hostFeerate, channelFeerate),
 		}, {
 			name:  "host config init update",
@@ -929,13 +929,13 @@ func cleanupSteps(guest *httptest.Server, host *Starlightd, maxRoundDurMins, fin
 			{
 				"Username":"host",
 				"Password":"password",
-				"DemoServer":true,
 				"HorizonURL":"%s",
 				"KeepAlive":false,
 				"MaxRoundDurMins": %d,
 				"FinalityDelayMins": %d,
 				"HostFeerate": %d,
-				"ChannelFeerate":%d
+				"ChannelFeerate":%d,
+				"Public":true
 			}`, *HorizonURL, maxRoundDurMins, finalityDelayMins, hostFeerate, channelFeerate),
 		}, {
 			name:  "host config init update",
