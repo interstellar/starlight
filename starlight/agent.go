@@ -468,16 +468,11 @@ func (g *Agent) AddAsset(assetCode, issuer string) error {
 		if err != nil {
 			return errors.Sub(errInvalidAsset, err)
 		}
-		account, err := g.wclient.LoadAccount(issuer)
-		if err != nil {
-			return errors.Wrap(errFetchingAccounts, "issuer account in adding asset")
-		}
-		authorized := !(account.Flags.AuthRequired)
 		w.Balances[asset.String()] = fsm.Balance{
 			Asset:      asset,
 			Amount:     0,
 			Pending:    true,
-			Authorized: authorized,
+			Authorized: false,
 		}
 		w.NativeBalance -= (baseReserve + hostFeerate)
 		w.Reserve += baseReserve
@@ -534,10 +529,6 @@ func (g *Agent) RemoveAsset(assetCode, issuer string) error {
 		if w.NativeBalance < hostFeerate {
 			return errors.Wrap(errInsufficientBalance, "fees to remove non-native asset")
 		}
-		w.NativeBalance -= hostFeerate
-		w.Seqnum++
-		root.Agent().PutWallet(w)
-
 		var issuerAccountID xdr.AccountId
 		err := issuerAccountID.SetAddress(issuer)
 		if err != nil {
@@ -548,10 +539,21 @@ func (g *Agent) RemoveAsset(assetCode, issuer string) error {
 		if err != nil {
 			return errors.Sub(errInvalidAsset, err)
 		}
-		if _, ok := w.Balances[asset.String()]; !ok {
+		var (
+			currBalance fsm.Balance
+			ok          bool
+		)
+		if currBalance, ok = w.Balances[asset.String()]; !ok {
 			return errInvalidAsset
 		}
-
+		if currBalance.Amount != 0 {
+			return errors.New("cannot remove trustline with nonzero balance")
+		}
+		currBalance.Authorized = false
+		w.Balances[asset.String()] = currBalance
+		w.NativeBalance -= hostFeerate
+		w.Seqnum++
+		root.Agent().PutWallet(w)
 		btx, err := b.Transaction(
 			b.Network{Passphrase: g.passphrase(root)},
 			b.SourceAccount{AddressOrSeed: w.Address},
@@ -732,9 +734,10 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 							currBalance.Amount += uint64(paymentOp.Amount)
 						} else {
 							currBalance = fsm.Balance{
-								Asset:   asset,
-								Amount:  uint64(paymentOp.Amount),
-								Pending: false,
+								Asset:      asset,
+								Amount:     uint64(paymentOp.Amount),
+								Pending:    false,
+								Authorized: true,
 							}
 						}
 						w.Balances[assetStr] = currBalance
@@ -811,10 +814,30 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 						w.NativeBalance += baseReserve // unreserve base reserve
 						w.Reserve -= baseReserve
 					} else { // AddAsset
-						w.Balances[changeTrustOp.Line.String()] = fsm.Balance{
-							Asset:   changeTrustOp.Line,
-							Pending: false,
+						var issuer xdr.AccountId
+						switch changeTrustOp.Line.Type {
+						case xdr.AssetTypeAssetTypeCreditAlphanum4:
+							if shortAsset, ok := changeTrustOp.Line.GetAlphaNum4(); ok {
+								issuer = shortAsset.Issuer
+							}
+						case xdr.AssetTypeAssetTypeCreditAlphanum12:
+							if longAsset, ok := changeTrustOp.Line.GetAlphaNum12(); ok {
+								issuer = longAsset.Issuer
+							}
+						default:
+							return errors.New("native trustline not allowed")
 						}
+						account, err := g.wclient.LoadAccount(issuer.Address())
+						if err != nil {
+							return errors.Wrap(err, "getting issuer auth requirement")
+						}
+						authorized := !(account.Flags.AuthRequired)
+						w.Balances[changeTrustOp.Line.String()] = fsm.Balance{
+							Asset:      changeTrustOp.Line,
+							Pending:    false,
+							Authorized: authorized,
+						}
+
 					}
 					root.Agent().PutWallet(w)
 					g.putUpdate(root, &Update{
