@@ -135,7 +135,7 @@ func (t *TbTx) Run(ctx context.Context) error {
 					walletAddr := root.Agent().PrimaryAcct().Address()
 					isWalletSrcTx := t.E.Tx.SourceAccount.Address() == walletAddr
 
-					var delta int64
+					w := root.Agent().Wallet()
 					for _, op := range t.E.Tx.Operations {
 						if op.SourceAccount == nil && !isWalletSrcTx {
 							continue
@@ -143,21 +143,58 @@ func (t *TbTx) Run(ctx context.Context) error {
 						if op.SourceAccount != nil && op.SourceAccount.Address() != walletAddr {
 							continue
 						}
-						if op.Body.Type != xdr.OperationTypePayment {
+						switch op.Body.Type {
+						// TODO(debnil): Check error and update Authorized field.
+						case xdr.OperationTypePayment:
+							paymentOp := op.Body.PaymentOp
+							var asset xdr.Asset
+							switch paymentOp.Asset.Type {
+							case xdr.AssetTypeAssetTypeCreditAlphanum12:
+								assetAlpha := paymentOp.Asset.AlphaNum12
+								asset.SetCredit(string(assetAlpha.AssetCode[:]), assetAlpha.Issuer)
+							case xdr.AssetTypeAssetTypeCreditAlphanum4:
+								assetAlpha := paymentOp.Asset.AlphaNum4
+								asset.SetCredit(string(assetAlpha.AssetCode[:]), assetAlpha.Issuer)
+							default:
+								w.NativeBalance += xlm.Amount(paymentOp.Amount)
+								continue
+							}
+							assetStr := asset.String()
+							var currBalance fsm.Balance
+							if currBalance, ok := w.Balances[assetStr]; ok {
+								currBalance.Amount += uint64(paymentOp.Amount)
+							} else {
+								log.Infof("could not find trustline for asset %s in payment op", assetStr)
+								continue
+							}
+							w.Balances[assetStr] = currBalance
+						case xdr.OperationTypeChangeTrust:
+							changeOp := op.Body.ChangeTrustOp
+							var asset xdr.Asset
+							switch changeOp.Line.Type {
+							case xdr.AssetTypeAssetTypeCreditAlphanum12:
+								assetAlpha := changeOp.Line.AlphaNum12
+								asset.SetCredit(string(assetAlpha.AssetCode[:]), assetAlpha.Issuer)
+							case xdr.AssetTypeAssetTypeCreditAlphanum4:
+								assetAlpha := changeOp.Line.AlphaNum4
+								asset.SetCredit(string(assetAlpha.AssetCode[:]), assetAlpha.Issuer)
+							default:
+								continue
+							}
+							// RemoveAsset failure requires no action.
+							// AddAsset failure does.
+							if changeOp.Limit != 0 {
+								assetStr := asset.String()
+								delete(w.Balances, assetStr)
+								w.NativeBalance += baseReserve
+								w.Reserve -= baseReserve
+							}
+						default:
 							continue
 						}
-						if op.Body.PaymentOp.Asset.Type != xdr.AssetTypeAssetTypeNative {
-							continue
-						}
-						delta += int64(op.Body.PaymentOp.Amount)
 					}
 
-					if delta != 0 {
-						w := root.Agent().Wallet()
-						w.NativeBalance += xlm.Amount(delta)
-						root.Agent().PutWallet(w)
-					}
-
+					root.Agent().PutWallet(w)
 					t.g.putUpdate(root, &Update{
 						Type: update.TxFailureType,
 						InputTx: &worizon.Tx{
