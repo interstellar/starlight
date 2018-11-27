@@ -774,43 +774,6 @@ func hostTopUpSteps(guest, host *Starlightd, topUpAmount xlm.Amount) []step {
 	}
 }
 
-// mergingPaymentSteps sends payments from Guest and Host that, if one of the agents is not
-// receiving messages, will eventually create a payment merge state when the agent comes
-// back online.
-func mergingPaymentSteps(guest, host *Starlightd, guestPayment, hostPayment xlm.Amount) []step {
-	return []step{
-		{
-			name:  "guest channel pay host",
-			agent: guest,
-			path:  "/api/do-command",
-			body: fmt.Sprintf(`
-			{
-				"ChannelID": "%%s",
-				"Command": {
-					"Name": "ChannelPay",
-					"Amount": %d,
-					"Time": "2018-10-02T10:26:43.511Z"
-				}
-			}`, guestPayment),
-			injectChanID: true,
-		}, {
-			name:  "host channel pay guest",
-			agent: host,
-			path:  "/api/do-command",
-			body: fmt.Sprintf(`
-			{
-				"ChannelID": "%%s",
-				"Command": {
-					"Name": "ChannelPay",
-					"Amount": %d,
-					"Time": "2018-10-02T10:26:43.511Z"
-				}
-			}`, hostPayment),
-			injectChanID: true,
-		},
-	}
-}
-
 // paymentMergeResolutionSteps represents the state transitions that Guest and Host go through to merge
 // the conflict payment, sending a merged payment from Host to Guest.
 func paymentMergeResolutionSteps(guest, host *Starlightd, mergePayment xlm.Amount) []step {

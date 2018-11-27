@@ -10,6 +10,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/interstellar/starlight/starlight/fsm"
 	"github.com/interstellar/starlight/starlight/log"
 	"github.com/interstellar/starlight/worizon/xlm"
 )
@@ -184,24 +185,32 @@ func TestPaymentMerge(t *testing.T) {
 			testStep(ctx, t, s, &channelID)
 		}
 
-		address := host.address
-		host.server.Close()
+		// Shut down the guest server and have both parties make channel payments
+		address := guest.address
+		guest.server.Close()
 
 		hostPayment := paymentAmount + 1*xlm.Lumen
 		guestPayment := paymentAmount
-		steps = mergingPaymentSteps(guest, host, guestPayment, hostPayment)
-		for _, s := range steps {
-			testStep(ctx, t, s, &channelID)
-		}
 
-		host.server = httptest.NewUnstartedServer(host.handler)
+		host.g.DoCommand(channelID, &fsm.Command{
+			Name:   "ChannelPay",
+			Amount: hostPayment,
+		})
+
+		guest.g.DoCommand(channelID, &fsm.Command{
+			Name:   "ChannelPay",
+			Amount: guestPayment,
+		})
+
+		// Restart the guest server
+		guest.server = httptest.NewUnstartedServer(guest.handler)
 		l, err := net.Listen("tcp", address)
 		if err != nil {
 			t.Fatal(err)
 		}
-		host.server.Listener.Close()
-		host.server.Listener = l
-		host.server.Start()
+		guest.server.Listener.Close()
+		guest.server.Listener = l
+		guest.server.Start()
 
 		steps = paymentMergeResolutionSteps(guest, host, hostPayment-guestPayment)
 		for _, s := range steps {
