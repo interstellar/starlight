@@ -714,6 +714,11 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 						w.NativeBalance += xlm.Amount(paymentOp.Amount)
 					case xdr.AssetTypeAssetTypeCreditAlphanum4:
 						if shortAsset, ok := paymentOp.Asset.GetAlphaNum4(); ok {
+							// Since assets are treated as credits on the Stellar network,
+							// payments of an asset back to the issuer disappear.
+							if shortAsset.Issuer.Address() == acctID {
+								continue
+							}
 							err = asset.SetCredit(string(shortAsset.AssetCode[:]), shortAsset.Issuer)
 							if err != nil {
 								return errors.Sub(err, errInvalidAsset)
@@ -721,6 +726,9 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 						}
 					case xdr.AssetTypeAssetTypeCreditAlphanum12:
 						if longAsset, ok := paymentOp.Asset.GetAlphaNum12(); ok {
+							if longAsset.Issuer.Address() == acctID {
+								continue
+							}
 							err = asset.SetCredit(string(longAsset.AssetCode[:]), longAsset.Issuer)
 							if err != nil {
 								return errors.Sub(err, errInvalidAsset)
@@ -1186,6 +1194,9 @@ func (g *Agent) DoWalletPay(dest string, amount uint64, assetCode, issuer string
 		hostAcct := root.Agent().PrimaryAcct()
 		hostFeerate := xlm.Amount(root.Agent().Config().HostFeerate())
 		if assetCode != "" && issuer != "" {
+			if w.NativeBalance <= hostFeerate {
+				return errors.Wrap(errInsufficientBalance, "XLM balance for host fee")
+			}
 			var issuerAccountID xdr.AccountId
 			err := issuerAccountID.SetAddress(issuer)
 			if err != nil {
@@ -1196,32 +1207,33 @@ func (g *Agent) DoWalletPay(dest string, amount uint64, assetCode, issuer string
 			if err != nil {
 				return errors.Sub(err, errInvalidAsset)
 			}
-			assetStr = asset.String()
-			if currBalance, ok := w.Balances[assetStr]; ok {
-				if !currBalance.Authorized {
-					return errors.New(fmt.Sprintf("unauthorized trustline for %s", assetStr))
+			// Check if the wallet/host is issuing their own asset.
+			// Else, check for an existing trustline.
+			if issuer != hostAcct.Address() {
+				assetStr = asset.String()
+				if currBalance, ok := w.Balances[assetStr]; ok {
+					if currBalance.Amount <= amount {
+						return errors.Wrap(errInsufficientBalance, "asset amount for payment")
+					}
+					if !currBalance.Authorized {
+						return errors.New(fmt.Sprintf("unauthorized trustline for %s", assetStr))
+					}
+					currBalance.Amount -= amount
+					w.Balances[assetStr] = currBalance
+				} else {
+					return errors.Wrap(errInvalidAsset, fmt.Sprintf("no trustline exists for asset %s, issuer %s", assetCode, issuer))
 				}
-				if w.NativeBalance <= hostFeerate {
-					return errors.Wrap(errInsufficientBalance, "XLM balance for host fee")
-				}
-				if currBalance.Amount <= amount {
-					return errors.Wrap(errInsufficientBalance, "asset amount for payment")
-				}
-				w.NativeBalance -= hostFeerate
-				currBalance.Amount -= amount
-				w.Balances[assetStr] = currBalance
-				paymentOp = b.Payment(
-					b.SourceAccount{AddressOrSeed: hostAcct.Address()},
-					b.Destination{AddressOrSeed: dest},
-					b.CreditAmount{
-						Code:   assetCode,
-						Issuer: issuer,
-						Amount: string(amount),
-					},
-				)
-			} else {
-				return errors.Wrap(errInvalidAsset, fmt.Sprintf("no trustline exists for asset %s, issuer %s", assetCode, issuer))
 			}
+			w.NativeBalance -= hostFeerate
+			paymentOp = b.Payment(
+				b.SourceAccount{AddressOrSeed: hostAcct.Address()},
+				b.Destination{AddressOrSeed: dest},
+				b.CreditAmount{
+					Code:   assetCode,
+					Issuer: issuer,
+					Amount: string(amount),
+				},
+			)
 		} else {
 			if w.NativeBalance <= xlm.Amount(amount)+hostFeerate {
 				return errors.Wrap(errInsufficientBalance, "XLM amount for payment and fees")
