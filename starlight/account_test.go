@@ -91,8 +91,8 @@ func TestFindAccount(t *testing.T) {
 	}}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			g := startTestAgent(t)
-			defer g.CloseWait()
+			g, closer := startTestAgent(t)
+			defer closer()
 			config := Config{
 				Username:   "alice",
 				Password:   "password",

@@ -153,6 +153,7 @@ func (tb *TB) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			tb.wg.Wait()
 			return
 
 		case p := <-tb.ch:

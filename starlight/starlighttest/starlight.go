@@ -15,14 +15,12 @@ import (
 	"github.com/interstellar/starlight/starlight"
 	"github.com/interstellar/starlight/starlight/fsm"
 	"github.com/interstellar/starlight/starlight/walletrpc"
-	"github.com/interstellar/starlight/worizon"
 	"github.com/interstellar/starlight/worizon/xlm"
 )
 
 // Starlightd is an in-memory starlight agent with HTTP endpoints for protocol messages and UI commands.
 type Starlightd struct {
 	g             *starlight.Agent
-	wclient       *worizon.Client
 	handler       http.Handler
 	server        *httptest.Server
 	cookie        string
@@ -52,10 +50,9 @@ func (s *Starlightd) Close() {
 }
 
 func start(ctx context.Context, t *testing.T, testdir, name string) *Starlightd {
-	g, wclient := starlight.StartTestnetAgent(ctx, t, fmt.Sprintf("%s/testdb_%s", testdir, name))
+	g := StartTestnetAgent(ctx, t, fmt.Sprintf("%s/testdb_%s", testdir, name))
 	s := &Starlightd{
 		g:             g,
-		wclient:       wclient,
 		nextUpdateNum: 1,
 	}
 	s.handler = logWrapper(walletrpc.Handler(s.g), name)

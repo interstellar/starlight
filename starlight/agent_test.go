@@ -19,8 +19,8 @@ import (
 var testHorizonURL = "https://horizon-testnet.stellar.org"
 
 func TestConfigInit(t *testing.T) {
-	g := startTestAgent(t)
-	defer g.CloseWait()
+	g, closer := startTestAgent(t)
+	defer closer()
 	config := Config{
 		Username:   "alice",
 		Password:   "password",
@@ -37,8 +37,8 @@ func TestConfigInit(t *testing.T) {
 }
 
 func TestConfigured(t *testing.T) {
-	g := startTestAgent(t)
-	defer g.CloseWait()
+	g, closer := startTestAgent(t)
+	defer closer()
 	config := Config{
 		Username:   "alice",
 		Password:   "password",
@@ -58,8 +58,8 @@ func TestConfigured(t *testing.T) {
 }
 
 func TestUnconfiguredUpdates(t *testing.T) {
-	g := startTestAgent(t)
-	defer g.CloseWait()
+	g, closer := startTestAgent(t)
+	defer closer()
 	got, err := json.Marshal(g.Updates(100, 200))
 	if err != nil {
 		t.Fatal(err)
@@ -72,8 +72,8 @@ func TestUnconfiguredUpdates(t *testing.T) {
 }
 
 func TestUpdatesNull(t *testing.T) {
-	g := startTestAgent(t)
-	defer g.CloseWait()
+	g, closer := startTestAgent(t)
+	defer closer()
 	config := Config{
 		Username:   "alice",
 		Password:   "password",
@@ -96,8 +96,8 @@ func TestUpdatesNull(t *testing.T) {
 }
 
 func TestInitConfigUpdate(t *testing.T) {
-	g := startTestAgent(t)
-	defer g.CloseWait()
+	g, closer := startTestAgent(t)
+	defer closer()
 	config := Config{
 		Username:   "alice",
 		Password:   "password",
@@ -153,8 +153,8 @@ func TestInitConfigUpdate(t *testing.T) {
 }
 
 func TestConfigEdit(t *testing.T) {
-	g := startTestAgent(t)
-	defer g.CloseWait()
+	g, closer := startTestAgent(t)
+	defer closer()
 	config := Config{
 		Username:   "alice",
 		Password:   "password",
@@ -276,8 +276,8 @@ func TestConfigEdit(t *testing.T) {
 }
 
 func TestAuthenticate(t *testing.T) {
-	g := startTestAgent(t)
-	defer g.CloseWait()
+	g, closer := startTestAgent(t)
+	defer closer()
 	config := Config{
 		Username:   "alice",
 		Password:   "password",
@@ -386,8 +386,8 @@ func TestAgentCreateChannel(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			g := startTestAgent(t)
-			defer g.CloseWait()
+			g, closer := startTestAgent(t)
+			defer closer()
 			config := Config{
 				Username:   "alice",
 				Password:   "password",
@@ -422,8 +422,8 @@ func TestAgentCreateChannel(t *testing.T) {
 }
 
 func TestShutdown(t *testing.T) {
-	g := startTestAgent(t)
-	defer g.CloseWait()
+	g, closer := startTestAgent(t)
+	defer closer()
 
 	config := Config{
 		Username:   "alice",

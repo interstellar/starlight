@@ -13,6 +13,7 @@ import (
 
 	"github.com/interstellar/starlight/errors"
 	"github.com/interstellar/starlight/net"
+	"github.com/interstellar/starlight/starlight"
 	"github.com/interstellar/starlight/starlight/fsm"
 	"github.com/interstellar/starlight/starlight/internal/update"
 	"github.com/interstellar/starlight/starlight/log"
@@ -1068,7 +1069,7 @@ func checkUpdate(ctx context.Context, s step, channelID *string) error {
 					s.agent.reserve = newReserve
 				}
 				if s.checkLedger {
-					if err = checkAcctBalance(s.agent.wclient, u.Account.ID, s.agent.balance+s.agent.reserve, s.agent.wclient.Now()); err != nil {
+					if err = checkAcctBalance(s.agent.g, u.Account.ID, s.agent.balance+s.agent.reserve, s.agent.g.Now()); err != nil {
 						return errors.Wrapf(err, "step %s", s.name)
 					}
 				}
@@ -1093,12 +1094,12 @@ func checkUpdate(ctx context.Context, s step, channelID *string) error {
 	return nil
 }
 
-func checkAcctBalance(wclient *worizon.Client, acctID string, want xlm.Amount, ledgerTime time.Time) error {
-	return checkAcctBalanceHelper(wclient, acctID, want, ledgerTime, 4)
+func checkAcctBalance(g *starlight.Agent, acctID string, want xlm.Amount, ledgerTime time.Time) error {
+	return checkAcctBalanceHelper(g, acctID, want, ledgerTime, 4)
 }
 
-func checkAcctBalanceHelper(wclient *worizon.Client, acctID string, want xlm.Amount, ledgerTime time.Time, retries int) error {
-	acc, err := wclient.LoadAccount(acctID)
+func checkAcctBalanceHelper(g *starlight.Agent, acctID string, want xlm.Amount, ledgerTime time.Time, retries int) error {
+	acc, err := g.LoadAccount(acctID)
 	if err != nil {
 		return err
 	}
@@ -1113,8 +1114,8 @@ func checkAcctBalanceHelper(wclient *worizon.Client, acctID string, want xlm.Amo
 	if bal != want {
 		if retries > 0 {
 			done := make(chan struct{})
-			wclient.AfterFunc(ledgerTime.Add(time.Second), func() {
-				err = checkAcctBalanceHelper(wclient, acctID, want, wclient.Now(), retries-1)
+			g.AfterFunc(ledgerTime.Add(time.Second), func() {
+				err = checkAcctBalanceHelper(g, acctID, want, g.Now(), retries-1)
 				close(done)
 			})
 			<-done

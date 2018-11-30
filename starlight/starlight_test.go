@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 	"testing"
 
 	bolt "github.com/coreos/bbolt"
@@ -19,30 +18,14 @@ import (
 	"github.com/interstellar/starlight/worizon/worizontest"
 )
 
-var testDB = "./testdb"
-
-// StartTestnetAgent starts an agent for testing
-// purposes, but with requests made to a live
-// testnet Horizon.
-// TODO(bobg): The main starlight package should not export testing code.
-func StartTestnetAgent(ctx context.Context, t *testing.T, dbpath string) (*Agent, *worizon.Client) {
-	db, err := bolt.Open(filepath.Join(dbpath), 0600, nil)
+func startTestAgent(t *testing.T) (*Agent, func()) {
+	f, err := ioutil.TempFile("", "starlight")
 	if err != nil {
 		t.Fatal(err)
 	}
-	g, err := StartAgent(ctx, db)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return g, g.wclient
-}
-
-func startTestAgent(t *testing.T) *Agent {
-	err := os.RemoveAll(testDB)
-	if err != nil {
-		t.Fatal(err)
-	}
-	db, err := bolt.Open(filepath.Join(testDB), 0600, nil)
+	dbfile := f.Name()
+	f.Close()
+	db, err := bolt.Open(dbfile, 0600, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +35,12 @@ func startTestAgent(t *testing.T) *Agent {
 	}
 	g.wclient = worizon.NewClient(horizonHTTP{}, &worizontest.FakeHorizonClient{})
 	g.httpclient.Transport = agentHTTP{}
-	return g
+	cleanup := func() {
+		g.CloseWait()
+		db.Close()
+		os.Remove(dbfile)
+	}
+	return g, cleanup
 }
 
 type agentHTTP struct{}

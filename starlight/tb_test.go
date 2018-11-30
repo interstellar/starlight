@@ -27,8 +27,8 @@ func testMsg() (*fsm.Message, error) {
 }
 
 func TestEncodeMsg(t *testing.T) {
-	g := startTestAgent(t)
-	defer g.CloseWait()
+	g, closer := startTestAgent(t)
+	defer closer()
 	codec := tbCodec{g: g}
 	msg, err := testMsg()
 	if err != nil {
@@ -53,8 +53,8 @@ func TestEncodeMsg(t *testing.T) {
 }
 
 func TestRunMsg(t *testing.T) {
-	g := startTestAgent(t)
-	defer g.CloseWait()
+	g, closer := startTestAgent(t)
+	defer closer()
 	err := g.ConfigInit(&Config{
 		Username:   "alice",
 		Password:   "passw0rd",
@@ -88,8 +88,8 @@ func TestRunMsg(t *testing.T) {
 }
 
 func TestAddMsgs(t *testing.T) {
-	g := startTestAgent(t)
-	defer g.CloseWait()
+	g, closer := startTestAgent(t)
+	defer closer()
 	err := g.ConfigInit(&Config{
 		Username:   "alice",
 		Password:   "passw0rd",

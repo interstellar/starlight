@@ -1649,6 +1649,18 @@ func (g *Agent) getSequenceNumbers(chanID string, guestRatchetAcct, hostRatchetA
 	return base, guest, host, nil
 }
 
+func (g *Agent) LoadAccount(accountID string) (worizon.Account, error) {
+	return g.wclient.LoadAccount(accountID)
+}
+
+func (g *Agent) AfterFunc(t time.Time, f func()) {
+	g.wclient.AfterFunc(t, f)
+}
+
+func (g *Agent) Now() time.Time {
+	return g.wclient.Now()
+}
+
 var tomlTemplate = template.Must(template.New("toml").Parse(`
 FEDERATION_SERVER="{{.Origin}}/federation"
 STARLIGHT_SERVER="{{.Origin}}/"`))
