@@ -51,6 +51,7 @@ func (s *Starlightd) Close() {
 
 func start(ctx context.Context, t *testing.T, testdir, name string) *Starlightd {
 	g := StartTestnetAgent(ctx, t, fmt.Sprintf("%s/testdb_%s", testdir, name))
+	g.SetDebug(*debug, name)
 	s := &Starlightd{
 		g:             g,
 		nextUpdateNum: 1,

@@ -18,7 +18,6 @@ import (
 	"github.com/interstellar/starlight/starlight/db"
 	"github.com/interstellar/starlight/starlight/fsm"
 	"github.com/interstellar/starlight/starlight/internal/update"
-	"github.com/interstellar/starlight/starlight/log"
 	"github.com/interstellar/starlight/starlight/taskbasket"
 	"github.com/interstellar/starlight/worizon"
 	"github.com/interstellar/starlight/worizon/xlm"
@@ -98,7 +97,7 @@ func (t *TbTx) Run(ctx context.Context) error {
 
 	succ, submitErr := t.g.wclient.SubmitTx(txstr)
 	if submitErr != nil {
-		log.Debugf("SubmitTx error (channel %s): %s\ntx: %s", string(t.ChanID), submitErr, txstr)
+		t.g.debugf("SubmitTx error (channel %s): %s\ntx: %s", string(t.ChanID), submitErr, txstr)
 
 		var (
 			resultStr string
@@ -109,27 +108,27 @@ func (t *TbTx) Run(ctx context.Context) error {
 		if herr, ok := submitErr.(*horizon.Error); ok {
 			resultStr, err = herr.ResultString()
 			if err != nil {
-				log.Debugf("extracting result string from horizon.Error: %s", err)
+				t.g.debugf("extracting result string from horizon.Error: %s", err)
 				resultStr = ""
 			}
 		}
 		if resultStr == "" {
 			resultStr = succ.Result
 			if resultStr == "" {
-				log.Debugf("cannot locate result string from failed SubmitTx call")
+				t.g.debugf("cannot locate result string from failed SubmitTx call")
 				return err // will retry
 			}
 		}
 
-		log.Debugf("result string: %s", resultStr)
+		t.g.debugf("result string: %s", resultStr)
 
 		err = xdr.SafeUnmarshalBase64(resultStr, &tr)
 		if err != nil {
-			log.Debugf("unmarshaling TransactionResult: %s", err)
+			t.g.debugf("unmarshaling TransactionResult: %s", err)
 			return err // will retry
 		}
 
-		if !isRetriableSubmitErr(t.g.wclient, &t.E.Tx, &tr, submitErr) {
+		if !isRetriableSubmitErr(t.g, &t.E.Tx, &tr, submitErr) {
 			if isWalletTx {
 				err = db.Update(t.g.db, func(root *db.Root) error {
 					walletAddr := root.Agent().PrimaryAcct().Address()
@@ -164,7 +163,7 @@ func (t *TbTx) Run(ctx context.Context) error {
 							if currBalance, ok := w.Balances[assetStr]; ok {
 								currBalance.Amount += uint64(paymentOp.Amount)
 							} else {
-								log.Infof("could not find trustline for asset %s in payment op", assetStr)
+								t.g.logf("could not find trustline for asset %s in payment op", assetStr)
 								continue
 							}
 							w.Balances[assetStr] = currBalance
@@ -206,7 +205,7 @@ func (t *TbTx) Run(ctx context.Context) error {
 					return nil
 				})
 				if err != nil {
-					log.Debugf("unreserving wallet funds after unretriable tx failure: %s", err)
+					t.g.debugf("unreserving wallet funds after unretriable tx failure: %s", err)
 					t.g.mustDeauthenticate()
 				}
 				return nil // will not retry
@@ -243,17 +242,17 @@ func (m *TbMsg) Run(ctx context.Context) error {
 	// Check if channel has closed
 	exists, err := channelExists(m.g.db, m.Msg.ChannelID)
 	if err != nil {
-		log.Debugf("channelExists error: %s", err)
+		m.g.debugf("channelExists error: %s", err)
 		return err
 	}
 	if !exists {
-		log.Debugf("channel doesn't exist")
+		m.g.debugf("channel doesn't exist")
 		return nil
 	}
 	url := strings.TrimRight(m.RemoteURL, "/") + "/starlight/message"
 	err = post(&m.g.httpclient, url, bytes.NewReader(j))
 	if err != nil {
-		log.Debugf("error %s sending message to %s", err, url)
+		m.g.debugf("error %s sending message to %s", err, url)
 	}
 	return err
 }
@@ -289,15 +288,15 @@ func channelExists(boltDB *bolt.DB, chanID string) (bool, error) {
 	return exists, err
 }
 
-func isRetriableSubmitErr(wclient *worizon.Client, tx *xdr.Transaction, tr *xdr.TransactionResult, err error) bool {
+func isRetriableSubmitErr(g *Agent, tx *xdr.Transaction, tr *xdr.TransactionResult, err error) bool {
 	if _, ok := err.(*horizon.Error); !ok {
 		// TODO(bobg): are there any non-horizon errors that are
 		// non-retriable?
-		log.Debugf("error %s not a horizon error", err)
+		g.debugf("error %s not a horizon error", err)
 		return true
 	}
 
-	log.Debugf("tx failed with result code %s", tr.Result.Code)
+	g.debugf("tx failed with result code %s", tr.Result.Code)
 
 	switch tr.Result.Code {
 	case xdr.TransactionResultCodeTxTooLate:
@@ -317,7 +316,7 @@ func isRetriableSubmitErr(wclient *worizon.Client, tx *xdr.Transaction, tr *xdr.
 	case xdr.TransactionResultCodeTxBadSeq:
 		// Don't know if seqnum is too low or too high. One case is
 		// retriable, the other's not.
-		acctSeqNum, err := wclient.SequenceForAccount(tx.SourceAccount.Address())
+		acctSeqNum, err := g.wclient.SequenceForAccount(tx.SourceAccount.Address())
 		if err != nil {
 			return true // whatevs
 		}

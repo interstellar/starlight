@@ -23,7 +23,6 @@ import (
 	b "github.com/stellar/go/build"
 	"github.com/stellar/go/xdr"
 
-	"github.com/interstellar/starlight/starlight/log"
 	"github.com/interstellar/starlight/worizon/xlm"
 )
 
@@ -311,7 +310,7 @@ func (u *Updater) setForceCloseState() error {
 	case AwaitingRatchet, AwaitingSettlement, AwaitingSettlementMintime, Closed:
 		return nil
 	}
-	log.Debug("entering force close")
+	u.debugf("entering force close")
 	if u.C.Role == Guest && u.C.GuestAmount == 0 {
 		// doesn't care about settlement
 		// and may not even have a ratchet tx

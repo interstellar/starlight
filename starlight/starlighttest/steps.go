@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -16,7 +17,6 @@ import (
 	"github.com/interstellar/starlight/starlight"
 	"github.com/interstellar/starlight/starlight/fsm"
 	"github.com/interstellar/starlight/starlight/internal/update"
-	"github.com/interstellar/starlight/starlight/log"
 	"github.com/interstellar/starlight/worizon"
 	"github.com/interstellar/starlight/worizon/xlm"
 )
@@ -43,6 +43,16 @@ type step struct {
 	hostDelta      xlm.Amount
 	guestDelta     xlm.Amount
 	reserveDelta   xlm.Amount
+}
+
+func (s step) logf(f string, a ...interface{}) {
+	log.Printf(f, a...)
+}
+
+func (s step) debugf(f string, a ...interface{}) {
+	if *debug {
+		s.logf(f, a...)
+	}
 }
 
 // WalletPaySelf executes a do-wallet-pay API action.
@@ -1025,7 +1035,7 @@ func checkUpdate(ctx context.Context, s step, channelID *string) error {
 	updateNum := s.agent.nextUpdateNum
 	for i := 0; i < 10 && !found; i++ {
 		body := fmt.Sprintf(`{"From": %d}`, updateNum)
-		log.Debugf("%s: polling /api/updates %s\n", s.name, body)
+		s.debugf("polling /api/updates %d", updateNum)
 		resp := post(ctx, s.agent.handler, s.agent.address, "/api/updates", body, s.agent.cookie)
 		if resp.Code != 200 {
 			return errors.New(fmt.Sprintf("%s: got http response: %d, want: 200", s.name, resp.Code))
@@ -1162,11 +1172,11 @@ func handleStep(ctx context.Context, s step, channelID *string) error {
 	}
 	if s.injectChanID {
 		s.body = fmt.Sprintf(s.body, *channelID)
-		log.Debugf("Body: %s", s.body)
 	}
 	if s.injectHostAcct {
 		s.body = fmt.Sprintf(s.body, s.agent.accountID)
 	}
+	s.debugf("step body: %s", s.body)
 	resp := post(ctx, s.agent.handler, s.agent.address, s.path, s.body, s.agent.cookie)
 	wantCode := s.wantCode
 	if wantCode == 0 {
@@ -1187,7 +1197,6 @@ func updateChannelID(orig string, body []byte) string {
 	}
 	for _, u := range updates {
 		if u.Channel != nil {
-			log.Debugf("updating channel ID to: %s", u.Channel.ID)
 			return u.Channel.ID
 		}
 	}
@@ -1196,7 +1205,9 @@ func updateChannelID(orig string, body []byte) string {
 
 func logWrapper(handler http.Handler, dest string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Debugf("%s: %s %s %s\n", r.Host, r.Method, r.URL.Path, dest)
+		if *debug {
+			log.Printf("%s: %s %s %s\n", r.Host, r.Method, r.URL.Path, dest)
+		}
 		handler.ServeHTTP(w, r)
 	})
 }

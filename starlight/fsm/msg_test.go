@@ -8,7 +8,6 @@ import (
 	"github.com/stellar/go/xdr"
 
 	"github.com/interstellar/starlight/errors"
-	"github.com/interstellar/starlight/starlight/log"
 	"github.com/interstellar/starlight/worizon/xlm"
 )
 
@@ -859,7 +858,6 @@ func TestHandleCloseMsg(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			log.Debug(c.name)
 			hostChannel, err := createTestChannel()
 			if err != nil {
 				t.Fatal(err)

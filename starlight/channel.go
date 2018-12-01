@@ -17,7 +17,6 @@ import (
 	"github.com/interstellar/starlight/starlight/db"
 	"github.com/interstellar/starlight/starlight/fsm"
 	"github.com/interstellar/starlight/starlight/internal/update"
-	"github.com/interstellar/starlight/starlight/log"
 	"github.com/interstellar/starlight/worizon"
 	"github.com/interstellar/starlight/worizon/xlm"
 )
@@ -58,7 +57,7 @@ func (g *Agent) watchEscrowAcct(ctx context.Context, chanID string) {
 		return g.updateChannel(chanID, updateFromTxCaller(ftx))
 	})
 	if err != nil {
-		log.Debugf("updating channel %s from tx: %s", string(chanID), err)
+		g.debugf("updating channel %s from tx: %s", string(chanID), err)
 		g.mustDeauthenticate()
 	}
 }
@@ -90,7 +89,7 @@ func (g *Agent) pollGuestMessages(ctx context.Context, chanID string) error {
 
 	for {
 		if ctx.Err() != nil {
-			log.Debugf("context canceled, keepAlive(%s) exiting", chanID)
+			g.debugf("context canceled, keepAlive(%s) exiting", chanID)
 			return nil
 		}
 
@@ -102,27 +101,27 @@ func (g *Agent) pollGuestMessages(ctx context.Context, chanID string) error {
 		url := strings.TrimRight(remoteURL, "/") + "/api/messages"
 		req, err := http.NewRequest("POST", url, strings.NewReader(body))
 		if err != nil {
-			log.Debug("unexpected error building request", err)
+			g.debugf("unexpected error building request: %s", err)
 			continue
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req = req.WithContext(ctx)
 		resp, err := g.httpclient.Do(req)
 		if err != nil {
-			log.Debug("unexpected error requesting messages", err)
+			g.debugf("unexpected error requesting messages: %s", err)
 			continue
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode/100 != 2 {
-			log.Debugf("unexpected bad status %s", resp.Status)
+			g.debugf("unexpected bad status %s", resp.Status)
 			continue
 		}
 
 		var messages []*fsm.Message
 		err = json.NewDecoder(resp.Body).Decode(&messages)
 		if err != nil {
-			log.Debug("unexpected error decoding messages", err)
+			g.debugf("unexpected error decoding messages: %s", err)
 			continue
 		}
 
@@ -251,7 +250,7 @@ func (g *Agent) keepAlive(ctx context.Context, channelID string) {
 		timer := time.NewTimer(net.Jitter(ch.MaxRoundDuration / 2))
 		select {
 		case <-ctx.Done():
-			log.Debugf("context canceled, keepAlive(%s) exiting", channelID)
+			g.debugf("context canceled, keepAlive(%s) exiting", channelID)
 			return
 
 		case <-timer.C:
@@ -263,7 +262,7 @@ func (g *Agent) keepAlive(ctx context.Context, channelID string) {
 			Amount: 0,
 		})
 		if err != nil {
-			log.Debugf("keep-alive payment on channel %s: %s", channelID, err)
+			g.debugf("keep-alive payment on channel %s: %s", channelID, err)
 		}
 	}
 }
@@ -320,6 +319,7 @@ func (g *Agent) doUpdateChannel(root *db.Root, chanID string, f func(*db.Root, *
 	if c.TopUpAmount != 0 {
 		c.TopUpAmount = 0
 	}
+
 	o := new(outputter)
 	updater := &fsm.Updater{
 		C:          c,
@@ -329,6 +329,8 @@ func (g *Agent) doUpdateChannel(root *db.Root, chanID string, f func(*db.Root, *
 		LedgerTime: g.wclient.Now(),
 		Passphrase: g.passphrase(root),
 	}
+	updater.SetDebug(g.debug)
+
 	err := f(root, updater, u)
 	if err != nil {
 		return err

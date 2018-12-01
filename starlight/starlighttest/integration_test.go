@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/interstellar/starlight/starlight/fsm"
-	"github.com/interstellar/starlight/starlight/log"
 	"github.com/interstellar/starlight/worizon/xlm"
 )
 
@@ -26,7 +25,6 @@ func itest(t *testing.T, f func(ctx context.Context, guest, host *Starlightd)) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
-	log.Infof("running %s", t.Name())
 	testdir, err := ioutil.TempDir("", t.Name())
 	if err != nil {
 		t.Fatal(err)
@@ -151,7 +149,6 @@ func TestCleanup(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
-	log.Infof("running %s", t.Name())
 	testdir, err := ioutil.TempDir("", t.Name())
 	if err != nil {
 		t.Fatal(err)

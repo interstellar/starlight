@@ -12,7 +12,6 @@ import (
 
 	"github.com/interstellar/starlight/starlight/db"
 	"github.com/interstellar/starlight/starlight/internal/update"
-	"github.com/interstellar/starlight/starlight/log"
 )
 
 var debug io.Writer = os.Stderr
@@ -77,7 +76,7 @@ func (g *Agent) putUpdate(root *db.Root, ev *Update) {
 	root.Tx().OnCommit(g.evcond.Broadcast)
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(ev)
-	log.Debug(string(b.Bytes()))
+	g.debugf("putUpdate: %s", string(b.Bytes()))
 }
 
 func lastUpdateNum(boltDB *bolt.DB) (n uint64) {

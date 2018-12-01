@@ -11,7 +11,6 @@ import (
 	"github.com/interstellar/starlight/errors"
 	"github.com/interstellar/starlight/math/checked"
 	"github.com/interstellar/starlight/starlight/key"
-	"github.com/interstellar/starlight/starlight/log"
 	"github.com/interstellar/starlight/worizon"
 	"github.com/interstellar/starlight/worizon/xlm"
 )
@@ -222,7 +221,7 @@ func handleRatchetTx(u *Updater, ptx *worizon.Tx, success bool) (bool, error) {
 			// It's my ratchet tx, since we can only detect tx failures for transactions that we submit.
 			// TODO(vniu): add more detailed failure handling for different error cases, such as bump sequence target too low.
 			u.transitionTo(Closed)
-			log.Infof("unrecoverable failure on submitted ratchet tx, channel %s: closing channel immediately and abandoning balance", string(u.C.ID))
+			u.logf("UNRECOVERABLE FAILURE on submitted ratchet tx, closing channel immediately and abandoning balance!")
 			return true, nil
 		}
 

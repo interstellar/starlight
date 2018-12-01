@@ -8,7 +8,6 @@ import (
 	"github.com/interstellar/starlight/errors"
 	"github.com/interstellar/starlight/net/http/httpjson"
 	"github.com/interstellar/starlight/starlight/fsm"
-	"github.com/interstellar/starlight/starlight/log"
 )
 
 // TODO(vniu): refactor i10r.io/net/httperror to avoid
@@ -100,8 +99,6 @@ func init() {
 }
 
 func (f *formatter) write(req *http.Request, w http.ResponseWriter, err error) {
-	f.log(req, err)
-
 	resp := f.format(err)
 	httpjson.Write(req.Context(), w, resp.HTTPStatus, resp)
 }
@@ -132,13 +129,4 @@ func (f *formatter) add(key error, httpStatus int, msg string, retry bool) {
 		Message:    msg,
 		Retriable:  retry,
 	}
-}
-
-func (f *formatter) log(req *http.Request, err error) {
-	var errorMessage string
-	if err != nil {
-		errorMessage = err.Error()
-	}
-	// TODO(vniu): format the log message with more error details and data
-	log.Debugf("request to %s returned internal error %s", req.URL.Path, errorMessage)
 }

@@ -8,7 +8,6 @@ import (
 	"github.com/stellar/go/xdr"
 
 	"github.com/interstellar/starlight/errors"
-	"github.com/interstellar/starlight/starlight/log"
 	"github.com/interstellar/starlight/worizon"
 )
 
@@ -20,6 +19,8 @@ type Updater struct {
 	Seed       []byte
 	LedgerTime time.Time
 	Passphrase string
+
+	debug bool
 }
 
 // Tx causes the updater to update its channel in response to a transaction appearing in a Stellar ledger.
@@ -28,7 +29,7 @@ func (u *Updater) Tx(tx *worizon.Tx) error {
 	if err != nil {
 		return err
 	}
-	log.Debugf("received tx: %s", txstr)
+	u.debugf("received tx: %s", txstr)
 	success := tx.Result.Result.Code == xdr.TransactionResultCodeTxSuccess
 
 	if tx.PT != "" {
@@ -53,7 +54,7 @@ func (u *Updater) Msg(m *Message) error {
 	if err != nil {
 		return err
 	}
-	log.Debugf("received message: %s", string(bytes))
+	u.debugf("received message: %s", string(bytes))
 	if err := u.verifyMsg(m); err != nil {
 		return err
 	}
@@ -82,7 +83,7 @@ func (u *Updater) Msg(m *Message) error {
 
 // Cmd causes the updater to update its channel in response to a user command.
 func (u *Updater) Cmd(c *Command) error {
-	log.Debugf("received command: %+v", *c)
+	u.debugf("received command: %+v", *c)
 	c.Time = u.LedgerTime
 	f := commandFuncs[c.Name]
 	return f(c, u)
@@ -101,7 +102,7 @@ func (u *Updater) Time() error {
 	switch u.C.State {
 	case AwaitingFunding:
 		// PreFundTimeout
-		log.Debug("PreFundTimeout...")
+		u.debugf("PreFundTimeout...")
 		if u.C.Role == Guest {
 			return u.transitionTo(Closed)
 		}
@@ -117,7 +118,7 @@ func (u *Updater) Time() error {
 
 	case ChannelProposed:
 		// ChannelProposedTimeout
-		log.Debug("ChannelProposedTimeout...")
+		u.debugf("ChannelProposedTimeout...")
 		if u.C.Role == Host {
 			u.H.NativeBalance += u.C.fundingBalanceAmount() + u.C.fundingFeeAmount() + u.C.fundedAcctsTxFeeAmount()
 			u.H.Seqnum++
@@ -127,12 +128,12 @@ func (u *Updater) Time() error {
 
 	case Open, PaymentProposed, PaymentAccepted, AwaitingClose:
 		// RoundTimeout
-		log.Debug("RoundTimeout...")
+		u.debugf("RoundTimeout...")
 		return u.setForceCloseState()
 
 	case AwaitingSettlementMintime:
 		// SettlementMintimeTimeout
-		log.Debug("SettlementMintimeTimeout...")
+		u.debugf("SettlementMintimeTimeout...")
 		u.transitionTo(AwaitingSettlement)
 	}
 

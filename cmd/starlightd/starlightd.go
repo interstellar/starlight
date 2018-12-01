@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -21,40 +22,26 @@ import (
 
 	i10rnet "github.com/interstellar/starlight/net"
 	"github.com/interstellar/starlight/starlight"
-	"github.com/interstellar/starlight/starlight/log"
 	"github.com/interstellar/starlight/starlight/walletrpc"
 )
 
 func main() {
-	listen := flag.String("listen", "localhost:7000", "listen `address` (if no LISTEN_FDS)")
-	dir := flag.String("data", "./starlight-data", "data directory")
-	out := flag.String("out", "", "file to write log output to")
-	verbose := flag.Bool("verbose", false, "print verbose debugging output")
+	var (
+		listen = flag.String("listen", "localhost:7000", "listen `address` (if no LISTEN_FDS)")
+		dir    = flag.String("data", "./starlight-data", "data directory")
+		debug  = flag.Bool("debug", false, "print verbose debugging output")
+		name   = flag.String("name", "", "name for the agent, used in log output")
+	)
 	flag.Parse()
 
 	err := os.MkdirAll(*dir, 0700)
 	if err != nil {
-		log.Info(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
 	db, err := bolt.Open(filepath.Join(*dir, "db"), 0600, nil)
 	if err != nil {
-		log.Info("error opening database", err)
-		os.Exit(1)
-	}
-
-	if *out != "" {
-		file, err := os.Create(*out)
-		if err != nil {
-			log.Info("error setting log output", err)
-			os.Exit(1)
-		}
-		log.SetOutput(file)
-	}
-
-	if *verbose {
-		log.SetVerbose(*verbose)
+		log.Fatalf("error opening database: %s", err)
 	}
 
 	ctx := context.Background()
@@ -62,9 +49,9 @@ func main() {
 	defer cancel()
 	g, err := starlight.StartAgent(ctx, db)
 	if err != nil {
-		log.Infof("error starting agent: %s", err)
-		os.Exit(1)
+		log.Fatalf("error starting agent: %s", err)
 	}
+	g.SetDebug(*debug, *name)
 
 	handler := walletrpc.Handler(g)
 	if !i10rnet.IsLoopback(*listen) {
@@ -73,15 +60,13 @@ func main() {
 
 	serveLn, redirLn, err := systemdListenersOrListen(*listen)
 	if err != nil {
-		log.Infof("listen:%s", err)
-		os.Exit(1)
+		log.Fatalf("listen: %s", err)
 	}
 	serveLn = &keepAliveListener{serveLn}
 
 	cert, key, err := findCertKey(*dir)
 	if err != nil && !os.IsNotExist(err) {
-		log.Info(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
 	if redirLn != nil {
@@ -146,8 +131,7 @@ func main() {
 		err = srv.Serve(tls.NewListener(serveLn, tlsConfig))
 	}
 	if err != nil {
-		log.Info("ListenAndServe:", err)
-		os.Exit(1)
+		log.Fatalf("ListenAndServe: %s", err)
 	}
 }
 

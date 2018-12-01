@@ -26,7 +26,6 @@ import (
 	"github.com/interstellar/starlight/starlight/internal/message"
 	"github.com/interstellar/starlight/starlight/internal/update"
 	"github.com/interstellar/starlight/starlight/key"
-	"github.com/interstellar/starlight/starlight/log"
 	"github.com/interstellar/starlight/starlight/taskbasket"
 	"github.com/interstellar/starlight/worizon"
 	"github.com/interstellar/starlight/worizon/xlm"
@@ -103,6 +102,12 @@ type Agent struct {
 	// whether or not the accounts have been successfully created
 	// and are ready to be streamed from Horizon.
 	acctsReady map[string]chan struct{}
+
+	// These fields are used for logging.
+	// They should be set once during initialization and not changed.
+	// As such they may be accessed without holding the db mutex.
+	name  string
+	debug bool
 }
 
 // Config has user-facing, primary options for the Starlight agent
@@ -232,9 +237,9 @@ func (g *Agent) CloseWait() {
 func (g *Agent) allez(f func(), desc string) {
 	g.wg.Add(1)
 	go func() {
-		log.Debugf("%s starting", desc)
+		g.debugf("%s starting", desc)
 		f()
-		log.Debugf("%s finished", desc)
+		g.debugf("%s finished", desc)
 		g.wg.Done()
 	}()
 }
@@ -912,7 +917,7 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 		return nil
 	})
 	if err != nil {
-		log.Debugf("watching wallet-account txs: %s", err)
+		g.debugf("watching wallet-account txs: %s", err)
 		g.mustDeauthenticate()
 	}
 }
@@ -922,6 +927,9 @@ func (g *Agent) getTestnetFaucetFunds(acctID fsm.AccountID) {
 	// so this tries indefinitely with backoff until success.
 	backoff := &net.Backoff{Base: 100 * time.Millisecond}
 	defer close(g.wallet)
+
+	acctIDStr := acctID.Address()
+	faucetURL := "https://friendbot.stellar.org/?addr=" + acctIDStr
 
 	for counter := 0; ; counter++ {
 		if counter == 1 {
@@ -933,30 +941,34 @@ func (g *Agent) getTestnetFaucetFunds(acctID fsm.AccountID) {
 				return nil
 			})
 		}
-		resp, err := g.httpclient.Get("https://friendbot.stellar.org/?addr=" + acctID.Address())
-		if err != nil {
-			dur := backoff.Next()
-			log.Debugf("retrieving testnet funds for %s: %s (will retry in %s)", acctID.Address(), err, dur)
-			time.Sleep(dur)
-			continue
-		}
-		if resp.StatusCode/100 != 2 {
+
+		err := func() error {
+			resp, err := g.httpclient.Get(faucetURL)
+			if err != nil {
+				return err
+			}
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
+
+			if resp.StatusCode/100 == 2 {
+				return nil
+			}
+
 			var v struct {
 				Detail      string
 				ResultCodes json.RawMessage `json:"result_codes"`
 			}
-			err := json.NewDecoder(resp.Body).Decode(&v)
-			var warning string
-			if err != nil {
-				warning = "bad http status from faucet: " + resp.Status
-				warning += "cannot read faucet response: " + err.Error()
-			} else {
-				warning = fmt.Sprintf("faucet: %s (%s)", v.Detail, v.ResultCodes)
+			jErr := json.NewDecoder(resp.Body).Decode(&v)
+			if jErr != nil {
+				return fmt.Errorf("bad http status %d from faucet at %s", resp.StatusCode, faucetURL)
 			}
-			log.Debug(warning)
+			return fmt.Errorf("faucet at %s: %s (%s); http status %d", faucetURL, v.Detail, v.ResultCodes, resp.StatusCode)
+		}()
+		if err != nil {
 			dur := backoff.Next()
-			log.Debugf("Retrieving testnet funds for %s (will retry in %s)", acctID.Address(), dur)
-			time.Sleep(dur)
+			g.debugf("getting testnet funds for %s failed, will retry in %s: %s", acctIDStr, dur, err)
+			g.sleep(dur)
 			continue
 		}
 		return
@@ -1007,9 +1019,11 @@ func (g *Agent) Authenticate(name, password string) bool {
 }
 
 func (g *Agent) mustDeauthenticate() {
-	log.Info("agent deauthenticating and entering watchtower mode")
 	err := db.Update(g.db, func(root *db.Root) error {
-		g.seed = nil
+		if g.seed != nil {
+			g.logf("entering watchtower mode")
+			g.seed = nil
+		}
 		return nil
 	})
 	if err != nil {
@@ -1443,7 +1457,7 @@ func (g *Agent) scheduleTimer(tx *bolt.Tx, t time.Time, chanID string) {
 				return updater.Time()
 			})
 			if err != nil {
-				log.Debugf("scheduling timer on channel %s: %s", string(chanID), err)
+				g.debugf("scheduling timer on channel %s: %s", string(chanID), err)
 				g.mustDeauthenticate()
 			}
 		})
@@ -1542,7 +1556,7 @@ func (g *Agent) handleMsg(w http.ResponseWriter, req *http.Request) {
 		return updater.Msg(m)
 	})
 	if err != nil {
-		log.Debugf("handling RPC message, channel %s: %s", string(m.ChannelID), err)
+		g.debugf("handling RPC message, channel %s: %s", string(m.ChannelID), err)
 		WriteError(req, w, err)
 	}
 	return
@@ -1553,36 +1567,36 @@ func (g *Agent) resolveChannelCreateConflict(chanID []byte, propose *fsm.Channel
 		if !root.Agent().Ready() {
 			return errAgentClosing
 		}
+
+		var (
+			proposedHostAddr  = propose.HostAcct.Address()
+			proposedGuestAddr = propose.GuestAcct.Address()
+		)
+
 		chans := root.Agent().Channels()
 		c := chans.Get(chanID)
 		switch c.State {
 		case fsm.SettingUp:
-			log.Infof("%s proposed a channel: agent is currently in SettingUp state proposing a channel to the same counterparty. Conflict will be resolved once the channel moves into ChannelProposed state", propose.HostAcct.Address())
-			return errors.Wrapf(errChannelExistsRetriable, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
+			return errors.Wrapf(errChannelExistsRetriable, "setting up: host %s, guest %s", proposedHostAddr, proposedGuestAddr)
+
 		case fsm.ChannelProposed:
-			// Decide whether or not to clean up your channel, then either clean up or return non-retriable error.
-			if propose.HostAmount < c.HostAmount {
-				log.Infof("%s proposed a channel: the channel proposed by this agent takes precedence, returning a non-retriable error", propose.HostAcct.Address())
-				return errors.Wrapf(errExists, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
+			if propose.HostAmount < c.HostAmount || (propose.HostAmount == c.HostAmount && proposedHostAddr < c.HostAcct.Address()) {
+				g.logf("channel proposal from %s takes precedence", proposedHostAddr)
+				return errors.Wrapf(errExists, "channel proposed: host %s, guest %s", proposedHostAddr, proposedGuestAddr)
 			}
-			if propose.HostAmount == c.HostAmount {
-				// Tie-break by string comparison to avoid force closing
-				if propose.HostAcct.Address() < c.HostAcct.Address() {
-					log.Infof("%s proposed a channel: the channel proposed by this agent takes precedence, returning a non-retriable error", propose.HostAcct.Address())
-					return errors.Wrapf(errExists, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
-				}
-			}
-			log.Infof("%s proposed a channel: cleaning up this agent's proposed channel before accepting", propose.HostAcct.Address())
+			g.logf("my channel proposal takes precedence over the one from %s", proposedHostAddr)
 			go g.DoCommand(string(chanID), &fsm.Command{
 				Name: "CleanUp",
 			})
-			return errors.Wrapf(errChannelExistsRetriable, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
+			return errors.Wrapf(errChannelExistsRetriable, "channel proposed: host %s, guest %s", proposedHostAddr, proposedGuestAddr)
+
 		case fsm.AwaitingCleanup:
 			// Channel in cleanup process: counterparty should retry until cleanup is complete
-			return errors.Wrapf(errChannelExistsRetriable, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
+			return errors.Wrapf(errChannelExistsRetriable, "awaiting cleanup: host %s, guest %s", proposedHostAddr, proposedGuestAddr)
+
 		default:
 			// Channel is already open or in some payment state: reject the proposed channel
-			return errors.Wrapf(errExists, "between host %s and guest %s", propose.HostAcct.Address(), propose.GuestAcct.Address())
+			return errors.Wrapf(errExists, "host %s, guest %s", proposedHostAddr, proposedGuestAddr)
 		}
 	})
 }
@@ -1647,6 +1661,16 @@ func (g *Agent) getSequenceNumbers(chanID string, guestRatchetAcct, hostRatchetA
 		return 0, 0, 0, err
 	}
 	return base, guest, host, nil
+}
+
+// sleep sleeps until dur elapses or g's context is canceled.
+func (g *Agent) sleep(dur time.Duration) {
+	t := time.NewTimer(dur)
+	select {
+	case <-t.C:
+	case <-g.rootCtx.Done():
+		t.Stop()
+	}
 }
 
 func (g *Agent) LoadAccount(accountID string) (worizon.Account, error) {

@@ -10,7 +10,6 @@ import (
 
 	"github.com/interstellar/starlight/errors"
 	"github.com/interstellar/starlight/starlight/key"
-	"github.com/interstellar/starlight/starlight/log"
 	"github.com/interstellar/starlight/worizon/xlm"
 )
 
@@ -237,7 +236,7 @@ func (u *Updater) handleChannelProposeMsg(m *Message) error {
 	}
 
 	if !propose.GuestAcct.Equals(u.C.GuestAcct) {
-		log.Debugf("dropped message: proposed guest acct %s doesn't match channel guest acct %s", propose.GuestAcct.Address(), u.C.GuestAcct.Address())
+		u.debugf("dropped message: proposed guest acct %s doesn't match channel guest acct %s", propose.GuestAcct.Address(), u.C.GuestAcct.Address())
 		return nil
 	}
 
@@ -278,11 +277,11 @@ func (u *Updater) handleChannelAcceptMsg(m *Message) error {
 		return errors.Wrap(ErrUnexpectedState, u.C.State)
 	}
 	if u.C.Role != Host {
-		log.Debugf("dropped message: host cannot accept channel")
+		u.debugf("dropped message: host cannot accept channel")
 		return nil
 	}
 	if u.LedgerTime.After(u.C.FundingTime.Add(u.C.MaxRoundDuration)) {
-		log.Debugf("dropped message: ledger time %s past funding time %s with max round duration %s", u.LedgerTime, u.C.FundingTime, u.C.MaxRoundDuration)
+		u.debugf("dropped message: ledger time %s past funding time %s with max round duration %s", u.LedgerTime, u.C.FundingTime, u.C.MaxRoundDuration)
 		return nil
 	}
 	u.H.Seqnum++
@@ -325,7 +324,7 @@ func (u *Updater) handlePaymentProposeMsg(m *Message) error {
 		return errors.Wrap(ErrUnexpectedState, u.C.State)
 	}
 	if payment.PaymentAmount < 0 {
-		log.Debugf("dropped message: invalid payment amount %s", payment.PaymentAmount)
+		u.debugf("dropped message: invalid payment amount %s", payment.PaymentAmount)
 		return nil
 	}
 	var verifyKey keypair.KP
@@ -333,7 +332,7 @@ func (u *Updater) handlePaymentProposeMsg(m *Message) error {
 	switch u.C.Role {
 	case Guest:
 		if payment.PaymentAmount > u.C.HostAmount {
-			log.Debugf("dropped message: invalid payment amount %s from host with balance %s", payment.PaymentAmount, u.C.HostAmount)
+			u.debugf("dropped message: invalid payment amount %s from host with balance %s", payment.PaymentAmount, u.C.HostAmount)
 			return nil
 		}
 		verifyKey, err = keypair.Parse(u.C.EscrowAcct.Address())
@@ -342,7 +341,7 @@ func (u *Updater) handlePaymentProposeMsg(m *Message) error {
 		}
 	case Host:
 		if payment.PaymentAmount > u.C.GuestAmount {
-			log.Debugf("dropped message: invalid payment amount %s from guest with balance %s", payment.PaymentAmount, u.C.HostAmount)
+			u.debugf("dropped message: invalid payment amount %s from guest with balance %s", payment.PaymentAmount, u.C.HostAmount)
 			return nil
 		}
 		verifyKey, err = keypair.Parse(u.C.GuestAcct.Address())
@@ -369,18 +368,18 @@ func (u *Updater) handlePaymentProposeMsg(m *Message) error {
 	var settleWithHostTx, settleWithGuestTx *b.TransactionBuilder
 	if ch2.GuestAmount == 0 {
 		if payment.SenderSettleWithGuestSig.Signature != nil {
-			log.Debugf("dropped message: %s", ErrUnusedSettleWithGuestSig)
+			u.debugf("dropped message: %s", ErrUnusedSettleWithGuestSig)
 			return ErrUnusedSettleWithGuestSig
 		}
 		settleWithHostTx, err = buildSettleOnlyWithHostTx(&ch2, payment.PaymentTime)
 		if err != nil {
-			log.Debugf("dropped message: error building SettleOnlyWithHostTx %s", err)
+			u.debugf("dropped message: error building SettleOnlyWithHostTx %s", err)
 			return err
 		}
 	} else {
 		settleWithGuestTx, err = buildSettleWithGuestTx(&ch2, payment.PaymentTime)
 		if err != nil {
-			log.Debugf("dropped message: error building SettleWithGuestTx %s", err)
+			u.debugf("dropped message: error building SettleWithGuestTx %s", err)
 			return err
 		}
 		if err = verifySig(settleWithGuestTx, verifyKey, payment.SenderSettleWithGuestSig); err != nil {
@@ -388,7 +387,7 @@ func (u *Updater) handlePaymentProposeMsg(m *Message) error {
 		}
 		settleWithHostTx, err = buildSettleWithHostTx(&ch2, payment.PaymentTime)
 		if err != nil {
-			log.Debugf("dropped message: error building SettleWithHostTx %s", err)
+			u.debugf("dropped message: error building SettleWithHostTx %s", err)
 			return err
 		}
 	}
@@ -399,24 +398,24 @@ func (u *Updater) handlePaymentProposeMsg(m *Message) error {
 	switch u.C.State {
 	case Open, AwaitingPaymentMerge:
 		if u.C.RoundNumber >= payment.RoundNumber {
-			log.Debugf("dropped message: payment round %d for channel round %d", payment.RoundNumber, u.C.RoundNumber)
+			u.debugf("dropped message: payment round %d for channel round %d", payment.RoundNumber, u.C.RoundNumber)
 			return nil
 		}
 		if u.LedgerTime.After(payment.PaymentTime.Add(u.C.MaxRoundDuration)) {
-			log.Debugf("dropped message: payment time %v with duration %v at ledger time %v", payment.PaymentTime, u.C.MaxRoundDuration, u.LedgerTime)
+			u.debugf("dropped message: payment time %v with duration %v at ledger time %v", payment.PaymentTime, u.C.MaxRoundDuration, u.LedgerTime)
 			return nil
 		}
 		if u.LedgerTime.Before(payment.PaymentTime.Add(-1 * u.C.MaxRoundDuration)) {
-			log.Debugf("dropped message: payment time %v with duration %v at ledger time %v", payment.PaymentTime, u.C.MaxRoundDuration, u.LedgerTime)
+			u.debugf("dropped message: payment time %v with duration %v at ledger time %v", payment.PaymentTime, u.C.MaxRoundDuration, u.LedgerTime)
 			return nil
 		}
 		if payment.PaymentTime.Before(u.C.PaymentTime) {
-			log.Debugf("dropped message: payment time %v with most recent completed payment time %v", payment.PaymentTime, ch2.PaymentTime)
+			u.debugf("dropped message: payment time %v with most recent completed payment time %v", payment.PaymentTime, ch2.PaymentTime)
 			return nil
 		}
 		if u.C.State == AwaitingPaymentMerge {
 			if payment.PaymentAmount != u.C.PendingAmountReceived-u.C.PendingAmountSent {
-				log.Debugf("dropped message: invalid merge payment amount %s", u.C.PendingAmountReceived)
+				u.debugf("dropped message: invalid merge payment amount %s", u.C.PendingAmountReceived)
 				return nil
 			}
 		} else {
@@ -430,7 +429,7 @@ func (u *Updater) handlePaymentProposeMsg(m *Message) error {
 
 	case PaymentProposed:
 		if u.C.RoundNumber != payment.RoundNumber {
-			log.Debugf("dropped message: payment round %d for channel round %d", payment.RoundNumber, u.C.RoundNumber)
+			u.debugf("dropped message: payment round %d for channel round %d", payment.RoundNumber, u.C.RoundNumber)
 			return nil
 		}
 		if u.C.PendingAmountSent > payment.PaymentAmount || (u.C.PendingAmountSent == payment.PaymentAmount && u.C.Role == Host) {
