@@ -10,7 +10,7 @@ import (
 	"github.com/interstellar/starlight/starlight/fsm"
 )
 
-// TODO(vniu): refactor i10r.io/net/httperror to avoid
+// TODO(vniu): refactor github.com/interstellar/starlight/net/httperror to avoid
 // code duplication.
 
 // Defines the exported errors that are used by the Starlight
