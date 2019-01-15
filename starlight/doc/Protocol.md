@@ -184,8 +184,8 @@ Host creates a channel by:
 - Generating keypairs and choosing parameters
 - Publishing a transaction to create three accounts:
   `EscrowAccount`,
-  `HostAccount`,
-  and `GuestAccount`
+  `HostRatchetAccount`,
+  and `GuestRatchetAccount`
 - Proposing the channel to Guest and receiving a required signature from Guest
 - Publishing a funding transaction
 
