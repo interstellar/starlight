@@ -1,0 +1,11 @@
+language: go
+env:
+  - I10R: "${TRAVIS_HOME}/gopath/src/github.com/interstellar/starlight"
+go:
+  - '1.11'
+branches:
+  only:
+    - main
+install: true
+script:
+  - go test -v ./starlight/starlighttest/... -timeout 60m # only integration

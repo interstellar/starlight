@@ -298,8 +298,8 @@ func TestHelperStack(t *testing.T) {
 	got := string(read)
 	doNotWant := []string{
 		"log.go:",
-		"i10r.io/log.Printkv",
-		"i10r.io/log.Error",
+		"github.com/interstellar/starlight/log.Printkv",
+		"github.com/interstellar/starlight/log.Error",
 	}
 
 	t.Logf("output:\n%s", got)
