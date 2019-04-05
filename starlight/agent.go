@@ -668,7 +668,7 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 					hostFeerate := root.Agent().Config().HostFeerate()
 					w.NativeBalance = xlm.Amount(createAccount.StartingBalance) - xlm.Amount(hostFeerate) - 2*baseReserve
 					w.Reserve = 2 * baseReserve
-					w.Seqnum = seqnum + 1
+					w.Seqnum = seqnum
 					w.Cursor = htx.PT
 					root.Agent().PutWallet(w)
 					g.putUpdate(root, &Update{
@@ -685,6 +685,7 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 					if root.Agent().Config().Public() {
 						// Set account home domain
 						domain := w.Address[strings.Index(w.Address, "*")+1:]
+						w.Seqnum++
 						tx, err := b.Transaction(
 							b.Network{Passphrase: g.passphrase(root)},
 							b.BaseFee{Amount: uint64(hostFeerate)},
