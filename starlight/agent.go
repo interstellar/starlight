@@ -670,7 +670,6 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 					w.Reserve = 2 * baseReserve
 					w.Seqnum = seqnum
 					w.Cursor = htx.PT
-					root.Agent().PutWallet(w)
 					g.putUpdate(root, &Update{
 						Type: update.AccountType,
 						Account: &update.Account{
@@ -707,6 +706,7 @@ func (g *Agent) watchWalletAcct(acctID string, cursor horizon.Cursor) {
 						// create transaction to set options
 						g.addTxTask(root.Tx(), walletBucket, *env.E)
 					}
+					root.Agent().PutWallet(w)
 
 				case xdr.OperationTypePayment:
 					paymentOp := op.Body.PaymentOp
